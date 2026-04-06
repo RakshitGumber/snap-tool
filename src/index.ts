@@ -13,9 +13,8 @@ export const app = new Elysia()
 			prefix: '/'
 		})
 	)
-	.get('/message', { message: 'Hello from server' } as const)
 	.listen(3000)
 
 console.log(
-	`🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+	`Application is running at http://${app.server?.hostname}:${app.server?.port}`
 )

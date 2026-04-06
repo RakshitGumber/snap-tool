@@ -12,6 +12,7 @@
   "dependencies": {
     "@fontsource-variable/merriweather": "^5.2.6",
     "@fontsource/lato": "^5.2.7",
+    "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

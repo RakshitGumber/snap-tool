@@ -4,9 +4,9 @@ import { Sidebar } from "./Components/main/Sidebar";
 
 function App() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex min-h-screen flex-col overflow-hidden bg-bg transition-colors duration-300">
       <Navbar />
-      <div className="h-full w-full flex justify-between">
+      <div className="flex h-full w-full flex-1 justify-between">
         <Sidebar />
         <Canvas />
       </div>

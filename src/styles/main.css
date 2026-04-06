@@ -20,7 +20,7 @@
 }
 
 :root {
-    --color-bg: #efeffe;
+    --color-bg: #f3f3fe;
     --color-foreground: #ffffff;
     --color-text: #10101e;
     --color-border: #aeaebe;
@@ -39,9 +39,16 @@
 
     --color-bg: var(--color-bg);
     --color-card: var(--color-foreground);
-    --color-text-color: var(--color-text)
+    --color-text-color: var(--color-text);
+    --color-border-color: var(--color-border);
+}
+
+html,
+body,
+#root {
+    min-height: 100%;
 }
 
 body {
-    @apply font-main bg-bg text-text-color
+    @apply font-main bg-bg text-text-color transition-colors duration-300;
 }

@@ -20,15 +20,17 @@
 }
 
 :root {
-    --color-bg: #f1f2f3;
+    --color-bg: #efeffe;
     --color-foreground: #ffffff;
-    --color-text: #10101e
+    --color-text: #10101e;
+    --color-border: #aeaebe;
 }
 
 .dark {
     --color-bg: #10101e;
     --color-foreground: #1f1f2f;
-    --color-text: #f1f2f3
+    --color-text: #efeffe;
+    --color-border: #3d3d3e
 }
 
 @theme {

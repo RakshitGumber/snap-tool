@@ -1,6 +1,6 @@
 import { CreateRoute } from "@/pages/create";
 import { RootRoute } from "@/pages/root";
-import type { JSX } from "react";
+import { useEffect, type JSX } from "react";
 import { create } from "zustand";
 
 interface useRouter {
@@ -25,6 +25,19 @@ const useRouter = create<useRouter>((set) => ({
 
 export const Router = () => {
   const { route } = useRouter();
+
+  useEffect(() => {
+    const handler = () => {
+      useRouter.setState({
+        route: window.location.pathname as RoutePath,
+      });
+    };
+
+    window.addEventListener("popstate", handler);
+
+    return () => window.removeEventListener("popstate", handler);
+  }, []);
+
   return <div>{directory[route]}</div>;
 };
 

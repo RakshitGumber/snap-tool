@@ -1,3 +1,9 @@
+import { Link } from "@/utils/Router";
+
 export const RootRoute = () => {
-  return <div>root</div>;
+  return (
+    <div>
+      Click this | <Link to="/create">Create</Link>
+    </div>
+  );
 };

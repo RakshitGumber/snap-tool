@@ -1,3 +1,4 @@
+import { Navbar } from "@/Components/main/Navbar";
 import { CreateRoute } from "@/pages/create";
 import { RootRoute } from "@/pages/root";
 import { useEffect, type JSX } from "react";
@@ -38,7 +39,12 @@ export const Router = () => {
     return () => window.removeEventListener("popstate", handler);
   }, []);
 
-  return <div>{directory[route]}</div>;
+  return (
+    <div className="flex h-screen flex-col overflow-hidden transition-colors duration-300">
+      <Navbar />
+      {directory[route]}
+    </div>
+  );
 };
 
 export const Link = ({

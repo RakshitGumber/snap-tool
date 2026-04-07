@@ -16,7 +16,7 @@ const directory: Record<RoutePath, JSX.Element> = {
   "/create": <CreateRoute />,
 };
 
-const useRouter = create<useRouter>((set) => ({
+export const useRouter = create<useRouter>((set) => ({
   route: window.location.pathname as RoutePath,
   setRoute: (path) => {
     window.history.pushState({}, "", path);
@@ -41,7 +41,7 @@ export const Router = () => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden transition-colors duration-300">
-      <Navbar route={route} />
+      <Navbar />
       <main className="min-h-0 flex-1">{directory[route]}</main>
     </div>
   );

@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/merriweather": "^5.2.6",
+    "@fontsource-variable/raleway": "^5.2.8",
     "@fontsource/lato": "^5.2.7",
     "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",

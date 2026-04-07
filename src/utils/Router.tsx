@@ -9,7 +9,7 @@ interface useRouter {
   setRoute: (path: RoutePath) => void;
 }
 
-type RoutePath = "/" | "/create";
+export type RoutePath = "/" | "/create";
 
 const directory: Record<RoutePath, JSX.Element> = {
   "/": <RootRoute />,
@@ -41,8 +41,8 @@ export const Router = () => {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden transition-colors duration-300">
-      <Navbar />
-      {directory[route]}
+      <Navbar route={route} />
+      <main className="min-h-0 flex-1">{directory[route]}</main>
     </div>
   );
 };
@@ -50,11 +50,19 @@ export const Router = () => {
 export const Link = ({
   to,
   children,
+  className,
+  type = "button",
 }: {
   to: RoutePath;
   children: React.ReactNode;
+  className?: string;
+  type?: "button" | "submit" | "reset";
 }) => {
   const { setRoute } = useRouter();
 
-  return <button onClick={() => setRoute(to)}>{children}</button>;
+  return (
+    <button className={className} onClick={() => setRoute(to)} type={type}>
+      {children}
+    </button>
+  );
 };

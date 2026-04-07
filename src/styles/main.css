@@ -11,44 +11,59 @@
 }
 
 @font-face {
-    font-family: 'Merriweather Variable';
+    font-family: 'Raleway Variable';
     font-style: normal;
     font-display: swap;
-    font-weight: 300 900;
-    src: url(@fontsource-variable/merriweather/files/merriweather-latin-wght-normal.woff2) format('woff2-variations');
+    font-weight: 100 900;
+    src: url(@fontsource-variable/raleway/files/raleway-latin-wght-normal.woff2) format('woff2-variations');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+
 :root {
-    --color-bg: #f3f3fe;
-    --color-foreground: #ffffff;
-    --color-text: #10101e;
-    --color-border: #aeaebe;
+    --bg-color: #F4F6FF;
+    --text-heading: #151417;
+    --text-color: #505165;
+    --accent-color: #4cfb95;
+    --accent-color-light: #4cfb95e0;
+    --border-color: #303032;
+    --text-muted: #8a8ba4;
 }
 
 .dark {
-    --color-bg: #10101e;
-    --color-foreground: #1f1f2f;
-    --color-text: #efeffe;
-    --color-border: #3d3d3e
+    --bg-color: #0F0F15;
+    --text-heading: #F4F6FF;
+    --text-color: #74769D;
+    --accent-color: #13ff6e;
+    --accent-color-light: #13ff6ee0;
+    --border-color: #303032;
+    --text-muted: #56576C;
 }
 
 @theme {
     --font-main: 'Lato', sans-serif;
-    --font-styled: 'Merriweather Variable', serif;
+    --font-styled: 'Raleway Variable', monospace;
 
-    --color-bg: var(--color-bg);
-    --color-card: var(--color-foreground);
-    --color-text-color: var(--color-text);
-    --color-border-color: var(--color-border);
+    --color-bg: var(--bg-color);
+    --color-title-color: var(--text-heading);
+    --color-text-color: var(--text-color);
+    --color-accent: var(--accent-color);
+    --color-accent-light: var(--accent-color-light);
+    --color-border-color: var(--border-color);
+    --color-secondary-text: var(--text-muted);
 }
 
-html,
-body,
-#root {
-    min-height: 100%;
-}
 
-body {
-    @apply font-main bg-bg text-text-color transition-colors duration-300;
+@layer base {
+    ::selection {
+        @apply bg-accent-light text-title-color;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-bg text-text-color font-main;
+    }
 }

@@ -12,7 +12,7 @@ export const Navbar = () => {
           onClick={() => setRoute("/")}
         >
           <h1 className="font-styled text-xl text-title-color font-semibold tracking-wider uppercase select-none">
-            After a Snap
+            Single Filter
           </h1>
         </button>
         {route == "/" ? (

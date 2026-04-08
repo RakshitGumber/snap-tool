@@ -5,20 +5,33 @@ export const Navbar = () => {
   const { route, setRoute } = useRouter();
 
   return (
-    <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur-2xl">
-      <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
-        <h1 className="font-styled text-xl text-title-color font-bold tracking-wider uppercase select-none cursor-pointer">
-          Snap Tool
-        </h1>
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur-2xl border-b-2 border-border-color">
+      <nav className="flex h-full w-full items-center justify-between p-3">
+        <button
+          className="hover:bg-text-color/20 rounded-lg flex items-center py-2 px-4 cursor-pointer"
+          onClick={() => setRoute("/")}
+        >
+          <h1 className="font-styled text-xl text-title-color font-semibold tracking-wider uppercase select-none">
+            After a Snap
+          </h1>
+        </button>
+        {route == "/" ? (
           <button
             onClick={() => setRoute("/create")}
-            className="gap-2 flex items-center text-lg font-medium text-bg bg-accent"
+            className="font-styled px-3 py-2 rounded-lg gap-1 flex items-center justify-center font-bold text-bg tracking-widest bg-accent cursor-pointer min-w-28"
           >
             Create
-            <Icon icon="solar:add-square-outline" className="text-2xl" />
+            <Icon icon="solar:add-square-broken" className="text-xl" />
           </button>
-        </div>
+        ) : (
+          <button
+            onClick={() => console.log("share triggred")}
+            className="font-styled px-3 py-2 rounded-lg gap-1 flex items-center justify-center font-bold text-bg tracking-widest bg-accent cursor-pointer min-w-28"
+          >
+            Share
+            <Icon icon="solar:share-broken" className="text-xl" />
+          </button>
+        )}
       </nav>
     </header>
   );

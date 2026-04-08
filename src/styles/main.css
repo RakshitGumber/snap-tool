@@ -22,22 +22,22 @@
 
 :root {
     --bg-color: #F4F6FF;
-    --text-heading: #151417;
-    --text-color: #505165;
-    --accent-color: #4cfb95;
-    --accent-color-light: #4cfb95e0;
-    --border-color: #21342d;
-    --text-muted: #8a8ba4;
+    --text-heading: #121217;
+    --text-color: #4B4D63;
+    --accent-color: #10B981;
+    --accent-color-light: #10B98133;
+    --border-color: #DDE0F0;
+    --text-muted: #8284A0;
 }
 
 .dark {
-    --bg-color: #0F0F15;
+    --bg-color: #09090B;
     --text-heading: #F4F6FF;
-    --text-color: #74769D;
+    --text-color: #8A8CA8;
     --accent-color: #4cfb95;
-    --accent-color-light: #4cfb95e0;
-    --border-color: #54957a80;
-    --text-muted: #56576C;
+    --accent-color-light: #4cfb9526;
+    --border-color: #1F2133;
+    --text-muted: #52546B;
 }
 
 @theme {

@@ -1,17 +1,23 @@
 import { useRouter } from "@/utils/Router";
 import { Icon } from "@iconify/react";
+import clsx from "clsx";
 
 export const Navbar = () => {
   const { route, setRoute } = useRouter();
 
   return (
-    <header className="sticky top-0 z-20 bg-bg/85 backdrop-blur-2xl border-b-2 border-border-color">
+    <header
+      className={clsx(
+        "sticky top-0 z-20 bg-bg/85 backdrop-blur-2xl",
+        route !== "/" && "border-b-2 border-border-color",
+      )}
+    >
       <nav className="flex h-full w-full items-center justify-between p-3">
         <button
           className="hover:bg-text-color/20 rounded-lg flex items-center py-2 px-4 cursor-pointer"
           onClick={() => setRoute("/")}
         >
-          <h1 className="font-styled text-xl text-title-color font-semibold tracking-wider uppercase select-none">
+          <h1 className="font-styled text-lg text-title-color font-semibold tracking-wide uppercase select-none">
             Single Filter
           </h1>
         </button>

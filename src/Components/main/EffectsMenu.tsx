@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export const Sidebar = () => {
+export const EffectsMenu = () => {
   const [width, setWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
 

@@ -6,22 +6,32 @@ import { useCreateEditorState } from "@/hooks/useCreateEditorState";
 import { type EditorTool } from "@/libs/editorSchema";
 
 export const CreateRoute = () => {
-  const { ratio, document, setRatio, setBackgroundFill, addItem, replaceDocument } =
-    useCreateEditorState();
+  const {
+    activeCanvas,
+    activeCanvasId,
+    canvases,
+    addCanvas,
+    setActiveCanvas,
+    setRatio,
+    setBackgroundFill,
+    addItem,
+    replaceDocument,
+  } = useCreateEditorState();
   const [activeTool, setActiveTool] = useState<EditorTool>("select");
-  const [paintColor, setPaintColor] = useState(document.bg.fill);
+  const [paintColor, setPaintColor] = useState(activeCanvas.document.bg.fill);
 
   useEffect(() => {
-    setPaintColor(document.bg.fill);
-  }, [document.bg.fill]);
+    setPaintColor(activeCanvas.document.bg.fill);
+  }, [activeCanvas.document.bg.fill]);
 
   return (
     <div className="flex h-full w-full min-h-0 flex-col">
       <CreateToolbar
-        aspectRatio={ratio}
+        aspectRatio={activeCanvas.ratio}
         activeTool={activeTool}
         paintColor={paintColor}
         onAspectRatioChange={setRatio}
+        onAddCanvas={addCanvas}
         onActiveToolChange={setActiveTool}
       />
 
@@ -34,16 +44,19 @@ export const CreateRoute = () => {
         />
 
         <Canvas
-          aspectRatio={ratio}
-          document={document}
+          activeCanvasId={activeCanvasId}
           activeTool={activeTool}
+          canvases={canvases}
           paintColor={paintColor}
-          onDropAsset={(payload, point) => {
-            addItem(payload, point);
+          onActivateCanvas={setActiveCanvas}
+          onDropAsset={(canvasId, payload, point) => {
+            setActiveCanvas(canvasId);
+            addItem(canvasId, payload, point);
             setActiveTool("select");
           }}
-          onApplyPaint={(color) => {
-            setBackgroundFill(color);
+          onApplyPaint={(canvasId, color) => {
+            setActiveCanvas(canvasId);
+            setBackgroundFill(color, canvasId);
           }}
           onDocumentChange={replaceDocument}
         />

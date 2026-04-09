@@ -1,5 +1,12 @@
 import { Icon } from "@iconify/react";
 import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
+import {
+  ASPECT_RATIO_PRESETS,
   type AspectRatioPreset,
   type EditorTool,
 } from "@/libs/editorSchema";
@@ -9,6 +16,7 @@ interface CreateToolbarProps {
   activeTool: EditorTool;
   paintColor: string;
   onAspectRatioChange: (ratio: AspectRatioPreset) => void;
+  onAddCanvas: () => void;
   onActiveToolChange: (tool: EditorTool) => void;
 }
 
@@ -19,25 +27,142 @@ const ratioLabels: Record<AspectRatioPreset, string> = {
 };
 
 export const CreateToolbar = ({
-  aspectRatio: _aspectRatio,
+  aspectRatio,
   activeTool,
   paintColor,
-  onAspectRatioChange: _onAspectRatioChange,
+  onAspectRatioChange,
+  onAddCanvas,
   onActiveToolChange,
 }: CreateToolbarProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [focusIndex, setFocusIndex] = useState(
+    Math.max(ASPECT_RATIO_PRESETS.indexOf(aspectRatio), 0),
+  );
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    setFocusIndex(Math.max(ASPECT_RATIO_PRESETS.indexOf(aspectRatio), 0));
+  }, [aspectRatio]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    optionRefs.current[focusIndex]?.focus();
+  }, [focusIndex, isOpen]);
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setFocusIndex((current) => (current + 1) % ASPECT_RATIO_PRESETS.length);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setFocusIndex(
+        (current) =>
+          (current - 1 + ASPECT_RATIO_PRESETS.length) % ASPECT_RATIO_PRESETS.length,
+      );
+    }
+  };
+
   return (
     <section className="relative z-30 shrink-0 border-b border-border-color bg-bg/95 px-5 py-3 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="font-styled flex items-center gap-2 rounded-xl bg-bg px-4 py-2 text-sm font-semibold tracking-wide text-title-color shadow-sm">
-            <Icon icon="solar:crop-minimalistic-broken" className="text-lg" />
-            Canvas
-            <span className="rounded-full bg-accent-light px-2 py-1 text-xs text-title-color">
-              {ratioLabels["1:1"]}
-            </span>
+          <div className="relative" ref={menuRef}>
+            <button
+              ref={buttonRef}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isOpen}
+              className="font-styled flex items-center gap-2 rounded-xl border border-border-color bg-bg px-4 py-2 text-sm font-semibold tracking-wide text-title-color transition hover:border-accent hover:text-title-color"
+              onClick={() => setIsOpen((open) => !open)}
+            >
+              <Icon icon="solar:crop-minimalistic-broken" className="text-lg" />
+              Canvas Size
+              <span className="rounded-full bg-accent-light px-2 py-1 text-xs text-title-color">
+                {ratioLabels[aspectRatio]}
+              </span>
+              <Icon
+                icon={isOpen ? "solar:alt-arrow-up-broken" : "solar:alt-arrow-down-broken"}
+                className="text-lg"
+              />
+            </button>
+
+            {isOpen ? (
+              <div
+                role="menu"
+                className="absolute left-0 top-[calc(100%+0.5rem)] z-20 min-w-52 rounded-2xl border border-border-color bg-bg p-2 shadow-2xl"
+                onKeyDown={handleMenuKeyDown}
+              >
+                {ASPECT_RATIO_PRESETS.map((ratio, index) => {
+                  const selected = aspectRatio === ratio;
+
+                  return (
+                    <button
+                      key={ratio}
+                      ref={(node) => {
+                        optionRefs.current[index] = node;
+                      }}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={selected}
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-title-color transition hover:bg-accent-light focus:bg-accent-light focus:outline-none"
+                      onClick={() => {
+                        onAspectRatioChange(ratio);
+                        setIsOpen(false);
+                        buttonRef.current?.focus();
+                      }}
+                    >
+                      <span className="font-medium">{ratioLabels[ratio]}</span>
+                      <span className="text-secondary-text">{ratio}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2 rounded-2xl border border-border-color bg-bg p-1">
+            <button
+              type="button"
+              className="rounded-xl px-3 py-2 text-sm font-medium text-title-color transition hover:bg-accent-light"
+              onClick={onAddCanvas}
+            >
+              Add Canvas
+            </button>
             <button
               type="button"
               className={`rounded-xl px-3 py-2 text-sm font-medium transition ${

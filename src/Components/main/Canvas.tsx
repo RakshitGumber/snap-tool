@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type DragEvent,
-} from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   createCanvasEditor,
   type CanvasEditor,
@@ -11,21 +6,25 @@ import {
 } from "@/libs/Canvas";
 import {
   CANVAS_ASSET_MIME,
-  type AspectRatioPreset,
   type AssetDragPayload,
-  type EditorDocument,
+  type EditorCanvas,
   type EditorTool,
   isAssetDragPayload,
 } from "@/libs/editorSchema";
 
 interface CanvasProps {
-  aspectRatio: AspectRatioPreset;
-  document: EditorDocument;
+  activeCanvasId: string;
   activeTool: EditorTool;
+  canvases: EditorCanvas[];
   paintColor: string;
-  onDropAsset: (payload: AssetDragPayload, point: { x: number; y: number }) => void;
-  onApplyPaint: (color: string) => void;
-  onDocumentChange: (document: EditorDocument) => void;
+  onActivateCanvas: (canvasId: string) => void;
+  onApplyPaint: (canvasId: string, color: string) => void;
+  onDocumentChange: (canvasId: string, document: EditorCanvas["document"]) => void;
+  onDropAsset: (
+    canvasId: string,
+    payload: AssetDragPayload,
+    point: { x: number; y: number },
+  ) => void;
 }
 
 const parseDraggedAsset = (event: DragEvent<HTMLDivElement>) => {
@@ -48,13 +47,14 @@ const hasAssetDragData = (event: DragEvent<HTMLDivElement>) =>
   Array.from(event.dataTransfer.types).includes(CANVAS_ASSET_MIME);
 
 export const Canvas = ({
-  aspectRatio,
-  document,
+  activeCanvasId,
   activeTool,
+  canvases,
   paintColor,
-  onDropAsset,
+  onActivateCanvas,
   onApplyPaint,
   onDocumentChange,
+  onDropAsset,
 }: CanvasProps) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CanvasEditor | null>(null);
@@ -74,6 +74,7 @@ export const Canvas = ({
     let disposed = false;
 
     void createCanvasEditor(host, {
+      onActiveCanvasChange: onActivateCanvas,
       onDocumentChange,
       onViewportChange: setViewportState,
     }).then((editor) => {
@@ -83,8 +84,8 @@ export const Canvas = ({
       }
 
       editorRef.current = editor;
-      editor.setAspectRatio(aspectRatio);
-      editor.setDocument(document);
+      editor.setCanvases(canvases);
+      editor.setActiveCanvasId(activeCanvasId);
       setIsReady(true);
     });
 
@@ -97,16 +98,16 @@ export const Canvas = ({
   }, []);
 
   useEffect(() => {
-    editorRef.current?.setAspectRatio(aspectRatio);
-  }, [aspectRatio]);
+    editorRef.current?.setCanvases(canvases);
+  }, [canvases]);
+
+  useEffect(() => {
+    editorRef.current?.setActiveCanvasId(activeCanvasId);
+  }, [activeCanvasId]);
 
   useEffect(() => {
     editorRef.current?.setTool(activeTool);
   }, [activeTool]);
-
-  useEffect(() => {
-    editorRef.current?.setDocument(document);
-  }, [document]);
 
   return (
     <section className="min-h-0 flex-1 bg-[radial-gradient(circle_at_top,_rgba(76,251,149,0.12),_transparent_28%),linear-gradient(180deg,rgba(18,18,23,0.04),transparent)] p-5">
@@ -142,32 +143,34 @@ export const Canvas = ({
           setIsDropActive(false);
 
           const payload = parseDraggedAsset(event);
-          const point = editorRef.current?.screenToCanvasPoint(
+          const target = editorRef.current?.screenToCanvasPoint(
             event.clientX,
             event.clientY,
           );
 
-          if (!payload || !point) {
+          if (!payload || !target) {
             return;
           }
 
-          onDropAsset(payload, point);
+          onActivateCanvas(target.canvasId);
+          onDropAsset(target.canvasId, payload, target.point);
         }}
         onClick={(event) => {
           if (activeTool !== "paintBucket") {
             return;
           }
 
-          const point = editorRef.current?.screenToCanvasPoint(
+          const target = editorRef.current?.screenToCanvasPoint(
             event.clientX,
             event.clientY,
           );
 
-          if (!point) {
+          if (!target) {
             return;
           }
 
-          onApplyPaint(paintColor);
+          onActivateCanvas(target.canvasId);
+          onApplyPaint(target.canvasId, paintColor);
         }}
       >
         <div ref={hostRef} className="h-full w-full" />
@@ -184,6 +187,10 @@ export const Canvas = ({
           {activeTool === "paintBucket"
             ? "Paint bucket armed"
             : "Wheel to zoom. Pan with middle-click or Shift plus left-drag."}
+        </div>
+
+        <div className="pointer-events-none absolute right-5 top-5 rounded-full bg-bg/85 px-3 py-2 text-xs uppercase tracking-[0.2em] text-secondary-text shadow-lg backdrop-blur-xl">
+          {canvases.length} canvases on board
         </div>
 
         {viewportState.canReturnToCanvas ? (

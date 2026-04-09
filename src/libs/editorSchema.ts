@@ -39,6 +39,18 @@ export interface EditorDocument {
   items: CanvasItem[];
 }
 
+export interface EditorCanvas {
+  id: string;
+  ratio: AspectRatioPreset;
+  document: EditorDocument;
+}
+
+export interface EditorStateSnapshot {
+  v: 2;
+  activeCanvasId: string;
+  canvases: EditorCanvas[];
+}
+
 export interface NormalizedCanvasPoint {
   x: number;
   y: number;
@@ -54,6 +66,7 @@ export const DEFAULT_DOCUMENT: EditorDocument = {
 };
 
 export const DEFAULT_PAINT_COLOR = "#10b981";
+export const DEFAULT_CANVAS_ID = "canvas-1";
 
 export const CANVAS_ASSET_MIME = "application/x.snap-tool-asset";
 
@@ -218,6 +231,32 @@ export const normalizeHexColor = (value: string) => {
   return DEFAULT_DOCUMENT.bg.fill;
 };
 
+export const cloneEditorDocument = (document: EditorDocument): EditorDocument => ({
+  v: 1,
+  bg: {
+    fill: document.bg.fill,
+  },
+  items: document.items.map((item) => ({ ...item })),
+});
+
+export const createEditorCanvas = (
+  id: string,
+  ratio: AspectRatioPreset = DEFAULT_ASPECT_RATIO,
+  document: EditorDocument = DEFAULT_DOCUMENT,
+): EditorCanvas => ({
+  id,
+  ratio,
+  document: cloneEditorDocument(document),
+});
+
+export const createEditorStateSnapshot = (
+  canvas: EditorCanvas = createEditorCanvas(DEFAULT_CANVAS_ID),
+): EditorStateSnapshot => ({
+  v: 2,
+  activeCanvasId: canvas.id,
+  canvases: [canvas],
+});
+
 export const isAspectRatioPreset = (value: string): value is AspectRatioPreset =>
   ASPECT_RATIO_PRESETS.includes(value as AspectRatioPreset);
 
@@ -281,6 +320,95 @@ export const validateEditorDocument = (value: unknown): EditorDocument | null =>
   };
 };
 
+const validateEditorCanvas = (value: unknown): EditorCanvas | null => {
+  if (!isRecord(value) || typeof value.id !== "string" || typeof value.ratio !== "string") {
+    return null;
+  }
+
+  if (!isAspectRatioPreset(value.ratio)) {
+    return null;
+  }
+
+  const document = validateEditorDocument(value.document);
+
+  if (!document) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    ratio: value.ratio,
+    document,
+  };
+};
+
+export const validateEditorStateSnapshot = (
+  value: unknown,
+): EditorStateSnapshot | null => {
+  if (
+    !isRecord(value) ||
+    value.v !== 2 ||
+    typeof value.activeCanvasId !== "string" ||
+    !Array.isArray(value.canvases)
+  ) {
+    return null;
+  }
+
+  const canvases = value.canvases
+    .map((canvas) => validateEditorCanvas(canvas))
+    .filter((canvas): canvas is EditorCanvas => canvas !== null);
+
+  if (
+    canvases.length === 0 ||
+    !canvases.some((canvas) => canvas.id === value.activeCanvasId)
+  ) {
+    return null;
+  }
+
+  return {
+    v: 2,
+    activeCanvasId: value.activeCanvasId,
+    canvases,
+  };
+};
+
+export const resizeDocumentForAspectRatio = (
+  document: EditorDocument,
+  fromRatio: AspectRatioPreset,
+  toRatio: AspectRatioPreset,
+): EditorDocument => {
+  if (fromRatio === toRatio) {
+    return cloneEditorDocument(document);
+  }
+
+  const fromSize = ASPECT_RATIO_DIMENSIONS[fromRatio];
+  const toSize = ASPECT_RATIO_DIMENSIONS[toRatio];
+
+  return {
+    ...cloneEditorDocument(document),
+    items: document.items.map((item) => {
+      const width = clamp((item.w * fromSize.width) / toSize.width, 0.05, 1);
+      const height = clamp((item.h * fromSize.height) / toSize.height, 0.05, 1);
+      const halfWidth = width / 2;
+      const halfHeight = height / 2;
+      const x = clamp((item.x * fromSize.width) / toSize.width, halfWidth, 1 - halfWidth);
+      const y = clamp(
+        (item.y * fromSize.height) / toSize.height,
+        halfHeight,
+        1 - halfHeight,
+      );
+
+      return {
+        ...item,
+        x,
+        y,
+        w: width,
+        h: height,
+      };
+    }),
+  };
+};
+
 export const parseEditorDocument = (value: string) => {
   try {
     return validateEditorDocument(JSON.parse(value));
@@ -290,4 +418,15 @@ export const parseEditorDocument = (value: string) => {
 };
 
 export const serializeEditorDocument = (value: EditorDocument) =>
+  JSON.stringify(value);
+
+export const parseEditorStateSnapshot = (value: string) => {
+  try {
+    return validateEditorStateSnapshot(JSON.parse(value));
+  } catch {
+    return null;
+  }
+};
+
+export const serializeEditorStateSnapshot = (value: EditorStateSnapshot) =>
   JSON.stringify(value);

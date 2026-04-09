@@ -1,15 +1,16 @@
-import { parseAsStringLiteral, useQueryStates } from "nuqs";
+import { useEffect, useState } from "react";
 import {
-  ASPECT_RATIO_PRESETS,
   DEFAULT_ASPECT_RATIO,
   DEFAULT_DOCUMENT,
   type AspectRatioPreset,
   type AssetDragPayload,
   type EditorDocument,
-  editorDocumentParser,
   findEffectAssetById,
+  isAspectRatioPreset,
   normalizeHexColor,
   type NormalizedCanvasPoint,
+  parseEditorDocument,
+  serializeEditorDocument,
 } from "@/libs/editorSchema";
 
 const createItemId = () => {
@@ -23,17 +24,47 @@ const createItemId = () => {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
-const queryState = {
-  ratio: parseAsStringLiteral(ASPECT_RATIO_PRESETS)
-    .withDefault(DEFAULT_ASPECT_RATIO)
-    .withOptions({
-      history: "replace",
-      clearOnDefault: false,
-    }),
-  doc: editorDocumentParser.withDefault(DEFAULT_DOCUMENT).withOptions({
-    history: "replace",
-    clearOnDefault: false,
-  }),
+const RATIO_PARAM = "ratio";
+const DOCUMENT_PARAM = "doc";
+
+interface EditorSearchState {
+  ratio: AspectRatioPreset;
+  doc: EditorDocument;
+}
+
+const parseAspectRatio = (value: string | null) => {
+  if (value && isAspectRatioPreset(value)) {
+    return value;
+  }
+
+  return DEFAULT_ASPECT_RATIO;
+};
+
+const parseDocument = (value: string | null) =>
+  value ? parseEditorDocument(value) ?? DEFAULT_DOCUMENT : DEFAULT_DOCUMENT;
+
+const readSearchState = (): EditorSearchState => {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    ratio: parseAspectRatio(params.get(RATIO_PARAM)),
+    doc: parseDocument(params.get(DOCUMENT_PARAM)),
+  };
+};
+
+const writeSearchState = (state: EditorSearchState) => {
+  const params = new URLSearchParams(window.location.search);
+
+  params.set(RATIO_PARAM, state.ratio);
+  params.set(DOCUMENT_PARAM, serializeEditorDocument(state.doc));
+
+  const nextSearch = `?${params.toString()}`;
+
+  if (nextSearch === window.location.search) {
+    return;
+  }
+
+  window.history.replaceState(window.history.state, "", `${window.location.pathname}${nextSearch}${window.location.hash}`);
 };
 
 const appendAsset = (
@@ -73,12 +104,43 @@ const appendAsset = (
 };
 
 export const useCreateEditorState = () => {
-  const [state, setState] = useQueryStates(queryState);
+  const [state, setState] = useState<EditorSearchState>(() => readSearchState());
 
-  const setRatio = (ratio: AspectRatioPreset) => void setState({ ratio });
+  useEffect(() => {
+    writeSearchState(readSearchState());
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextState = readSearchState();
+
+      writeSearchState(nextState);
+      setState(nextState);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const updateState = (updater: (current: EditorSearchState) => EditorSearchState) => {
+    setState((current) => {
+      const nextState = updater(current);
+
+      writeSearchState(nextState);
+      return nextState;
+    });
+  };
+
+  const setRatio = (ratio: AspectRatioPreset) =>
+    updateState((current) => ({
+      ...current,
+      ratio,
+    }));
 
   const setBackgroundFill = (fill: string) =>
-    void setState((current) => ({
+    updateState((current) => ({
+      ...current,
       doc: {
         ...current.doc,
         bg: {
@@ -88,14 +150,16 @@ export const useCreateEditorState = () => {
     }));
 
   const addItem = (payload: AssetDragPayload, point: NormalizedCanvasPoint) =>
-    void setState((current) => ({
+    updateState((current) => ({
+      ...current,
       doc: appendAsset(current.doc, payload, point),
     }));
 
   const replaceDocument = (document: EditorDocument) =>
-    void setState({
+    updateState((current) => ({
+      ...current,
       doc: document,
-    });
+    }));
 
   return {
     ratio: state.ratio,

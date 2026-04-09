@@ -7,8 +7,6 @@ import {
   Texture,
 } from "pixi.js";
 import {
-  ASPECT_RATIO_DIMENSIONS,
-  DEFAULT_ASPECT_RATIO,
   DEFAULT_DOCUMENT,
   EFFECT_ASSETS,
   type AspectRatioPreset,
@@ -20,7 +18,8 @@ import {
 } from "@/libs/editorSchema";
 
 const WORKSPACE_PADDING = 72;
-const ARTBOARD_RADIUS = 32;
+const ARTBOARD_SIZE = 1200;
+const ARTBOARD_RADIUS = 0;
 const MIN_ITEM_SIZE = 0.05;
 const ROTATION_HANDLE_OFFSET = 44;
 const HANDLE_RADIUS = 18;
@@ -37,12 +36,26 @@ interface ArtboardPoint {
   y: number;
 }
 
+interface ScreenPoint {
+  x: number;
+  y: number;
+}
+
+export interface CanvasViewportState {
+  canReturnToCanvas: boolean;
+}
+
 type InteractionState =
   | {
       mode: "drag";
       itemId: string;
       startPointer: ArtboardPoint;
       startItem: CanvasItem;
+    }
+  | {
+      mode: "pan";
+      startPointer: ScreenPoint;
+      startOffset: ScreenPoint;
     }
   | {
       mode: "scale";
@@ -62,6 +75,7 @@ export interface CanvasEditor {
   setDocument: (document: EditorDocument) => void;
   setAspectRatio: (ratio: AspectRatioPreset) => void;
   setTool: (tool: EditorTool) => void;
+  centerCanvas: () => void;
   screenToCanvasPoint: (
     clientX: number,
     clientY: number,
@@ -71,10 +85,14 @@ export interface CanvasEditor {
 
 interface CreateCanvasEditorOptions {
   onDocumentChange?: (document: EditorDocument) => void;
+  onViewportChange?: (state: CanvasViewportState) => void;
 }
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
+
+const isPanPointerEvent = (event: PointerEvent | MouseEvent) =>
+  event.button === 1 || (event.button === 0 && event.shiftKey);
 
 const cloneDocument = (document: EditorDocument): EditorDocument => ({
   v: 1,
@@ -128,7 +146,6 @@ export const createCanvasEditor = async (
   );
 
   let currentDocument = cloneDocument(DEFAULT_DOCUMENT);
-  let currentRatio = DEFAULT_ASPECT_RATIO;
   let currentTool: EditorTool = "select";
   let currentBounds: ArtboardBounds = {
     x: 0,
@@ -136,33 +153,81 @@ export const createCanvasEditor = async (
     width: 0,
     height: 0,
   };
+  let artboardOffset: ScreenPoint = {
+    x: 0,
+    y: 0,
+  };
+  let viewportZoom = 1;
   let selectedItemId: string | null = null;
   let interactionState: InteractionState = null;
 
-  const getArtboardSize = () => ASPECT_RATIO_DIMENSIONS[currentRatio];
+  const getArtboardSize = () => ({
+    width: ARTBOARD_SIZE,
+    height: ARTBOARD_SIZE,
+  });
 
-  const screenToArtboardPoint = (
+  const screenToStagePoint = (
     clientX: number,
     clientY: number,
-    allowOutside = false,
-  ): ArtboardPoint | null => {
+  ): ScreenPoint | null => {
     const rect = app.canvas.getBoundingClientRect();
 
     if (rect.width === 0 || rect.height === 0) {
       return null;
     }
 
-    const scaleX = app.screen.width / rect.width;
-    const scaleY = app.screen.height / rect.height;
-    const screenX = (clientX - rect.left) * scaleX;
-    const screenY = (clientY - rect.top) * scaleY;
+    return {
+      x: (clientX - rect.left) * (app.screen.width / rect.width),
+      y: (clientY - rect.top) * (app.screen.height / rect.height),
+    };
+  };
+
+  const getArtboardLayout = () => {
+    const availableWidth = Math.max(app.screen.width - WORKSPACE_PADDING * 2, 120);
+    const availableHeight = Math.max(app.screen.height - WORKSPACE_PADDING * 2, 120);
+    const fitScale = Math.min(
+      availableWidth / ARTBOARD_SIZE,
+      availableHeight / ARTBOARD_SIZE,
+    );
+    const scale = fitScale * viewportZoom;
+    const scaledSize = ARTBOARD_SIZE * scale;
+    const centeredOriginX = (app.screen.width - scaledSize) / 2;
+    const centeredOriginY = (app.screen.height - scaledSize) / 2;
+
+    return {
+      scale,
+      fitScale,
+      scaledSize,
+      centeredOriginX,
+      centeredOriginY,
+    };
+  };
+
+  const syncWorkspaceCursor = () => {
+    const isPanActive = interactionState?.mode === "pan";
+    const cursor = isPanActive ? "grabbing" : "default";
+
+    workspace.cursor = cursor;
+    artboardBackground.cursor = cursor;
+  };
+
+  const screenToArtboardPoint = (
+    clientX: number,
+    clientY: number,
+    allowOutside = false,
+  ): ArtboardPoint | null => {
+    const point = screenToStagePoint(clientX, clientY);
+
+    if (!point) {
+      return null;
+    }
 
     if (
       !allowOutside &&
-      (screenX < currentBounds.x ||
-        screenY < currentBounds.y ||
-        screenX > currentBounds.x + currentBounds.width ||
-        screenY > currentBounds.y + currentBounds.height)
+      (point.x < currentBounds.x ||
+        point.y < currentBounds.y ||
+        point.x > currentBounds.x + currentBounds.width ||
+        point.y > currentBounds.y + currentBounds.height)
     ) {
       return null;
     }
@@ -170,13 +235,26 @@ export const createCanvasEditor = async (
     const { width, height } = getArtboardSize();
 
     return {
-      x: ((screenX - currentBounds.x) / currentBounds.width) * width,
-      y: ((screenY - currentBounds.y) / currentBounds.height) * height,
+      x: ((point.x - currentBounds.x) / currentBounds.width) * width,
+      y: ((point.y - currentBounds.y) / currentBounds.height) * height,
     };
   };
 
   const emitDocumentChange = () => {
     options.onDocumentChange?.(cloneDocument(currentDocument));
+  };
+
+  const emitViewportChange = () => {
+    const right = currentBounds.x + currentBounds.width;
+    const bottom = currentBounds.y + currentBounds.height;
+
+    options.onViewportChange?.({
+      canReturnToCanvas:
+        currentBounds.x < 0 ||
+        currentBounds.y < 0 ||
+        right > app.screen.width ||
+        bottom > app.screen.height,
+    });
   };
 
   const updateDocumentItem = (
@@ -272,6 +350,12 @@ export const createCanvasEditor = async (
       sprite.cursor = currentTool === "select" ? "move" : "default";
 
       sprite.on("pointerdown", (event: any) => {
+        if (isPanPointerEvent(event.originalEvent)) {
+          beginPan(event);
+          event.stopPropagation();
+          return;
+        }
+
         if (currentTool !== "select") {
           return;
         }
@@ -303,19 +387,16 @@ export const createCanvasEditor = async (
 
   const renderScene = () => {
     const { width, height } = getArtboardSize();
-    const availableWidth = Math.max(app.screen.width - WORKSPACE_PADDING * 2, 120);
-    const availableHeight = Math.max(app.screen.height - WORKSPACE_PADDING * 2, 120);
-    const scale = Math.min(availableWidth / width, availableHeight / height);
-    const scaledWidth = width * scale;
-    const scaledHeight = height * scale;
-    const originX = (app.screen.width - scaledWidth) / 2;
-    const originY = (app.screen.height - scaledHeight) / 2;
+    const layout = getArtboardLayout();
+
+    const originX = layout.centeredOriginX + artboardOffset.x;
+    const originY = layout.centeredOriginY + artboardOffset.y;
 
     currentBounds = {
       x: originX,
       y: originY,
-      width: scaledWidth,
-      height: scaledHeight,
+      width: layout.scaledSize,
+      height: layout.scaledSize,
     };
 
     workspace.clear();
@@ -325,20 +406,24 @@ export const createCanvasEditor = async (
 
     shadow.clear();
     shadow
-      .roundRect(originX + 10, originY + 14, scaledWidth, scaledHeight, ARTBOARD_RADIUS)
-      .fill({ color: 0x020617, alpha: 0.2 });
+      .roundRect(originX + 10, originY + 12, layout.scaledSize, layout.scaledSize, ARTBOARD_RADIUS)
+      .fill({ color: 0x020617, alpha: 0.16 });
+    shadow
+      .roundRect(originX + 24, originY + 30, layout.scaledSize - 8, layout.scaledSize - 8, ARTBOARD_RADIUS)
+      .fill({ color: 0x020617, alpha: 0.08 });
 
     artboard.position.set(originX, originY);
-    artboard.scale.set(scale);
+    artboard.scale.set(layout.scale);
 
     artboardBackground.clear();
     artboardBackground
       .roundRect(0, 0, width, height, ARTBOARD_RADIUS)
-      .fill({ color: currentDocument.bg.fill })
-      .stroke({ color: 0xd9dceb, width: 6 });
+      .fill({ color: currentDocument.bg.fill });
 
     renderItems();
     renderSelection();
+    syncWorkspaceCursor();
+    emitViewportChange();
   };
 
   const commitInteraction = () => {
@@ -356,6 +441,21 @@ export const createCanvasEditor = async (
     const point = screenToArtboardPoint(event.clientX, event.clientY, true);
 
     if (!point) {
+      return;
+    }
+
+    if (activeInteraction.mode === "pan") {
+      const stagePoint = screenToStagePoint(event.clientX, event.clientY);
+
+      if (!stagePoint) {
+        return;
+      }
+
+      artboardOffset = {
+        x: activeInteraction.startOffset.x + stagePoint.x - activeInteraction.startPointer.x,
+        y: activeInteraction.startOffset.y + stagePoint.y - activeInteraction.startPointer.y,
+      };
+      renderScene();
       return;
     }
 
@@ -423,6 +523,44 @@ export const createCanvasEditor = async (
     }
 
     interactionState = null;
+    syncWorkspaceCursor();
+  };
+
+  const centerCanvas = () => {
+    artboardOffset = { x: 0, y: 0 };
+    renderScene();
+  };
+
+  const handleWheel = (event: WheelEvent) => {
+    event.preventDefault();
+
+    const pointer = screenToStagePoint(event.clientX, event.clientY);
+
+    if (!pointer) {
+      return;
+    }
+
+    const previousLayout = getArtboardLayout();
+    const previousOriginX = previousLayout.centeredOriginX + artboardOffset.x;
+    const previousOriginY = previousLayout.centeredOriginY + artboardOffset.y;
+    const localX = (pointer.x - previousOriginX) / previousLayout.scaledSize;
+    const localY = (pointer.y - previousOriginY) / previousLayout.scaledSize;
+    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+    const nextZoom = clamp(viewportZoom * zoomFactor, 0.2, 4);
+
+    if (nextZoom === viewportZoom) {
+      return;
+    }
+
+    viewportZoom = nextZoom;
+
+    const nextLayout = getArtboardLayout();
+
+    artboardOffset = {
+      x: pointer.x - localX * nextLayout.scaledSize - nextLayout.centeredOriginX,
+      y: pointer.y - localY * nextLayout.scaledSize - nextLayout.centeredOriginY,
+    };
+    renderScene();
   };
 
   selectionOverlay.eventMode = "passive";
@@ -435,6 +573,12 @@ export const createCanvasEditor = async (
 
   rotateHandle.on("pointerdown", (event: any) => {
     if (currentTool !== "select" || !selectedItemId) {
+      return;
+    }
+
+    if (isPanPointerEvent(event.originalEvent)) {
+      beginPan(event);
+      event.stopPropagation();
       return;
     }
 
@@ -465,6 +609,12 @@ export const createCanvasEditor = async (
       return;
     }
 
+    if (isPanPointerEvent(event.originalEvent)) {
+      beginPan(event);
+      event.stopPropagation();
+      return;
+    }
+
     const item = currentDocument.items.find((entry) => entry.id === selectedItemId);
     const pointer = screenToArtboardPoint(
       event.originalEvent.clientX,
@@ -489,29 +639,41 @@ export const createCanvasEditor = async (
     event.stopPropagation();
   });
 
-  artboardBackground.on("pointerdown", () => {
-    if (currentTool !== "select") {
+  const beginPan = (event: any) => {
+    if (!isPanPointerEvent(event.originalEvent)) {
+      return;
+    }
+
+    event.originalEvent.preventDefault();
+
+    const stagePoint = screenToStagePoint(
+      event.originalEvent.clientX,
+      event.originalEvent.clientY,
+    );
+
+    if (!stagePoint) {
       return;
     }
 
     selectedItemId = null;
+    interactionState = {
+      mode: "pan",
+      startPointer: stagePoint,
+      startOffset: { ...artboardOffset },
+    };
+    syncWorkspaceCursor();
     renderSelection();
-  });
+  };
 
-  workspace.on("pointerdown", () => {
-    if (currentTool !== "select") {
-      return;
-    }
-
-    selectedItemId = null;
-    renderSelection();
-  });
+  artboardBackground.on("pointerdown", beginPan);
+  workspace.on("pointerdown", beginPan);
 
   const resizeObserver = new ResizeObserver(() => {
     renderScene();
   });
 
   resizeObserver.observe(container);
+  app.canvas.addEventListener("wheel", handleWheel, { passive: false });
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", handlePointerUp);
   renderScene();
@@ -530,8 +692,7 @@ export const createCanvasEditor = async (
       renderScene();
     },
     setAspectRatio(ratio) {
-      currentRatio = ratio;
-      renderScene();
+      void ratio;
     },
     setTool(tool) {
       currentTool = tool;
@@ -542,6 +703,9 @@ export const createCanvasEditor = async (
       }
 
       renderScene();
+    },
+    centerCanvas() {
+      centerCanvas();
     },
     screenToCanvasPoint(clientX, clientY) {
       const point = screenToArtboardPoint(clientX, clientY, false);
@@ -558,6 +722,7 @@ export const createCanvasEditor = async (
     },
     destroy() {
       resizeObserver.disconnect();
+      app.canvas.removeEventListener("wheel", handleWheel);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
       app.destroy({ removeView: true }, { children: true });

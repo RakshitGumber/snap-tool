@@ -1,5 +1,3 @@
-import { createParser } from "nuqs";
-
 export const ASPECT_RATIO_PRESETS = ["1:1", "9:16", "16:9"] as const;
 
 export type AspectRatioPreset = (typeof ASPECT_RATIO_PRESETS)[number];
@@ -220,6 +218,9 @@ export const normalizeHexColor = (value: string) => {
   return DEFAULT_DOCUMENT.bg.fill;
 };
 
+export const isAspectRatioPreset = (value: string): value is AspectRatioPreset =>
+  ASPECT_RATIO_PRESETS.includes(value as AspectRatioPreset);
+
 export const findEffectAssetById = (id: string) =>
   EFFECT_ASSETS.find((asset) => asset.id === id) ?? null;
 
@@ -280,17 +281,13 @@ export const validateEditorDocument = (value: unknown): EditorDocument | null =>
   };
 };
 
-export const areDocumentsEqual = (left: EditorDocument, right: EditorDocument) =>
-  JSON.stringify(left) === JSON.stringify(right);
+export const parseEditorDocument = (value: string) => {
+  try {
+    return validateEditorDocument(JSON.parse(value));
+  } catch {
+    return null;
+  }
+};
 
-export const editorDocumentParser = createParser<EditorDocument>({
-  parse: (value) => {
-    try {
-      return validateEditorDocument(JSON.parse(value));
-    } catch {
-      return null;
-    }
-  },
-  serialize: (value) => JSON.stringify(value),
-  eq: areDocumentsEqual,
-});
+export const serializeEditorDocument = (value: EditorDocument) =>
+  JSON.stringify(value);

@@ -4,7 +4,11 @@ import {
   useState,
   type DragEvent,
 } from "react";
-import { createCanvasEditor, type CanvasEditor } from "@/libs/Canvas";
+import {
+  createCanvasEditor,
+  type CanvasEditor,
+  type CanvasViewportState,
+} from "@/libs/Canvas";
 import {
   CANVAS_ASSET_MIME,
   type AspectRatioPreset,
@@ -56,6 +60,9 @@ export const Canvas = ({
   const editorRef = useRef<CanvasEditor | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isDropActive, setIsDropActive] = useState(false);
+  const [viewportState, setViewportState] = useState<CanvasViewportState>({
+    canReturnToCanvas: false,
+  });
 
   useEffect(() => {
     const host = hostRef.current;
@@ -66,7 +73,10 @@ export const Canvas = ({
 
     let disposed = false;
 
-    void createCanvasEditor(host, { onDocumentChange }).then((editor) => {
+    void createCanvasEditor(host, {
+      onDocumentChange,
+      onViewportChange: setViewportState,
+    }).then((editor) => {
       if (disposed) {
         editor.destroy();
         return;
@@ -101,10 +111,10 @@ export const Canvas = ({
   return (
     <section className="min-h-0 flex-1 bg-[radial-gradient(circle_at_top,_rgba(76,251,149,0.12),_transparent_28%),linear-gradient(180deg,rgba(18,18,23,0.04),transparent)] p-5">
       <div
-        className={`relative h-full overflow-hidden rounded-[36px] border transition ${
+        className={`relative h-full overflow-hidden rounded-[36px] bg-bg/35 transition ${
           isDropActive
-            ? "border-accent shadow-[0_0_0_4px_rgba(16,185,129,0.16)]"
-            : "border-border-color"
+            ? "shadow-[0_0_0_4px_rgba(16,185,129,0.16),0_22px_64px_rgba(2,6,23,0.18)]"
+            : "shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
         }`}
         onDragEnter={(event) => {
           if (hasAssetDragData(event)) {
@@ -170,11 +180,24 @@ export const Canvas = ({
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute left-5 top-5 rounded-full border border-border-color bg-bg/85 px-3 py-2 text-xs uppercase tracking-[0.24em] text-secondary-text backdrop-blur-xl">
+        <div className="pointer-events-none absolute left-5 top-5 rounded-full bg-bg/85 px-3 py-2 text-xs uppercase tracking-[0.24em] text-secondary-text shadow-lg backdrop-blur-xl">
           {activeTool === "paintBucket"
             ? "Paint bucket armed"
-            : "Drop elements on the artboard"}
+            : "Wheel to zoom. Pan with middle-click or Shift plus left-drag."}
         </div>
+
+        {viewportState.canReturnToCanvas ? (
+          <button
+            type="button"
+            className="absolute bottom-5 right-5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-[0_18px_32px_rgba(16,185,129,0.28)] transition hover:brightness-105"
+            onClick={(event) => {
+              event.stopPropagation();
+              editorRef.current?.centerCanvas();
+            }}
+          >
+            Move Back To Canvas
+          </button>
+        ) : null}
       </div>
     </section>
   );

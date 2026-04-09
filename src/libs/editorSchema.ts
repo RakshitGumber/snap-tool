@@ -51,7 +51,7 @@ export interface EditorStateSnapshot {
   canvases: EditorCanvas[];
 }
 
-export interface NormalizedCanvasPoint {
+export interface CanvasPoint {
   x: number;
   y: number;
 }
@@ -98,7 +98,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "spark-burst",
     label: "Spark Burst",
     kind: "sticker",
-    defaultSize: 0.2,
+    defaultSize: 240,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <path fill="#FFD84D" d="M128 12l24 71 76 17-58 47 8 78-50-37-50 37 8-78-58-47 76-17z"/>
@@ -110,7 +110,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "heart-pop",
     label: "Heart Pop",
     kind: "sticker",
-    defaultSize: 0.2,
+    defaultSize: 240,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <path fill="#FF5D8F" d="M128 224 39 132C18 111 18 77 39 56c21-21 55-21 76 0l13 13 13-13c21-21 55-21 76 0 21 21 21 55 0 76z"/>
@@ -122,7 +122,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "speech-bubble",
     label: "Speech Bubble",
     kind: "sticker",
-    defaultSize: 0.22,
+    defaultSize: 264,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <rect x="28" y="40" width="200" height="140" rx="42" fill="#8B5CF6"/>
@@ -137,7 +137,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "sun-badge",
     label: "Sun Badge",
     kind: "sticker",
-    defaultSize: 0.2,
+    defaultSize: 240,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <circle cx="128" cy="128" r="58" fill="#F59E0B"/>
@@ -152,7 +152,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "camera",
     label: "Camera",
     kind: "icon",
-    defaultSize: 0.16,
+    defaultSize: 192,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <rect x="30" y="64" width="196" height="128" rx="28" fill="#111827"/>
@@ -166,7 +166,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "pin",
     label: "Location Pin",
     kind: "icon",
-    defaultSize: 0.16,
+    defaultSize: 192,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <path fill="#EF4444" d="M128 236s74-74 74-130a74 74 0 1 0-148 0c0 56 74 130 74 130z"/>
@@ -178,7 +178,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "bolt",
     label: "Bolt",
     kind: "icon",
-    defaultSize: 0.16,
+    defaultSize: 192,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <path fill="#FBBF24" d="M150 18 58 142h56l-8 96 92-124h-56z"/>
@@ -189,7 +189,7 @@ export const EFFECT_ASSETS: EffectAsset[] = [
     id: "star",
     label: "Star",
     kind: "icon",
-    defaultSize: 0.16,
+    defaultSize: 192,
     src: sticker(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
         <path fill="#38BDF8" d="M128 24l29 68 75 7-57 47 18 72-65-39-65 39 18-72-57-47 75-7z"/>
@@ -209,9 +209,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 
 export const normalizeHexColor = (value: string) => {
   const sanitized = value.trim().toLowerCase();
@@ -289,10 +286,10 @@ const validateCanvasItem = (value: unknown): CanvasItem | null => {
     id: value.id,
     type: value.type,
     sourceId: value.sourceId,
-    x: clamp(value.x, 0, 1),
-    y: clamp(value.y, 0, 1),
-    w: clamp(value.w, 0.05, 1),
-    h: clamp(value.h, 0.05, 1),
+    x: value.x,
+    y: value.y,
+    w: Math.max(1, value.w),
+    h: Math.max(1, value.h),
     rotation: isFiniteNumber(value.rotation) ? value.rotation : 0,
     z: isFiniteNumber(value.z) ? value.z : 0,
   };
@@ -371,62 +368,3 @@ export const validateEditorStateSnapshot = (
     canvases,
   };
 };
-
-export const resizeDocumentForAspectRatio = (
-  document: EditorDocument,
-  fromRatio: AspectRatioPreset,
-  toRatio: AspectRatioPreset,
-): EditorDocument => {
-  if (fromRatio === toRatio) {
-    return cloneEditorDocument(document);
-  }
-
-  const fromSize = ASPECT_RATIO_DIMENSIONS[fromRatio];
-  const toSize = ASPECT_RATIO_DIMENSIONS[toRatio];
-
-  return {
-    ...cloneEditorDocument(document),
-    items: document.items.map((item) => {
-      const width = clamp((item.w * fromSize.width) / toSize.width, 0.05, 1);
-      const height = clamp((item.h * fromSize.height) / toSize.height, 0.05, 1);
-      const halfWidth = width / 2;
-      const halfHeight = height / 2;
-      const x = clamp((item.x * fromSize.width) / toSize.width, halfWidth, 1 - halfWidth);
-      const y = clamp(
-        (item.y * fromSize.height) / toSize.height,
-        halfHeight,
-        1 - halfHeight,
-      );
-
-      return {
-        ...item,
-        x,
-        y,
-        w: width,
-        h: height,
-      };
-    }),
-  };
-};
-
-export const parseEditorDocument = (value: string) => {
-  try {
-    return validateEditorDocument(JSON.parse(value));
-  } catch {
-    return null;
-  }
-};
-
-export const serializeEditorDocument = (value: EditorDocument) =>
-  JSON.stringify(value);
-
-export const parseEditorStateSnapshot = (value: string) => {
-  try {
-    return validateEditorStateSnapshot(JSON.parse(value));
-  } catch {
-    return null;
-  }
-};
-
-export const serializeEditorStateSnapshot = (value: EditorStateSnapshot) =>
-  JSON.stringify(value);

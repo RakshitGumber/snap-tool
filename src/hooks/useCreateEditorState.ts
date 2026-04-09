@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  ASPECT_RATIO_DIMENSIONS,
+  type CanvasPoint,
   DEFAULT_ASPECT_RATIO,
-  DEFAULT_DOCUMENT,
   DEFAULT_CANVAS_ID,
   createEditorCanvas,
   createEditorStateSnapshot,
@@ -9,13 +10,7 @@ import {
   type AssetDragPayload,
   cloneEditorDocument,
   findEffectAssetById,
-  isAspectRatioPreset,
   normalizeHexColor,
-  type NormalizedCanvasPoint,
-  parseEditorDocument,
-  parseEditorStateSnapshot,
-  resizeDocumentForAspectRatio,
-  serializeEditorStateSnapshot,
   type EditorCanvas,
   type EditorDocument,
   type EditorStateSnapshot,
@@ -32,61 +27,11 @@ const createItemId = () => {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
-const LEGACY_RATIO_PARAM = "ratio";
-const LEGACY_DOCUMENT_PARAM = "doc";
-const STATE_PARAM = "state";
-
-const parseLegacyState = (params: URLSearchParams): EditorStateSnapshot => {
-  const ratioValue = params.get(LEGACY_RATIO_PARAM);
-  const documentValue = params.get(LEGACY_DOCUMENT_PARAM);
-  const ratio =
-    ratioValue && isAspectRatioPreset(ratioValue)
-      ? ratioValue
-      : DEFAULT_ASPECT_RATIO;
-  const document = documentValue
-    ? parseEditorDocument(documentValue) ?? DEFAULT_DOCUMENT
-    : DEFAULT_DOCUMENT;
-
-  return createEditorStateSnapshot(
-    createEditorCanvas(DEFAULT_CANVAS_ID, ratio, document),
-  );
-};
-
-const readSearchState = (): EditorStateSnapshot => {
-  const params = new URLSearchParams(window.location.search);
-  const stateValue = params.get(STATE_PARAM);
-
-  if (stateValue) {
-    return parseEditorStateSnapshot(stateValue) ?? createEditorStateSnapshot();
-  }
-
-  return parseLegacyState(params);
-};
-
-const writeSearchState = (state: EditorStateSnapshot) => {
-  const params = new URLSearchParams(window.location.search);
-
-  params.set(STATE_PARAM, serializeEditorStateSnapshot(state));
-  params.delete(LEGACY_RATIO_PARAM);
-  params.delete(LEGACY_DOCUMENT_PARAM);
-
-  const nextSearch = `?${params.toString()}`;
-
-  if (nextSearch === window.location.search) {
-    return;
-  }
-
-  window.history.replaceState(
-    window.history.state,
-    "",
-    `${window.location.pathname}${nextSearch}${window.location.hash}`,
-  );
-};
-
 const appendAsset = (
+  canvas: EditorCanvas,
   document: EditorDocument,
   payload: AssetDragPayload,
-  point: NormalizedCanvasPoint,
+  point: CanvasPoint,
 ) => {
   const asset = findEffectAssetById(payload.sourceId);
 
@@ -94,11 +39,12 @@ const appendAsset = (
     return document;
   }
 
+  const canvasSize = ASPECT_RATIO_DIMENSIONS[canvas.ratio];
   const nextZ =
     document.items.reduce((highest, item) => Math.max(highest, item.z), -1) + 1;
   const halfSize = asset.defaultSize / 2;
-  const x = clamp(point.x, halfSize, 1 - halfSize);
-  const y = clamp(point.y, halfSize, 1 - halfSize);
+  const x = clamp(point.x, halfSize, canvasSize.width - halfSize);
+  const y = clamp(point.y, halfSize, canvasSize.height - halfSize);
 
   return {
     ...cloneEditorDocument(document),
@@ -146,34 +92,35 @@ const createCanvasId = (canvases: EditorCanvas[]) => {
   return `canvas-${index}`;
 };
 
+const getNextActiveCanvasId = (
+  canvases: EditorCanvas[],
+  removedCanvasId: string,
+  activeCanvasId: string,
+) => {
+  if (canvases.length === 0) {
+    return DEFAULT_CANVAS_ID;
+  }
+
+  if (removedCanvasId !== activeCanvasId) {
+    return activeCanvasId;
+  }
+
+  const removedIndex = canvases.findIndex((canvas) => canvas.id === removedCanvasId);
+  const fallbackIndex =
+    removedIndex >= 0 ? Math.min(removedIndex, canvases.length - 2) : 0;
+
+  return canvases[Math.max(fallbackIndex, 0)]?.id ?? canvases[0].id;
+};
+
 export const useCreateEditorState = () => {
-  const [state, setState] = useState<EditorStateSnapshot>(() => readSearchState());
+  const [state, setState] = useState<EditorStateSnapshot>(() =>
+    createEditorStateSnapshot(
+      createEditorCanvas(DEFAULT_CANVAS_ID, DEFAULT_ASPECT_RATIO),
+    ),
+  );
 
-  useEffect(() => {
-    writeSearchState(readSearchState());
-  }, []);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const nextState = readSearchState();
-
-      writeSearchState(nextState);
-      setState(nextState);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  const updateState = (updater: (current: EditorStateSnapshot) => EditorStateSnapshot) => {
-    setState((current) => {
-      const nextState = updater(current);
-
-      writeSearchState(nextState);
-      return nextState;
-    });
-  };
+  const updateState = (updater: (current: EditorStateSnapshot) => EditorStateSnapshot) =>
+    setState((current) => updater(current));
 
   const activeCanvas = useMemo(() => getActiveCanvas(state), [state]);
 
@@ -200,12 +147,56 @@ export const useCreateEditorState = () => {
       };
     });
 
+  const removeCanvas = (canvasId: string) =>
+    updateState((current) => {
+      if (current.canvases.length <= 1) {
+        return current;
+      }
+
+      const nextCanvases = current.canvases.filter((canvas) => canvas.id !== canvasId);
+
+      if (nextCanvases.length === current.canvases.length) {
+        return current;
+      }
+
+      return {
+        ...current,
+        activeCanvasId: getNextActiveCanvasId(
+          current.canvases,
+          canvasId,
+          current.activeCanvasId,
+        ),
+        canvases: nextCanvases,
+      };
+    });
+
+  const replaceCanvases = (canvases: EditorCanvas[], activeCanvasId: string) =>
+    updateState((current) => {
+      if (canvases.length === 0) {
+        return current;
+      }
+
+      const nextCanvases = canvases.map((canvas) => ({
+        ...canvas,
+        document: cloneEditorDocument(canvas.document),
+      }));
+      const nextActiveCanvasId = nextCanvases.some((canvas) => canvas.id === activeCanvasId)
+        ? activeCanvasId
+        : nextCanvases[0].id;
+
+      return {
+        ...current,
+        activeCanvasId: nextActiveCanvasId,
+        canvases: nextCanvases,
+      };
+    });
+
   const setRatio = (ratio: AspectRatioPreset, canvasId = state.activeCanvasId) =>
     updateState((current) =>
       updateCanvasById(current, canvasId, (canvas) => ({
         ...canvas,
         ratio,
-        document: resizeDocumentForAspectRatio(canvas.document, canvas.ratio, ratio),
+        document: cloneEditorDocument(canvas.document),
       })),
     );
 
@@ -225,12 +216,12 @@ export const useCreateEditorState = () => {
   const addItem = (
     canvasId: string,
     payload: AssetDragPayload,
-    point: NormalizedCanvasPoint,
+    point: CanvasPoint,
   ) =>
     updateState((current) =>
       updateCanvasById(current, canvasId, (canvas) => ({
         ...canvas,
-        document: appendAsset(canvas.document, payload, point),
+        document: appendAsset(canvas, canvas.document, payload, point),
       })),
     );
 
@@ -248,6 +239,8 @@ export const useCreateEditorState = () => {
     canvases: state.canvases,
     addCanvas,
     addItem,
+    removeCanvas,
+    replaceCanvases,
     replaceDocument,
     setActiveCanvas,
     setBackgroundFill,

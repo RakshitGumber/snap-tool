@@ -6,6 +6,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import {
+  ASPECT_RATIO_DIMENSIONS,
   ASPECT_RATIO_PRESETS,
   type AspectRatioPreset,
   type EditorTool,
@@ -21,9 +22,9 @@ interface CreateToolbarProps {
 }
 
 const ratioLabels: Record<AspectRatioPreset, string> = {
-  "1:1": "Square",
-  "9:16": "9:16",
-  "16:9": "16:9",
+  "1:1": "1200 x 1200",
+  "9:16": "900 x 1600",
+  "16:9": "1600 x 900",
 };
 
 export const CreateToolbar = ({
@@ -147,7 +148,10 @@ export const CreateToolbar = ({
                       }}
                     >
                       <span className="font-medium">{ratioLabels[ratio]}</span>
-                      <span className="text-secondary-text">{ratio}</span>
+                      <span className="text-secondary-text">
+                        {ASPECT_RATIO_DIMENSIONS[ratio].width} x{" "}
+                        {ASPECT_RATIO_DIMENSIONS[ratio].height} px
+                      </span>
                     </button>
                   );
                 })}

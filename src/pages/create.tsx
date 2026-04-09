@@ -15,6 +15,8 @@ export const CreateRoute = () => {
     setRatio,
     setBackgroundFill,
     addItem,
+    removeCanvas,
+    replaceCanvases,
     replaceDocument,
   } = useCreateEditorState();
   const [activeTool, setActiveTool] = useState<EditorTool>("select");
@@ -37,8 +39,11 @@ export const CreateRoute = () => {
 
       <div className="flex min-h-0 flex-1">
         <EffectsMenu
+          activeCanvasId={activeCanvasId}
           activeTool={activeTool}
+          canvases={canvases}
           paintColor={paintColor}
+          onCanvasSelect={setActiveCanvas}
           onActiveToolChange={setActiveTool}
           onPaintColorChange={setPaintColor}
         />
@@ -58,6 +63,8 @@ export const CreateRoute = () => {
             setActiveCanvas(canvasId);
             setBackgroundFill(color, canvasId);
           }}
+          onCanvasesChange={replaceCanvases}
+          onDeleteCanvas={removeCanvas}
           onDocumentChange={replaceDocument}
         />
       </div>

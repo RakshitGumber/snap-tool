@@ -11,28 +11,24 @@ import {
   DEFAULT_DOCUMENT,
   EFFECT_ASSETS,
   type AspectRatioPreset,
+  type CanvasPoint,
   type CanvasItem,
   type EditorCanvas,
   type EditorDocument,
   type EditorTool,
   findEffectAssetById,
-  type NormalizedCanvasPoint,
 } from "@/libs/editorSchema";
 
 const WORKSPACE_PADDING = 72;
 const ARTBOARD_GAP = 96;
 const ARTBOARD_RADIUS = 0;
-const MIN_ITEM_SIZE = 0.05;
+const MIN_ITEM_SIZE = 48;
 const ROTATION_HANDLE_OFFSET = 44;
 const HANDLE_RADIUS = 18;
 const CANVAS_SNAP_THRESHOLD = 180;
+const CANVAS_SNAP_GAPS = [0, ARTBOARD_GAP];
 
 interface ScreenPoint {
-  x: number;
-  y: number;
-}
-
-interface ArtboardPoint {
   x: number;
   y: number;
 }
@@ -75,7 +71,7 @@ export interface CanvasViewportState {
 
 export interface CanvasPointerTarget {
   canvasId: string;
-  point: NormalizedCanvasPoint;
+  point: CanvasPoint;
 }
 
 type InteractionState =
@@ -89,7 +85,8 @@ type InteractionState =
       mode: "drag";
       canvasId: string;
       itemId: string;
-      startPointer: ArtboardPoint;
+      startItemWorld: ScreenPoint;
+      startPointer: ScreenPoint;
       startItem: CanvasItem;
     }
   | {
@@ -108,14 +105,17 @@ type InteractionState =
       mode: "scale";
       canvasId: string;
       itemId: string;
-      startDistance: number;
+      startPointer: CanvasPoint;
       startItem: CanvasItem;
     }
   | null;
 
 export interface CanvasEditor {
   centerCanvas: () => void;
+  deleteSelection: () => void;
   destroy: () => void;
+  focusCanvas: (canvasId: string) => void;
+  focusCanvasInDirection: (direction: "left" | "right" | "up" | "down") => void;
   screenToCanvasPoint: (
     clientX: number,
     clientY: number,
@@ -127,12 +127,33 @@ export interface CanvasEditor {
 
 interface CreateCanvasEditorOptions {
   onActiveCanvasChange?: (canvasId: string) => void;
+  onCanvasDelete?: (canvasId: string) => void;
+  onCanvasesChange?: (canvases: EditorCanvas[], activeCanvasId: string) => void;
   onDocumentChange?: (canvasId: string, document: EditorDocument) => void;
   onViewportChange?: (state: CanvasViewportState) => void;
 }
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
+
+const createItemId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `item-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const createCanvasId = (canvases: EditorCanvas[]) => {
+  const existing = new Set(canvases.map((canvas) => canvas.id));
+  let index = canvases.length + 1;
+
+  while (existing.has(`canvas-${index}`)) {
+    index += 1;
+  }
+
+  return `canvas-${index}`;
+};
 
 const cloneDocument = (document: EditorDocument): EditorDocument => ({
   v: 1,
@@ -147,8 +168,27 @@ const cloneCanvas = (canvas: EditorCanvas): EditorCanvas => ({
   document: cloneDocument(canvas.document),
 });
 
+const cloneCanvasForDuplication = (
+  canvas: EditorCanvas,
+  duplicateId: string,
+): EditorCanvas => ({
+  ...canvas,
+  id: duplicateId,
+  document: {
+    ...cloneDocument(canvas.document),
+    items: canvas.document.items.map((item) => ({
+      ...item,
+      id: createItemId(),
+    })),
+  },
+});
+
 const degreesToRadians = (degrees: number) => (degrees * Math.PI) / 180;
 const radiansToDegrees = (radians: number) => (radians * 180) / Math.PI;
+const rotateVector = (point: CanvasPoint, radians: number): CanvasPoint => ({
+  x: point.x * Math.cos(radians) - point.y * Math.sin(radians),
+  y: point.x * Math.sin(radians) + point.y * Math.cos(radians),
+});
 
 const isPanPointerEvent = (event: PointerEvent | MouseEvent) =>
   event.button === 1 || (event.button === 0 && event.shiftKey);
@@ -217,6 +257,7 @@ export const createCanvasEditor = async (
     totalWidth: 0,
   };
   let interactionState: InteractionState = null;
+  let selectedCanvasId: string | null = null;
   let selectedItem: SelectionState | null = null;
   const canvasPositions = new Map<string, ScreenPoint>();
 
@@ -414,24 +455,24 @@ export const createCanvasEditor = async (
 
       const otherPosition = canvasPositions.get(otherCanvas.id) ?? { x: 0, y: 0 };
       const otherSize = ASPECT_RATIO_DIMENSIONS[otherCanvas.ratio];
-      const candidates: ScreenPoint[] = [
+      const candidates: ScreenPoint[] = CANVAS_SNAP_GAPS.flatMap((gap) => [
         {
-          x: otherPosition.x + otherSize.width + ARTBOARD_GAP,
+          x: otherPosition.x + otherSize.width + gap,
           y: otherPosition.y,
         },
         {
-          x: otherPosition.x - movedSize.width - ARTBOARD_GAP,
+          x: otherPosition.x - movedSize.width - gap,
           y: otherPosition.y,
         },
         {
           x: otherPosition.x,
-          y: otherPosition.y + otherSize.height + ARTBOARD_GAP,
+          y: otherPosition.y + otherSize.height + gap,
         },
         {
           x: otherPosition.x,
-          y: otherPosition.y - movedSize.height - ARTBOARD_GAP,
+          y: otherPosition.y - movedSize.height - gap,
         },
-      ];
+      ]);
 
       for (const candidate of candidates) {
         const distance = Math.hypot(
@@ -481,8 +522,8 @@ export const createCanvasEditor = async (
       return {
         canvasId: artboard.canvasId,
         point: {
-          x: localX / artboard.width,
-          y: localY / artboard.height,
+          x: localX,
+          y: localY,
         },
       };
     }
@@ -510,6 +551,197 @@ export const createCanvasEditor = async (
     );
   };
 
+  const moveDocumentItem = (
+    fromCanvasId: string,
+    toCanvasId: string,
+    itemId: string,
+    nextItem: CanvasItem,
+  ) => {
+    if (fromCanvasId === toCanvasId) {
+      updateDocumentItem(fromCanvasId, itemId, () => nextItem);
+      return true;
+    }
+
+    let movedItem: CanvasItem | null = null;
+
+    currentCanvases = currentCanvases.map((canvas) => {
+      if (canvas.id !== fromCanvasId) {
+        return canvas;
+      }
+
+      return {
+        ...canvas,
+        document: {
+          ...canvas.document,
+          items: canvas.document.items.filter((item) => {
+            if (item.id !== itemId) {
+              return true;
+            }
+
+            movedItem = {
+              ...item,
+              ...nextItem,
+            };
+            return false;
+          }),
+        },
+      };
+    });
+
+    if (!movedItem) {
+      return false;
+    }
+
+    const transferredItem: CanvasItem = movedItem;
+
+    currentCanvases = currentCanvases.map((canvas) => {
+      if (canvas.id !== toCanvasId) {
+        return canvas;
+      }
+
+      const nextZ =
+        canvas.document.items.reduce((highest, item) => Math.max(highest, item.z), -1) + 1;
+
+      return {
+        ...canvas,
+        document: {
+          ...canvas.document,
+          items: [
+            ...canvas.document.items,
+            {
+              ...transferredItem,
+              z: nextZ,
+            },
+          ],
+        },
+      };
+    });
+
+    return true;
+  };
+
+  const duplicateDocumentItem = (canvasId: string, itemId: string) => {
+    const canvas = getCanvasById(canvasId);
+    const sourceItem = canvas?.document.items.find((item) => item.id === itemId) ?? null;
+
+    if (!canvas || !sourceItem) {
+      return null;
+    }
+
+    const duplicatedItem: CanvasItem = {
+      ...sourceItem,
+      id: createItemId(),
+      z: canvas.document.items.reduce((highest, item) => Math.max(highest, item.z), -1) + 1,
+    };
+
+    currentCanvases = currentCanvases.map((entry) =>
+      entry.id !== canvasId
+        ? entry
+        : {
+            ...entry,
+            document: {
+              ...entry.document,
+              items: [...entry.document.items, duplicatedItem],
+            },
+          },
+    );
+
+    return duplicatedItem;
+  };
+
+  const duplicateCanvas = (canvasId: string) => {
+    const canvas = getCanvasById(canvasId);
+    const canvasPosition = canvasPositions.get(canvasId) ?? { x: 0, y: 0 };
+
+    if (!canvas) {
+      return null;
+    }
+
+    const duplicateId = createCanvasId(currentCanvases);
+    const duplicatedCanvas = cloneCanvasForDuplication(canvas, duplicateId);
+
+    currentCanvases = [...currentCanvases, duplicatedCanvas];
+    canvasPositions.set(duplicateId, { ...canvasPosition });
+    currentActiveCanvasId = duplicateId;
+    selectedCanvasId = duplicateId;
+    selectedItem = null;
+    emitCanvasesChange();
+    return duplicateId;
+  };
+
+  const getNextCanvasIdAfterDeletion = (canvasId: string) => {
+    if (currentCanvases.length <= 1) {
+      return null;
+    }
+
+    const removedIndex = currentCanvases.findIndex((canvas) => canvas.id === canvasId);
+
+    if (removedIndex < 0) {
+      return null;
+    }
+
+    const fallbackIndex = Math.min(removedIndex, currentCanvases.length - 2);
+
+    return currentCanvases[Math.max(fallbackIndex, 0)]?.id ?? null;
+  };
+
+  const deleteSelectedItem = () => {
+    if (!selectedItem) {
+      return;
+    }
+
+    const { canvasId, itemId } = selectedItem;
+
+    currentCanvases = currentCanvases.map((canvas) =>
+      canvas.id !== canvasId
+        ? canvas
+        : {
+            ...canvas,
+            document: {
+              ...canvas.document,
+              items: canvas.document.items.filter((item) => item.id !== itemId),
+            },
+          },
+    );
+    selectedItem = null;
+    renderScene();
+    emitDocumentChange(canvasId);
+  };
+
+  const deleteSelectedCanvas = () => {
+    const canvasId = selectedCanvasId ?? currentActiveCanvasId;
+
+    if (!canvasId || currentCanvases.length <= 1) {
+      return;
+    }
+
+    const nextActiveCanvasId = getNextCanvasIdAfterDeletion(canvasId);
+
+    currentCanvases = currentCanvases.filter((canvas) => canvas.id !== canvasId);
+    canvasPositions.delete(canvasId);
+    selectedCanvasId = null;
+    selectedItem = null;
+
+    if (nextActiveCanvasId) {
+      currentActiveCanvasId = nextActiveCanvasId;
+      options.onActiveCanvasChange?.(nextActiveCanvasId);
+    }
+
+    renderScene();
+    options.onCanvasDelete?.(canvasId);
+  };
+
+  const deleteSelection = () => {
+    if (selectedItem) {
+      deleteSelectedItem();
+      return;
+    }
+
+    if (selectedCanvasId && selectedCanvasId === currentActiveCanvasId) {
+      deleteSelectedCanvas();
+    }
+  };
+
   const emitDocumentChange = (canvasId: string) => {
     const canvas = getCanvasById(canvasId);
 
@@ -518,6 +750,13 @@ export const createCanvasEditor = async (
     }
 
     options.onDocumentChange?.(canvasId, cloneDocument(canvas.document));
+  };
+
+  const emitCanvasesChange = () => {
+    options.onCanvasesChange?.(
+      currentCanvases.map((canvas) => cloneCanvas(canvas)),
+      currentActiveCanvasId,
+    );
   };
 
   const renderSelection = () => {
@@ -540,14 +779,14 @@ export const createCanvasEditor = async (
       return;
     }
 
-    const itemWidth = item.w * artboard.width;
-    const itemHeight = item.h * artboard.height;
+    const itemWidth = item.w;
+    const itemHeight = item.h;
     const halfWidth = itemWidth / 2;
     const halfHeight = itemHeight / 2;
 
     selectionOverlay.position.set(
-      artboard.x + item.x * artboard.width,
-      artboard.y + item.y * artboard.height,
+      artboard.x + item.x,
+      artboard.y + item.y,
     );
     selectionOverlay.rotation = degreesToRadians(item.rotation);
 
@@ -626,8 +865,22 @@ export const createCanvasEditor = async (
       return;
     }
 
+    if (currentTool === "select" && event.originalEvent.altKey) {
+      const duplicatedCanvasId = duplicateCanvas(canvasId);
+
+      if (!duplicatedCanvasId) {
+        return;
+      }
+
+      beginCanvasMove(duplicatedCanvasId, event);
+      renderScene();
+      event.stopPropagation();
+      return;
+    }
+
     currentActiveCanvasId = canvasId;
     options.onActiveCanvasChange?.(canvasId);
+    selectedCanvasId = canvasId;
     selectedItem = null;
     beginCanvasMove(canvasId, event);
     renderScene();
@@ -662,6 +915,8 @@ export const createCanvasEditor = async (
       const background = new Graphics();
       const itemsLayer = new Container();
       const isActive = artboard.canvasId === currentActiveCanvasId;
+      const showCanvasSelection =
+        selectedCanvasId === artboard.canvasId && selectedItem === null;
 
       shadows
         .roundRect(
@@ -686,6 +941,11 @@ export const createCanvasEditor = async (
       background
         .roundRect(0, 0, artboard.width, artboard.height, ARTBOARD_RADIUS)
         .fill({ color: artboard.document.bg.fill });
+      if (showCanvasSelection) {
+        background
+          .roundRect(0, 0, artboard.width, artboard.height, ARTBOARD_RADIUS)
+          .stroke({ color: 0x10b981, width: 8 });
+      }
       background.eventMode = "static";
       background.cursor = interactionState?.mode === "pan" ? "grabbing" : "default";
       background.on("pointerdown", createArtboardPointerDown(artboard.canvasId));
@@ -706,10 +966,10 @@ export const createCanvasEditor = async (
         const sprite = new Sprite(texture);
 
         sprite.anchor.set(0.5);
-        sprite.x = item.x * artboard.width;
-        sprite.y = item.y * artboard.height;
-        sprite.width = item.w * artboard.width;
-        sprite.height = item.h * artboard.height;
+        sprite.x = item.x;
+        sprite.y = item.y;
+        sprite.width = item.w;
+        sprite.height = item.h;
         sprite.rotation = degreesToRadians(item.rotation);
         sprite.eventMode = "static";
         sprite.cursor = currentTool === "select" ? "move" : "default";
@@ -732,25 +992,50 @@ export const createCanvasEditor = async (
             event.originalEvent.clientX,
             event.originalEvent.clientY,
           );
-          const target =
-            point ? stageToCanvasPoint(point, artboard.canvasId, true) : null;
+          const worldPoint = point ? stageToWorldPoint(point) : null;
 
-          if (!target) {
+          if (!worldPoint) {
             return;
+          }
+
+          let interactionItem = item;
+          let interactionItemId = item.id;
+          let duplicated = false;
+
+          if (event.originalEvent.altKey) {
+            const duplicatedItem = duplicateDocumentItem(artboard.canvasId, item.id);
+
+            if (!duplicatedItem) {
+              return;
+            }
+
+            interactionItem = duplicatedItem;
+            interactionItemId = duplicatedItem.id;
+            duplicated = true;
+            emitDocumentChange(artboard.canvasId);
           }
 
           selectedItem = {
             canvasId: artboard.canvasId,
-            itemId: item.id,
+            itemId: interactionItemId,
           };
+          selectedCanvasId = null;
           interactionState = {
             mode: "drag",
             canvasId: artboard.canvasId,
-            itemId: item.id,
-            startPointer: target.point,
-            startItem: { ...item },
+            itemId: interactionItemId,
+            startItemWorld: {
+              x: artboard.x + interactionItem.x,
+              y: artboard.y + interactionItem.y,
+            },
+            startPointer: worldPoint,
+            startItem: { ...interactionItem },
           };
-          renderSelection();
+          if (duplicated) {
+            renderScene();
+          } else {
+            renderSelection();
+          }
           event.stopPropagation();
         });
 
@@ -767,9 +1052,12 @@ export const createCanvasEditor = async (
     emitViewportChange();
   };
 
-  const commitInteraction = (canvasId: string) => {
+  const commitInteraction = (...canvasIds: string[]) => {
     renderScene();
-    emitDocumentChange(canvasId);
+
+    for (const canvasId of new Set(canvasIds)) {
+      emitDocumentChange(canvasId);
+    }
   };
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -821,47 +1109,129 @@ export const createCanvasEditor = async (
     }
 
     const stagePoint = screenToStagePoint(event.clientX, event.clientY);
-    const target = stagePoint
-      ? stageToCanvasPoint(stagePoint, activeInteraction.canvasId, true)
-      : null;
+    const worldPoint = stagePoint ? stageToWorldPoint(stagePoint) : null;
     const artboard = getArtboardLayout(activeInteraction.canvasId);
 
-    if (!target || !artboard) {
+    if (!worldPoint || !artboard) {
       return;
     }
 
     if (activeInteraction.mode === "drag") {
-      const deltaX = target.point.x - activeInteraction.startPointer.x;
-      const deltaY = target.point.y - activeInteraction.startPointer.y;
-      const halfWidth = activeInteraction.startItem.w / 2;
-      const halfHeight = activeInteraction.startItem.h / 2;
+      const hoveredArtboard =
+        currentLayout.artboards.find(
+          (entry) =>
+            worldPoint.x >= entry.x &&
+            worldPoint.y >= entry.y &&
+            worldPoint.x <= entry.x + entry.width &&
+            worldPoint.y <= entry.y + entry.height,
+        ) ?? null;
+      const nextCanvasId = hoveredArtboard?.canvasId ?? activeInteraction.canvasId;
+      const nextArtboard = getArtboardLayout(nextCanvasId);
 
-      updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
-        ...item,
-        x: clamp(activeInteraction.startItem.x + deltaX, halfWidth, 1 - halfWidth),
-        y: clamp(activeInteraction.startItem.y + deltaY, halfHeight, 1 - halfHeight),
-      }));
+      if (!nextArtboard) {
+        return;
+      }
+
+      const deltaX = worldPoint.x - activeInteraction.startPointer.x;
+      const deltaY = worldPoint.y - activeInteraction.startPointer.y;
+      const nextWorldX = activeInteraction.startItemWorld.x + deltaX;
+      const nextWorldY = activeInteraction.startItemWorld.y + deltaY;
+      const nextItem = {
+        ...activeInteraction.startItem,
+        x: nextWorldX - nextArtboard.x,
+        y: nextWorldY - nextArtboard.y,
+      };
+
+      const moved = moveDocumentItem(
+        activeInteraction.canvasId,
+        nextCanvasId,
+        activeInteraction.itemId,
+        nextItem,
+      );
+
+      if (!moved) {
+        return;
+      }
+
+      if (nextCanvasId !== activeInteraction.canvasId) {
+        interactionState = {
+          ...activeInteraction,
+          canvasId: nextCanvasId,
+        };
+        selectedCanvasId = null;
+        selectedItem = {
+          canvasId: nextCanvasId,
+          itemId: activeInteraction.itemId,
+        };
+        currentActiveCanvasId = nextCanvasId;
+        options.onActiveCanvasChange?.(nextCanvasId);
+        commitInteraction(activeInteraction.canvasId, nextCanvasId);
+        return;
+      }
+
       commitInteraction(activeInteraction.canvasId);
       return;
     }
 
+    const target = stagePoint
+      ? stageToCanvasPoint(stagePoint, activeInteraction.canvasId, true)
+      : null;
+
+    if (!target) {
+      return;
+    }
+
     if (activeInteraction.mode === "scale") {
-      const centerX = activeInteraction.startItem.x * artboard.width;
-      const centerY = activeInteraction.startItem.y * artboard.height;
-      const pointerX = target.point.x * artboard.width;
-      const pointerY = target.point.y * artboard.height;
-      const distance = Math.hypot(pointerX - centerX, pointerY - centerY);
-      const ratio = distance / Math.max(activeInteraction.startDistance, 24);
-      const rawWidth = activeInteraction.startItem.w * ratio;
-      const rawHeight = activeInteraction.startItem.h * ratio;
+      const pointerDelta = {
+        x: target.point.x - activeInteraction.startPointer.x,
+        y: target.point.y - activeInteraction.startPointer.y,
+      };
+      const localDelta = rotateVector(
+        pointerDelta,
+        -degreesToRadians(activeInteraction.startItem.rotation),
+      );
+      const rawWidth = activeInteraction.startItem.w + localDelta.x * 2;
+      const rawHeight = activeInteraction.startItem.h + localDelta.y * 2;
       const maxWidth = Math.max(
         MIN_ITEM_SIZE,
-        Math.min(activeInteraction.startItem.x, 1 - activeInteraction.startItem.x) * 2,
+        Math.min(
+          activeInteraction.startItem.x,
+          artboard.width - activeInteraction.startItem.x,
+        ) * 2,
       );
       const maxHeight = Math.max(
         MIN_ITEM_SIZE,
-        Math.min(activeInteraction.startItem.y, 1 - activeInteraction.startItem.y) * 2,
+        Math.min(
+          activeInteraction.startItem.y,
+          artboard.height - activeInteraction.startItem.y,
+        ) * 2,
       );
+      const minScale = Math.max(
+        MIN_ITEM_SIZE / Math.max(activeInteraction.startItem.w, 0.0001),
+        MIN_ITEM_SIZE / Math.max(activeInteraction.startItem.h, 0.0001),
+      );
+      const maxScale = Math.min(
+        maxWidth / Math.max(activeInteraction.startItem.w, 0.0001),
+        maxHeight / Math.max(activeInteraction.startItem.h, 0.0001),
+      );
+
+      if (event.shiftKey) {
+        const widthRatio = rawWidth / Math.max(activeInteraction.startItem.w, 0.0001);
+        const heightRatio = rawHeight / Math.max(activeInteraction.startItem.h, 0.0001);
+        const rawScale =
+          Math.abs(widthRatio - 1) >= Math.abs(heightRatio - 1)
+            ? widthRatio
+            : heightRatio;
+        const constrainedScale = clamp(rawScale, minScale, maxScale);
+
+        updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
+          ...item,
+          w: activeInteraction.startItem.w * constrainedScale,
+          h: activeInteraction.startItem.h * constrainedScale,
+        }));
+        commitInteraction(activeInteraction.canvasId);
+        return;
+      }
 
       updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
         ...item,
@@ -872,10 +1242,10 @@ export const createCanvasEditor = async (
       return;
     }
 
-    const centerX = activeInteraction.startItem.x * artboard.width;
-    const centerY = activeInteraction.startItem.y * artboard.height;
-    const pointerX = target.point.x * artboard.width;
-    const pointerY = target.point.y * artboard.height;
+    const centerX = activeInteraction.startItem.x;
+    const centerY = activeInteraction.startItem.y;
+    const pointerX = target.point.x;
+    const pointerY = target.point.y;
     const angle = Math.atan2(pointerY - centerY, pointerX - centerX);
     const rotation =
       activeInteraction.startItem.rotation +
@@ -903,6 +1273,98 @@ export const createCanvasEditor = async (
       y: (app.screen.height - currentLayout.scaledHeight) / 2 - currentLayout.minY * currentLayout.scale,
     };
     renderScene();
+  };
+
+  const focusCanvas = (canvasId: string) => {
+    const artboard = getArtboardLayout(canvasId);
+
+    if (!artboard) {
+      return;
+    }
+
+    const baseFitScale = currentLayout.scale / Math.max(viewportZoom, 0.0001);
+    const availableWidth = Math.max(app.screen.width - WORKSPACE_PADDING * 2, 120);
+    const availableHeight = Math.max(app.screen.height - WORKSPACE_PADDING * 2, 120);
+    const desiredScale =
+      Math.min(availableWidth / artboard.width, availableHeight / artboard.height) * 0.94;
+
+    viewportZoom = clamp(desiredScale / Math.max(baseFitScale, 0.0001), 0.2, 4);
+    currentActiveCanvasId = canvasId;
+    options.onActiveCanvasChange?.(canvasId);
+
+    const nextLayout = getBoardLayout();
+    const nextArtboard =
+      nextLayout.artboards.find((entry) => entry.canvasId === canvasId) ?? null;
+
+    if (!nextArtboard) {
+      return;
+    }
+
+    boardOrigin = {
+      x:
+        app.screen.width / 2 -
+        (nextArtboard.x + nextArtboard.width / 2) * nextLayout.scale,
+      y:
+        app.screen.height / 2 -
+        (nextArtboard.y + nextArtboard.height / 2) * nextLayout.scale,
+    };
+    renderScene();
+  };
+
+  const focusCanvasInDirection = (direction: "left" | "right" | "up" | "down") => {
+    const activeArtboard = getArtboardLayout(currentActiveCanvasId);
+
+    if (!activeArtboard) {
+      return;
+    }
+
+    const activeCenterX = activeArtboard.x + activeArtboard.width / 2;
+    const activeCenterY = activeArtboard.y + activeArtboard.height / 2;
+    let bestCanvasId: string | null = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (const artboard of currentLayout.artboards) {
+      if (artboard.canvasId === activeArtboard.canvasId) {
+        continue;
+      }
+
+      const centerX = artboard.x + artboard.width / 2;
+      const centerY = artboard.y + artboard.height / 2;
+      const deltaX = centerX - activeCenterX;
+      const deltaY = centerY - activeCenterY;
+
+      if (direction === "right" && deltaX <= 0) {
+        continue;
+      }
+
+      if (direction === "left" && deltaX >= 0) {
+        continue;
+      }
+
+      if (direction === "down" && deltaY <= 0) {
+        continue;
+      }
+
+      if (direction === "up" && deltaY >= 0) {
+        continue;
+      }
+
+      const score =
+        direction === "left" || direction === "right"
+          ? Math.abs(deltaX) + Math.abs(deltaY) * 1.5
+          : Math.abs(deltaY) + Math.abs(deltaX) * 1.5;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestCanvasId = artboard.canvasId;
+      }
+    }
+
+    if (!bestCanvasId) {
+      return;
+    }
+
+    focusCanvas(bestCanvasId);
   };
 
   const handleWheel = (event: WheelEvent) => {
@@ -970,16 +1432,16 @@ export const createCanvasEditor = async (
       return;
     }
 
-    const centerX = item.x * artboard.width;
-    const centerY = item.y * artboard.height;
+    const centerX = item.x;
+    const centerY = item.y;
 
     interactionState = {
       mode: "rotate",
       canvasId: selected.canvasId,
       itemId: selected.itemId,
       startAngle: Math.atan2(
-        target.point.y * artboard.height - centerY,
-        target.point.x * artboard.width - centerX,
+        target.point.y - centerY,
+        target.point.x - centerX,
       ),
       startItem: { ...item },
     };
@@ -993,7 +1455,7 @@ export const createCanvasEditor = async (
 
     const selected = selectedItem;
 
-    if (isPanPointerEvent(event.originalEvent)) {
+    if (event.originalEvent.button === 1) {
       beginPan(event);
       event.stopPropagation();
       return;
@@ -1012,17 +1474,11 @@ export const createCanvasEditor = async (
       return;
     }
 
-    const centerX = item.x * artboard.width;
-    const centerY = item.y * artboard.height;
-
     interactionState = {
       mode: "scale",
       canvasId: selected.canvasId,
       itemId: selected.itemId,
-      startDistance: Math.hypot(
-        target.point.x * artboard.width - centerX,
-        target.point.y * artboard.height - centerY,
-      ),
+      startPointer: { ...target.point },
       startItem: { ...item },
     };
     event.stopPropagation();
@@ -1030,6 +1486,7 @@ export const createCanvasEditor = async (
 
   workspace.on("pointerdown", (event: any) => {
     if (!isPanPointerEvent(event.originalEvent)) {
+      selectedCanvasId = null;
       selectedItem = null;
       renderSelection();
       return;
@@ -1052,6 +1509,9 @@ export const createCanvasEditor = async (
     centerCanvas() {
       centerCanvas();
     },
+    deleteSelection() {
+      deleteSelection();
+    },
     destroy() {
       resizeObserver.disconnect();
       app.canvas.removeEventListener("wheel", handleWheel);
@@ -1059,6 +1519,12 @@ export const createCanvasEditor = async (
       window.removeEventListener("pointerup", handlePointerUp);
       app.destroy({ removeView: true }, { children: true });
       container.replaceChildren();
+    },
+    focusCanvas(canvasId) {
+      focusCanvas(canvasId);
+    },
+    focusCanvasInDirection(direction) {
+      focusCanvasInDirection(direction);
     },
     screenToCanvasPoint(clientX, clientY) {
       const point = screenToStagePoint(clientX, clientY);
@@ -1095,12 +1561,20 @@ export const createCanvasEditor = async (
         selectedItem = null;
       }
 
+      if (
+        selectedCanvasId &&
+        !currentCanvases.some((canvas) => canvas.id === selectedCanvasId)
+      ) {
+        selectedCanvasId = null;
+      }
+
       renderScene();
     },
     setTool(tool) {
       currentTool = tool;
 
       if (tool !== "select") {
+        selectedCanvasId = null;
         selectedItem = null;
         interactionState = null;
       }

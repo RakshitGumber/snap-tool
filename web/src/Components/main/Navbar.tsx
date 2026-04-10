@@ -1,17 +1,12 @@
 import { useRouter } from "@/utils/Router";
 import { Icon } from "@iconify/react";
-import clsx from "clsx";
+import { TopPanel } from "../panels/TopPanel";
 
 export const Navbar = () => {
   const { route, setRoute } = useRouter();
 
   return (
-    <header
-      className={clsx(
-        "sticky top-0 z-20 bg-bg/85 backdrop-blur-2xl",
-        route !== "/" && "border-b-2 border-border-color",
-      )}
-    >
+    <TopPanel>
       <nav className="flex h-full w-full items-center justify-between p-3">
         <button
           className="hover:bg-text-color/20 rounded-lg flex items-center py-2 px-4 cursor-pointer"
@@ -39,6 +34,6 @@ export const Navbar = () => {
           </button>
         )}
       </nav>
-    </header>
+    </TopPanel>
   );
 };

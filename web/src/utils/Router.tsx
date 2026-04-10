@@ -40,9 +40,9 @@ export const Router = () => {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen flex-col">
       <Navbar />
-      <main className="min-h-0 flex-1">{directory[route]}</main>
+      <main>{directory[route]}</main>
     </div>
   );
 };

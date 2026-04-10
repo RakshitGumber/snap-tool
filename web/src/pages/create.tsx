@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Canvas } from "@/Components/main/Canvas";
-import { CreateToolbar } from "@/Components/main/CreateToolbar";
-import { EffectsMenu } from "@/Components/main/EffectsMenu";
+import { Canvas } from "@/Components/panels/Canvas";
+import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
+import { EffectsMenu } from "@/Components/panels/EffectsMenu";
 import { useCreateEditorState } from "@/hooks/useCreateEditorState";
 import { type EditorTool } from "@/libs/editorSchema";
 

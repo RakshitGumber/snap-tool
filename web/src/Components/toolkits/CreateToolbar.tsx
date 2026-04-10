@@ -93,7 +93,8 @@ export const CreateToolbar = ({
       event.preventDefault();
       setFocusIndex(
         (current) =>
-          (current - 1 + ASPECT_RATIO_PRESETS.length) % ASPECT_RATIO_PRESETS.length,
+          (current - 1 + ASPECT_RATIO_PRESETS.length) %
+          ASPECT_RATIO_PRESETS.length,
       );
     }
   };
@@ -117,7 +118,11 @@ export const CreateToolbar = ({
                 {ratioLabels[aspectRatio]}
               </span>
               <Icon
-                icon={isOpen ? "solar:alt-arrow-up-broken" : "solar:alt-arrow-down-broken"}
+                icon={
+                  isOpen
+                    ? "solar:alt-arrow-up-broken"
+                    : "solar:alt-arrow-down-broken"
+                }
                 className="text-lg"
               />
             </button>
@@ -202,7 +207,10 @@ export const CreateToolbar = ({
               <span>Click the canvas to apply the selected color.</span>
             </>
           ) : (
-            <span>Wheel to zoom, pan with middle-click or Shift plus left-drag, then drop stickers and icons onto the canvas.</span>
+            <span>
+              Wheel to zoom, pan with middle-click or Shift plus left-drag, then
+              drop stickers and icons onto the canvas.
+            </span>
           )}
         </div>
       </div>

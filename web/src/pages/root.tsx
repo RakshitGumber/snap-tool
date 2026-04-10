@@ -1,5 +1,9 @@
+import { Hero } from "@/Components/main/Hero";
+
 export const RootRoute = () => {
   return (
-    <section className="flex h-full items-center justify-center">Hello</section>
+    <section className="flex flex-col items-center">
+      <Hero />
+    </section>
   );
 };

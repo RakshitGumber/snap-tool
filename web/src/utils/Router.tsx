@@ -40,7 +40,7 @@ export const Router = () => {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex flex-col">
       <Navbar />
       <main>{directory[route]}</main>
     </div>

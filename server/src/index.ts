@@ -1,7 +1,12 @@
 import cors from "@elysiajs/cors";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 
 import { auth } from "@/lib/auth";
+import { schema } from "./db/schema";
+
+import { createSelectSchema } from "drizzle-typebox";
+
+const UserSchema = createSelectSchema(schema.user);
 
 const app = new Elysia()
   .use(
@@ -22,18 +27,34 @@ const app = new Elysia()
       session: session?.session,
     };
   })
-  .get("/", () => "Welcome to Elysia + Better Auth!")
-  .get("/profile", (ctx) => {
-    if (!ctx.user) {
-      ctx.set.status = 401;
-      return { error: "Unauthorized. Please log in." };
-    }
-
-    return {
-      message: "You are authenticated!",
-      user: ctx.user,
-    };
-  })
+  .get("/", () => "Aye yo brother wassup")
+  .get(
+    "/api/profile",
+    (ctx) => {
+      if (!ctx.user) {
+        ctx.set.status = 401;
+        return { error: "Unauthorized" };
+      }
+      return {
+        message: "Authenticated via Eden Treaty!",
+        user: {
+          ...ctx.user,
+          image: ctx.user.image ?? null,
+        },
+      };
+    },
+    {
+      response: {
+        200: t.Object({
+          message: t.String(),
+          user: UserSchema,
+        }),
+        401: t.Object({
+          error: t.String(),
+        }),
+      },
+    },
+  )
   .listen(process.env.PORT);
 
 console.log(

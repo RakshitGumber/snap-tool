@@ -1,4 +1,5 @@
 import { Features } from "@/Components/main/Features";
+import { Footer } from "@/Components/main/Footer";
 import { Hero } from "@/Components/main/Hero";
 import { Mentions } from "@/Components/main/Mentions";
 
@@ -8,6 +9,7 @@ export const RootRoute = () => {
       <Hero />
       <Mentions />
       <Features />
+      <Footer />
     </section>
   );
 };

@@ -14,6 +14,7 @@
     "@fontsource/lato": "^5.2.7",
     "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",
+    "better-auth": "^1.6.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "pixi.js": "8.17.1",

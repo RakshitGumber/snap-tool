@@ -1,13 +1,11 @@
-import { TopPanel } from "@/Components/panels/TopPanel";
+/* eslint-disable react-refresh/only-export-components */
 import { CreateRoute } from "@/pages/create";
 import { RootRoute } from "@/pages/root";
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, type JSX, type ReactNode } from "react";
 import { create } from "zustand";
 
+import { TopPanel } from "@/Components/panels/TopPanel";
 import { Navbar } from "@/Components/main/Navbar";
-import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
-import type { EditorTool } from "@/libs/editorSchema";
-import { useCreateEditorState } from "@/hooks/useCreateEditorState";
 
 interface useRouter {
   route: RoutePath;
@@ -44,26 +42,13 @@ export const Router = () => {
     return () => window.removeEventListener("popstate", handler);
   }, []);
 
-  const { activeCanvas, addCanvas, setRatio } = useCreateEditorState();
-  const [activeTool, setActiveTool] = useState<EditorTool>("select");
-  const [paintColor, _] = useState(activeCanvas.document.bg.fill);
-
   return (
     <div className="flex flex-col">
-      <TopPanel>
-        {route === "/" ? (
+      {route === "/" ? (
+        <TopPanel>
           <Navbar />
-        ) : (
-          <CreateToolbar
-            aspectRatio={activeCanvas.ratio}
-            activeTool={activeTool}
-            paintColor={paintColor}
-            onAspectRatioChange={setRatio}
-            onAddCanvas={addCanvas}
-            onActiveToolChange={setActiveTool}
-          />
-        )}
-      </TopPanel>
+        </TopPanel>
+      ) : null}
       <main>{directory[route]}</main>
     </div>
   );
@@ -76,7 +61,7 @@ export const Link = ({
   type = "button",
 }: {
   to: RoutePath;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   type?: "button" | "submit" | "reset";
 }) => {

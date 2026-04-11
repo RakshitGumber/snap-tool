@@ -172,12 +172,12 @@ export const Canvas = ({
   }, [activeCanvasId]);
 
   return (
-    <section className="min-h-0 flex-1 bg-[radial-gradient(circle_at_top,_rgba(76,251,149,0.12),_transparent_28%),linear-gradient(180deg,rgba(18,18,23,0.04),transparent)] p-5">
+    <section className="min-h-0 flex-1 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9),_transparent_34%),linear-gradient(180deg,rgba(242,244,250,0.95),rgba(236,240,249,0.82))] p-3 sm:p-4 lg:p-5">
       <div
-        className={`relative h-full overflow-hidden rounded-[36px] bg-bg/35 transition ${
+        className={`relative h-full overflow-hidden rounded-[38px] border border-border-color/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,248,252,0.7))] transition ${
           isDropActive
-            ? "shadow-[0_0_0_4px_rgba(16,185,129,0.16),0_22px_64px_rgba(2,6,23,0.18)]"
-            : "shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
+            ? "shadow-[0_0_0_3px_rgba(15,23,42,0.08),0_26px_72px_rgba(15,23,42,0.16)]"
+            : "shadow-[0_24px_64px_rgba(15,23,42,0.14),0_1px_0_rgba(255,255,255,0.8)_inset]"
         }`}
         onDragEnter={(event) => {
           if (hasAssetDragData(event)) {
@@ -238,33 +238,23 @@ export const Canvas = ({
         <div ref={hostRef} className="h-full w-full" />
 
         {!isReady ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-bg/70 backdrop-blur-sm">
-            <p className="font-styled text-sm uppercase tracking-[0.3em] text-secondary-text">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-bg/75 backdrop-blur-sm">
+            <p className="font-comic text-sm uppercase tracking-[0.3em] text-secondary-text">
               Preparing editor
             </p>
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute left-5 top-5 rounded-full bg-bg/85 px-3 py-2 text-xs uppercase tracking-[0.24em] text-secondary-text shadow-lg backdrop-blur-xl">
-          {activeTool === "paintBucket"
-            ? "Paint bucket armed"
-            : "Wheel to zoom. Pan with middle-click or Shift plus left-drag. Drag items across canvases or outside a canvas. Ctrl plus period focuses the active canvas. Ctrl plus arrow keys move between canvases. Delete removes the selected item or selected canvas."}
-        </div>
-
-        <div className="pointer-events-none absolute right-5 top-5 rounded-full bg-bg/85 px-3 py-2 text-xs uppercase tracking-[0.2em] text-secondary-text shadow-lg backdrop-blur-xl">
-          {canvases.length} canvases on board
-        </div>
-
         {viewportState.canReturnToCanvas ? (
           <button
             type="button"
-            className="absolute bottom-5 right-5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-bg shadow-[0_18px_32px_rgba(16,185,129,0.28)] transition hover:brightness-105"
+            className="absolute bottom-5 right-5 rounded-full bg-title-color px-4 py-2 text-sm font-semibold text-bg shadow-[0_18px_32px_rgba(15,23,42,0.22)] transition hover:brightness-105"
             onClick={(event) => {
               event.stopPropagation();
               editorRef.current?.focusCanvas(activeCanvasId);
             }}
           >
-            Move Back To Canvas
+            Recenter canvas
           </button>
         ) : null}
       </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ASPECT_RATIO_DIMENSIONS,
   type CanvasPoint,
@@ -14,7 +14,10 @@ import {
   type EditorCanvas,
   type EditorDocument,
   type EditorStateSnapshot,
+  type EditorTool,
 } from "@/libs/editorSchema";
+
+export type CreateSidebarTab = "page" | "image" | "background" | "text" | "effects" | "layers";
 
 const createItemId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -118,21 +121,37 @@ export const useCreateEditorState = () => {
       createEditorCanvas(DEFAULT_CANVAS_ID, DEFAULT_ASPECT_RATIO),
     ),
   );
+  const [activeTool, setActiveTool] = useState<EditorTool>("select");
+  const [paintColor, setPaintColor] = useState(
+    state.canvases[0]?.document.bg.fill ?? "#ffffff",
+  );
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<CreateSidebarTab>("page");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const updateState = (updater: (current: EditorStateSnapshot) => EditorStateSnapshot) =>
     setState((current) => updater(current));
 
   const activeCanvas = useMemo(() => getActiveCanvas(state), [state]);
 
+  useEffect(() => {
+    const nextPaintColor = normalizeHexColor(activeCanvas.document.bg.fill);
+
+    setPaintColor((current) => (current === nextPaintColor ? current : nextPaintColor));
+  }, [activeCanvas.document.bg.fill, activeCanvas.id]);
+
   const setActiveCanvas = (canvasId: string) =>
-    updateState((current) =>
-      current.canvases.some((canvas) => canvas.id === canvasId)
-        ? {
-            ...current,
-            activeCanvasId: canvasId,
-          }
-        : current,
-    );
+    updateState((current) => {
+      if (!current.canvases.some((canvas) => canvas.id === canvasId)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        activeCanvasId: canvasId,
+      };
+    });
 
   const addCanvas = () =>
     updateState((current) => {
@@ -201,17 +220,21 @@ export const useCreateEditorState = () => {
     );
 
   const setBackgroundFill = (fill: string, canvasId = state.activeCanvasId) =>
-    updateState((current) =>
-      updateCanvasById(current, canvasId, (canvas) => ({
+    updateState((current) => {
+      const normalizedFill = normalizeHexColor(fill);
+
+      const nextState = updateCanvasById(current, canvasId, (canvas) => ({
         ...canvas,
         document: {
           ...cloneEditorDocument(canvas.document),
           bg: {
-            fill: normalizeHexColor(fill),
+            fill: normalizedFill,
           },
         },
-      })),
-    );
+      }));
+
+      return nextState;
+    });
 
   const addItem = (
     canvasId: string,
@@ -226,24 +249,53 @@ export const useCreateEditorState = () => {
     );
 
   const replaceDocument = (canvasId: string, document: EditorDocument) =>
+    updateState((current) => {
+      const nextState = updateCanvasById(current, canvasId, (canvas) => ({
+        ...canvas,
+        document: cloneEditorDocument(document),
+      }));
+
+      return nextState;
+    });
+
+  const clearCanvas = (canvasId = state.activeCanvasId) =>
     updateState((current) =>
       updateCanvasById(current, canvasId, (canvas) => ({
         ...canvas,
-        document: cloneEditorDocument(document),
+        document: {
+          ...cloneEditorDocument(canvas.document),
+          items: [],
+        },
       })),
     );
+
+  const setSidebarWidthClamped = (nextWidth: number) =>
+    setSidebarWidth(Math.min(560, Math.max(280, nextWidth)));
 
   return {
     activeCanvas,
     activeCanvasId: state.activeCanvasId,
+    activeSidebarTab,
+    activeTool,
     canvases: state.canvases,
+    clearCanvas,
+    isPreviewMode,
+    isSidebarCollapsed,
+    paintColor,
     addCanvas,
     addItem,
     removeCanvas,
     replaceCanvases,
     replaceDocument,
     setActiveCanvas,
+    setActiveSidebarTab,
+    setActiveTool,
     setBackgroundFill,
+    setIsPreviewMode,
+    setIsSidebarCollapsed,
+    setPaintColor,
+    setSidebarWidth: setSidebarWidthClamped,
     setRatio,
+    sidebarWidth,
   };
 };

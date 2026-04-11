@@ -11,6 +11,7 @@ import {
   type AspectRatioPreset,
   type EditorTool,
 } from "@/libs/editorSchema";
+import { useRouter } from "@/pages/Router";
 
 interface CreateToolbarProps {
   aspectRatio: AspectRatioPreset;
@@ -42,6 +43,7 @@ export const CreateToolbar = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const { setRoute } = useRouter();
 
   useEffect(() => {
     setFocusIndex(Math.max(ASPECT_RATIO_PRESETS.indexOf(aspectRatio), 0));
@@ -103,6 +105,9 @@ export const CreateToolbar = ({
     <section className="relative z-30 shrink-0 border-b border-border-color bg-bg/95 px-5 py-3 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
+          <button className="" onClick={() => setRoute("/")}>
+            <Icon icon="solar:home-2-broken"></Icon>
+          </button>
           <div className="relative" ref={menuRef}>
             <button
               ref={buttonRef}

@@ -18,10 +18,12 @@ export const ThemeButton = () => {
     <button
       type="button"
       onClick={() => setTheme(nextTheme)}
-      aria-label={`Switch to ${nextTheme} mode`}
-      className="gap-2 rounded-full border border-border-color bg-bg/80 px-2 py-2 text-title-color transition hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent-light/40"
+      className="rounded-lg border border-border-color px-2 py-2 text-title-color transition hover:border-accent hover:bg-accent-light"
     >
-      <Icon icon={darkMode ? "solar:sun-2-bold" : "solar:moon-stars-bold"} />
+      <Icon
+        icon={!darkMode ? "solar:sun-2-bold" : "solar:moon-stars-bold"}
+        className="text-xl"
+      />
     </button>
   );
 };

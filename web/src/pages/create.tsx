@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Canvas } from "@/Components/panels/Canvas";
-import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
 import { EffectsMenu } from "@/Components/panels/EffectsMenu";
 import { useCreateEditorState } from "@/hooks/useCreateEditorState";
 import { type EditorTool } from "@/libs/editorSchema";
@@ -10,9 +9,7 @@ export const CreateRoute = () => {
     activeCanvas,
     activeCanvasId,
     canvases,
-    addCanvas,
     setActiveCanvas,
-    setRatio,
     setBackgroundFill,
     addItem,
     removeCanvas,
@@ -27,47 +24,36 @@ export const CreateRoute = () => {
   }, [activeCanvas.document.bg.fill]);
 
   return (
-    <div className="flex h-full w-full min-h-0 flex-col">
-      <CreateToolbar
-        aspectRatio={activeCanvas.ratio}
+    <div className="flex min-h-0 flex-1">
+      <EffectsMenu
+        activeCanvasId={activeCanvasId}
         activeTool={activeTool}
+        canvases={canvases}
         paintColor={paintColor}
-        onAspectRatioChange={setRatio}
-        onAddCanvas={addCanvas}
+        onCanvasSelect={setActiveCanvas}
         onActiveToolChange={setActiveTool}
+        onPaintColorChange={setPaintColor}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <EffectsMenu
-          activeCanvasId={activeCanvasId}
-          activeTool={activeTool}
-          canvases={canvases}
-          paintColor={paintColor}
-          onCanvasSelect={setActiveCanvas}
-          onActiveToolChange={setActiveTool}
-          onPaintColorChange={setPaintColor}
-        />
-
-        <Canvas
-          activeCanvasId={activeCanvasId}
-          activeTool={activeTool}
-          canvases={canvases}
-          paintColor={paintColor}
-          onActivateCanvas={setActiveCanvas}
-          onDropAsset={(canvasId, payload, point) => {
-            setActiveCanvas(canvasId);
-            addItem(canvasId, payload, point);
-            setActiveTool("select");
-          }}
-          onApplyPaint={(canvasId, color) => {
-            setActiveCanvas(canvasId);
-            setBackgroundFill(color, canvasId);
-          }}
-          onCanvasesChange={replaceCanvases}
-          onDeleteCanvas={removeCanvas}
-          onDocumentChange={replaceDocument}
-        />
-      </div>
+      <Canvas
+        activeCanvasId={activeCanvasId}
+        activeTool={activeTool}
+        canvases={canvases}
+        paintColor={paintColor}
+        onActivateCanvas={setActiveCanvas}
+        onDropAsset={(canvasId, payload, point) => {
+          setActiveCanvas(canvasId);
+          addItem(canvasId, payload, point);
+          setActiveTool("select");
+        }}
+        onApplyPaint={(canvasId, color) => {
+          setActiveCanvas(canvasId);
+          setBackgroundFill(color, canvasId);
+        }}
+        onCanvasesChange={replaceCanvases}
+        onDeleteCanvas={removeCanvas}
+        onDocumentChange={replaceDocument}
+      />
     </div>
   );
 };

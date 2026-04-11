@@ -42,8 +42,7 @@
 
 @theme {
     --font-main: 'Lato', sans-serif;
-    --font-styled: 'Raleway Variable', monospace;
-    --font-comic: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive;
+    --font-styled: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive;
 
     --color-bg: var(--bg-color);
     --color-title-color: var(--text-heading);

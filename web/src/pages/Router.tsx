@@ -6,6 +6,7 @@ import { create } from "zustand";
 
 import { TopPanel } from "@/Components/panels/TopPanel";
 import { Navbar } from "@/Components/main/Navbar";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface useRouter {
   route: RoutePath;
@@ -29,6 +30,7 @@ export const useRouter = create<useRouter>((set) => ({
 
 export const Router = () => {
   const { route } = useRouter();
+  const initializeAuth = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
     const handler = () => {
@@ -41,6 +43,10 @@ export const Router = () => {
 
     return () => window.removeEventListener("popstate", handler);
   }, []);
+
+  useEffect(() => {
+    void initializeAuth();
+  }, [initializeAuth]);
 
   return (
     <div className="flex flex-col">

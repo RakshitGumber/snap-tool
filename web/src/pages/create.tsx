@@ -2,8 +2,8 @@ import { TopPanel } from "@/Components/panels/TopPanel";
 import { Canvas } from "@/Components/panels/Canvas";
 import { CreateSidebar } from "@/Components/panels/EffectsMenu";
 import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
-import { useAuth } from "@/providers/AuthProvider";
 import { useCreateEditorState } from "@/hooks/useCreateEditorState";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export const CreateRoute = () => {
   const {
@@ -31,7 +31,7 @@ export const CreateRoute = () => {
     replaceCanvases,
     replaceDocument,
   } = useCreateEditorState();
-  const { isLoading, session } = useAuth();
+  const { isLoading, session } = useAuthStore();
 
   const sessionLabel = isLoading
     ? "Session loading"

@@ -57,6 +57,8 @@ const app = new Elysia()
   )
   .listen(process.env.PORT);
 
+export type App = typeof app;
+
 console.log(
   `Server started at http://${app.server?.hostname}:${app.server?.port}`,
 );

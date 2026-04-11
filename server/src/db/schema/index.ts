@@ -1,9 +1,5 @@
-import { accounts, authSchema, sessions, users, verifications } from "./auth";
-import { postRelations, posts } from "./posts";
+import * as auth from "./auth";
 
 export const schema = {
-  ...authSchema,
-  posts,
+  ...auth,
 } as const;
-
-export { accounts, authSchema, postRelations, posts, sessions, users, verifications };

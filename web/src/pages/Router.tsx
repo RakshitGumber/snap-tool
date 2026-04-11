@@ -1,81 +1,126 @@
-/* eslint-disable react-refresh/only-export-components */
-import { CreateRoute } from "@/pages/create";
-import { RootRoute } from "@/pages/root";
-import { useEffect, type JSX, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { create } from "zustand";
 
-import { TopPanel } from "@/Components/panels/TopPanel";
-import { Navbar } from "@/Components/main/Navbar";
+import { CreateRoute } from "@/pages/create";
+import { RootRoute } from "@/pages/root";
+
 import { useAuthStore } from "@/stores/useAuthStore";
 
-interface useRouter {
-  route: RoutePath;
-  setRoute: (path: RoutePath) => void;
+interface RouteConfig {
+  path: string;
+  element: ReactNode;
+  isProtected?: boolean;
 }
 
-export type RoutePath = "/" | "/create";
+const ROUTES: RouteConfig[] = [
+  { path: "/", element: <RootRoute /> },
+  {
+    path: "/create",
+    element: <CreateRoute />,
+    isProtected: true,
+  },
+];
 
-const directory: Record<RoutePath, JSX.Element> = {
-  "/": <RootRoute />,
-  "/create": <CreateRoute />,
-};
+interface useRouterState {
+  route: string;
+  setRoute: (path: string) => void;
+}
 
-export const useRouter = create<useRouter>((set) => ({
-  route: window.location.pathname as RoutePath,
+export const useRouter = create<useRouterState>((set) => ({
+  route: window.location.pathname,
   setRoute: (path) => {
     window.history.pushState({}, "", path);
     set({ route: path });
   },
 }));
 
+const matchRoute = (currentPath: string, routeDef: string): boolean => {
+  if (currentPath === routeDef) return true;
+
+  // Handle wildcards (e.g., "/settings/*")
+  if (routeDef.endsWith("/*")) {
+    const base = routeDef.slice(0, -2);
+    return currentPath.startsWith(base);
+  }
+
+  // Handle params (e.g., "/user/:id")
+  const currentSegments = currentPath.split("/").filter(Boolean);
+  const routeSegments = routeDef.split("/").filter(Boolean);
+
+  if (currentSegments.length !== routeSegments.length) return false;
+
+  return routeSegments.every(
+    (segment, i) => segment.startsWith(":") || segment === currentSegments[i],
+  );
+};
+
 export const Router = () => {
-  const { route } = useRouter();
-  const initializeAuth = useAuthStore((state) => state.initialize);
+  const { route, setRoute } = useRouter();
+
+  const { session, isLoading } = useAuthStore((state) => state);
 
   useEffect(() => {
-    const handler = () => {
-      useRouter.setState({
-        route: window.location.pathname as RoutePath,
-      });
-    };
-
-    window.addEventListener("popstate", handler);
-
-    return () => window.removeEventListener("popstate", handler);
+    const handlePopState = () =>
+      useRouter.setState({ route: window.location.pathname });
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  useEffect(() => {
-    void initializeAuth();
-  }, [initializeAuth]);
-
-  return (
-    <div className="flex flex-col">
-      {route === "/" ? (
-        <TopPanel>
-          <Navbar />
-        </TopPanel>
-      ) : null}
-      <main>{directory[route]}</main>
-    </div>
+  const activeRoute = useMemo(
+    () => ROUTES.find((r) => matchRoute(route, r.path)),
+    [route],
   );
+
+  useEffect(() => {
+    if (activeRoute?.isProtected && !isLoading && !session) {
+      // User is not authenticated, redirect to home/login
+      setRoute("/");
+    }
+  }, [activeRoute, isLoading, session, setRoute]);
+
+  if (!activeRoute) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <h1>404 - Page Not Found</h1>
+        <Link to="/" className="ml-4 text-blue-500 underline">
+          Go Home
+        </Link>
+      </div>
+    );
+  }
+
+  if (activeRoute.isProtected && isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
+
+  return <main className="flex flex-col">{activeRoute.element}</main>;
 };
 
 export const Link = ({
   to,
   children,
   className,
-  type = "button",
 }: {
-  to: RoutePath;
-  children: ReactNode;
+  to: string;
+  children?: ReactNode;
   className?: string;
-  type?: "button" | "submit" | "reset";
 }) => {
-  const { setRoute } = useRouter();
+  const setRoute = useRouter((state) => state.setRoute);
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.ctrlKey || e.metaKey || e.button !== 0) return;
+
+    e.preventDefault();
+    setRoute(to);
+  };
 
   return (
-    <button className={className} onClick={() => setRoute(to)} type={type}>
+    <a href={to} onClick={handleClick} className={className}>
       {children}
-    </button>
+    </a>
   );
 };

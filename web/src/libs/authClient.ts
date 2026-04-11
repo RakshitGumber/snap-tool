@@ -1,7 +1,8 @@
 export interface AuthUser {
-  id?: string;
+  id: string;
   name?: string | null;
-  email?: string | null;
+  email: string;
+  emailVerified: boolean;
   image?: string | null;
 }
 
@@ -14,76 +15,66 @@ export interface AuthCredentials {
   email?: string;
   password?: string;
   provider?: string;
+  name?: string;
 }
-
-export interface AuthClientSurface {
-  baseUrl: string;
-  getSession: () => Promise<AuthSession | null>;
-  signIn: (credentials?: AuthCredentials) => Promise<AuthSession | null>;
-  signOut: () => Promise<void>;
-}
-
-const safeReadJson = async <T,>(response: Response): Promise<T | null> => {
-  if (!response.ok) {
-    return null;
-  }
-
-  try {
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-};
 
 const getDefaultAuthBaseUrl = () => {
   const envBaseUrl = import.meta.env.VITE_AUTH_BASE_URL;
-
   return typeof envBaseUrl === "string" && envBaseUrl.trim().length > 0
     ? envBaseUrl.trim()
     : "/api/auth";
 };
 
-export const createAuthClient = (baseUrl = getDefaultAuthBaseUrl()): AuthClientSurface => {
+export const createAuthClient = (baseUrl = getDefaultAuthBaseUrl()) => {
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+
+  const apiCall = async <T>(
+    endpoint: string,
+    method: "GET" | "POST" = "GET",
+    body?: unknown,
+  ): Promise<T | null> => {
+    try {
+      const response = await fetch(`${normalizedBaseUrl}${endpoint}`, {
+        method,
+        credentials: "include",
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      if (!response.ok) return null;
+
+      if (endpoint === "/sign-out") return null;
+
+      return (await response.json()) as T;
+    } catch {
+      return null;
+    }
+  };
 
   return {
     baseUrl: normalizedBaseUrl,
-    async getSession() {
-      try {
-        const response = await fetch(`${normalizedBaseUrl}/session`, {
-          credentials: "include",
-        });
 
-        return safeReadJson<AuthSession>(response);
-      } catch {
-        return null;
-      }
-    },
-    async signIn(credentials) {
-      try {
-        const response = await fetch(`${normalizedBaseUrl}/sign-in`, {
-          body: JSON.stringify(credentials ?? {}),
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        });
+    getSession: () => apiCall<AuthSession>("/session"),
 
-        return safeReadJson<AuthSession>(response);
-      } catch {
-        return null;
-      }
+    signIn: (credentials?: AuthCredentials) =>
+      apiCall<AuthSession>("/sign-in", "POST", credentials ?? {}),
+
+    signUp: (credentials?: AuthCredentials) =>
+      apiCall<AuthSession>("/sign-up", "POST", credentials ?? {}),
+
+    signOut: async () => {
+      await apiCall("/sign-out", "POST");
     },
-    async signOut() {
-      try {
-        await fetch(`${normalizedBaseUrl}/sign-out`, {
-          credentials: "include",
-          method: "POST",
-        });
-      } catch {
-        return;
-      }
+
+    // --- Email Verification Endpoints (Standard Better Auth Flow) ---
+
+    sendVerificationEmail: async (email: string) => {
+      await apiCall("/send-verification-email", "POST", { email });
+    },
+
+    verifyEmail: async (token: string) => {
+      // Sends the token from the URL back to the server to verify the user
+      return apiCall<AuthSession>("/verify-email", "POST", { token });
     },
   };
 };

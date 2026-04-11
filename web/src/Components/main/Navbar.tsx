@@ -7,12 +7,12 @@ export const Navbar = () => {
 
   return (
     <TopPanel>
-      <nav className="flex h-full w-full items-center justify-between p-3">
+      <nav className="max-w-7xl mx-auto flex h-full w-full items-center justify-between p-3">
         <button
           className="hover:bg-text-color/20 rounded-lg flex items-center py-2 px-4 cursor-pointer"
           onClick={() => setRoute("/")}
         >
-          <h1 className="font-styled text-lg text-title-color font-semibold tracking-wide uppercase select-none">
+          <h1 className="font-styled text-2xl text-title-color font-semibold tracking-wide uppercase select-none">
             Single Filter
           </h1>
         </button>

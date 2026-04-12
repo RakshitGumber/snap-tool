@@ -2,63 +2,32 @@ import cors from "@elysiajs/cors";
 import { Elysia, t } from "elysia";
 
 import { auth } from "@/lib/auth";
-import { schema } from "./db/schema";
 
-import { createSelectSchema } from "drizzle-typebox";
-
-const UserSchema = createSelectSchema(schema.user);
+import { splitOrigins } from "./config/helpers";
 
 const app = new Elysia()
   .use(
     cors({
-      origin: process.env.WEB_APP_ORIGIN,
+      origin: splitOrigins(process.env.FRONTEND_URL, ["http://localhost:5173"]),
       credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     }),
   )
-  .all("/api/auth/*", async (ctx) => {
-    return auth.handler(ctx.request);
+  .onError(({ code, error, set }) => {
+    if (code === "NOT_FOUND") {
+      set.status = 404;
+      return { ok: false, message: "Not Found" };
+    }
+
+    console.error(error);
+    set.status = 500;
+    return { ok: false, message: "Internal Server Error" };
   })
-  .derive(async (ctx) => {
-    const session = await auth.api.getSession({
-      headers: ctx.request.headers,
-    });
-    return {
-      user: session?.user,
-      session: session?.session,
-    };
-  })
-  .get("/", () => "Server is working")
-  .get(
-    "/api/profile",
-    (ctx) => {
-      if (!ctx.user) {
-        ctx.set.status = 401;
-        return { error: "Unauthorized" };
-      }
-      return {
-        message: "Authenticated via Eden Treaty!",
-        user: {
-          ...ctx.user,
-          image: ctx.user.image ?? null,
-        },
-      };
-    },
-    {
-      response: {
-        200: t.Object({
-          message: t.String(),
-          user: UserSchema,
-        }),
-        401: t.Object({
-          error: t.String(),
-        }),
-      },
-    },
-  )
+  .mount(auth.handler)
+  .get("/", () => "Applying multiple filters to call myself single filter")
   .listen(process.env.PORT);
 
 export type App = typeof app;
 
-console.log(
-  `Server started at http://${app.server?.hostname}:${app.server?.port}`,
-);
+console.log(`Server is running at ${app.server?.url}`);

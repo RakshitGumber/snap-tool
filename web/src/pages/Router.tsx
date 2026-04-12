@@ -70,6 +70,7 @@ export const Router = () => {
 
   const session = useAuthStore((state) => state.session);
   const isLoading = useAuthStore((state) => state.isLoading);
+  const refreshSession = useAuthStore((state) => state.refreshSession);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -79,6 +80,10 @@ export const Router = () => {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
 
   const activeRoute = useMemo(
     () => ROUTES.find((r) => matchRoute(route, r.path)),
@@ -109,7 +114,7 @@ export const Router = () => {
     }
   }
 
-  return <main className="flex flex-col">{activeRoute.element}</main>;
+  return <div className="flex flex-col">{activeRoute.element}</div>;
 };
 
 export const Link = ({

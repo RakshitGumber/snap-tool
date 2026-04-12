@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { useKeyboardShortcuts } from "@/hooks/useKeyBindings";
 import {
   createCanvasEditor,
   type CanvasEditor,
   type CanvasViewportState,
 } from "@/libs/Canvas";
+import { CanvasShortcuts } from "@/libs/canvasShorcuts";
 import {
   CANVAS_ASSET_MIME,
   type AssetDragPayload,
@@ -11,6 +13,7 @@ import {
   type EditorTool,
   isAssetDragPayload,
 } from "@/libs/editorSchema";
+import type { ShortcutMap } from "@/types/canvas";
 
 interface CanvasProps {
   activeCanvasId: string;
@@ -51,10 +54,26 @@ const parseDraggedAsset = (event: DragEvent<HTMLDivElement>) => {
 const hasAssetDragData = (event: DragEvent<HTMLDivElement>) =>
   Array.from(event.dataTransfer.types).includes(CANVAS_ASSET_MIME);
 
-const isTypingTarget = (target: EventTarget | null) =>
-  target instanceof HTMLInputElement ||
-  target instanceof HTMLTextAreaElement ||
-  (target instanceof HTMLElement && target.isContentEditable);
+const normalizeShortcutKey = (shortcut: string) =>
+  shortcut
+    .split("+")
+    .map((segment) => {
+      const normalized = segment.trim().toLowerCase();
+
+      return normalized === "period" ? "." : normalized;
+    })
+    .join("+");
+
+const normalizeShortcutMap = (shortcuts: ShortcutMap) =>
+  Object.entries(shortcuts).reduce<ShortcutMap>(
+    (normalized, [shortcut, handler]) => {
+      normalized[normalizeShortcutKey(shortcut)] = handler;
+      return normalized;
+    },
+    {},
+  );
+
+const noop = () => {};
 
 export const Canvas = ({
   activeCanvasId,
@@ -71,10 +90,69 @@ export const Canvas = ({
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<CanvasEditor | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const [isDropActive, setIsDropActive] = useState(false);
   const [viewportState, setViewportState] = useState<CanvasViewportState>({
     canReturnToCanvas: false,
   });
+  const callbackRef = useRef({
+    onActivateCanvas,
+    onApplyPaint,
+    onCanvasesChange,
+    onDeleteCanvas,
+    onDocumentChange,
+    onDropAsset,
+  });
+  const stateRef = useRef({
+    activeCanvasId,
+    activeTool,
+    canvases,
+  });
+  callbackRef.current = {
+    onActivateCanvas,
+    onApplyPaint,
+    onCanvasesChange,
+    onDeleteCanvas,
+    onDocumentChange,
+    onDropAsset,
+  };
+  stateRef.current = {
+    activeCanvasId,
+    activeTool,
+    canvases,
+  };
+  const keyboardShortcuts = useMemo(
+    () =>
+      normalizeShortcutMap(
+        CanvasShortcuts({
+          undo: noop,
+          redo: noop,
+          delete: () => {
+            editorRef.current?.deleteSelection();
+          },
+          save: noop,
+          clear: noop,
+          focus: {
+            this: () => {
+              editorRef.current?.focusActiveCanvas();
+            },
+            next: () => {
+              editorRef.current?.focusCanvasInDirection("right");
+            },
+            prev: () => {
+              editorRef.current?.focusCanvasInDirection("left");
+            },
+            down: () => {
+              editorRef.current?.focusCanvasInDirection("down");
+            },
+            up: () => {
+              editorRef.current?.focusCanvasInDirection("up");
+            },
+          },
+        }),
+      ),
+    [],
+  );
+
+  useKeyboardShortcuts(keyboardShortcuts, isReady);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -86,10 +164,18 @@ export const Canvas = ({
     let disposed = false;
 
     void createCanvasEditor(host, {
-      onActiveCanvasChange: onActivateCanvas,
-      onCanvasesChange,
-      onCanvasDelete: onDeleteCanvas,
-      onDocumentChange,
+      onActiveCanvasChange: (canvasId) =>
+        callbackRef.current.onActivateCanvas(canvasId),
+      onAssetDrop: (canvasId, payload, point) =>
+        callbackRef.current.onDropAsset(canvasId, payload, point),
+      onCanvasesChange: (nextCanvases, nextActiveCanvasId) =>
+        callbackRef.current.onCanvasesChange(nextCanvases, nextActiveCanvasId),
+      onCanvasDelete: (canvasId) =>
+        callbackRef.current.onDeleteCanvas(canvasId),
+      onDocumentChange: (canvasId, document) =>
+        callbackRef.current.onDocumentChange(canvasId, document),
+      onPaintApply: (canvasId, color) =>
+        callbackRef.current.onApplyPaint(canvasId, color),
       onViewportChange: setViewportState,
     }).then((editor) => {
       if (disposed) {
@@ -98,8 +184,13 @@ export const Canvas = ({
       }
 
       editorRef.current = editor;
-      editor.setCanvases(canvases);
-      editor.setActiveCanvasId(activeCanvasId);
+      const initialState = stateRef.current;
+
+      editor.syncState({
+        activeCanvasId: initialState.activeCanvasId,
+        canvases: initialState.canvases,
+        tool: initialState.activeTool,
+      });
       setIsReady(true);
     });
 
@@ -112,77 +203,17 @@ export const Canvas = ({
   }, []);
 
   useEffect(() => {
-    editorRef.current?.setCanvases(canvases);
-  }, [canvases]);
-
-  useEffect(() => {
-    editorRef.current?.setActiveCanvasId(activeCanvasId);
-  }, [activeCanvasId]);
-
-  useEffect(() => {
-    editorRef.current?.setTool(activeTool);
-  }, [activeTool]);
-
-  // useEffect(() => {
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     if (isTypingTarget(event.target)) {
-  //       return;
-  //     }
-
-  //     if (event.key === "Delete" || event.key === "Backspace") {
-  //       event.preventDefault();
-  //       editorRef.current?.deleteSelection();
-  //       return;
-  //     }
-
-  //     if (!(event.ctrlKey || event.metaKey)) {
-  //       return;
-  //     }
-
-  //     if (event.code === "Period" || event.key === ".") {
-  //       event.preventDefault();
-  //       editorRef.current?.focusCanvas(activeCanvasId);
-  //       return;
-  //     }
-
-  //     if (event.code === "ArrowRight") {
-  //       event.preventDefault();
-  //       editorRef.current?.focusCanvasInDirection("right");
-  //       return;
-  //     }
-
-  //     if (event.code === "ArrowLeft") {
-  //       event.preventDefault();
-  //       editorRef.current?.focusCanvasInDirection("left");
-  //       return;
-  //     }
-
-  //     if (event.code === "ArrowDown") {
-  //       event.preventDefault();
-  //       editorRef.current?.focusCanvasInDirection("down");
-  //       return;
-  //     }
-
-  //     if (event.code === "ArrowUp") {
-  //       event.preventDefault();
-  //       editorRef.current?.focusCanvasInDirection("up");
-  //     }
-  //   };
-
-  //   window.addEventListener("keydown", handleKeyDown);
-
-  //   return () => window.removeEventListener("keydown", handleKeyDown);
-  // }, [activeCanvasId]);
+    editorRef.current?.syncState({
+      activeCanvasId,
+      canvases,
+      tool: activeTool,
+    });
+  }, [activeCanvasId, activeTool, canvases]);
 
   return (
     <section className="h-full w-full">
       <div
         className="relative h-full overflow-hidden"
-        onDragEnter={(event) => {
-          if (hasAssetDragData(event)) {
-            setIsDropActive(true);
-          }
-        }}
         onDragOver={(event) => {
           if (!hasAssetDragData(event)) {
             return;
@@ -190,73 +221,49 @@ export const Canvas = ({
 
           event.preventDefault();
           event.dataTransfer.dropEffect = "copy";
-          setIsDropActive(true);
-        }}
-        onDragLeave={(event) => {
-          const nextTarget = event.relatedTarget;
-
-          if (
-            !(nextTarget instanceof Node) ||
-            !event.currentTarget.contains(nextTarget)
-          ) {
-            setIsDropActive(false);
-          }
         }}
         onDrop={(event) => {
-          event.preventDefault();
-          setIsDropActive(false);
-
-          const payload = parseDraggedAsset(event);
-          const target = editorRef.current?.screenToCanvasPoint(
-            event.clientX,
-            event.clientY,
-          );
-
-          if (!payload || !target) {
+          if (!hasAssetDragData(event)) {
             return;
           }
 
-          onActivateCanvas(target.canvasId);
-          onDropAsset(target.canvasId, payload, target.point);
+          event.preventDefault();
+
+          const payload = parseDraggedAsset(event);
+
+          if (!payload) {
+            return;
+          }
+
+          editorRef.current?.dropAssetFromScreenPoint(
+            event.clientX,
+            event.clientY,
+            payload,
+          );
         }}
         onClick={(event) => {
           if (activeTool !== "paintBucket") {
             return;
           }
 
-          const target = editorRef.current?.screenToCanvasPoint(
+          editorRef.current?.paintFromScreenPoint(
             event.clientX,
             event.clientY,
+            paintColor,
           );
-
-          if (!target) {
-            return;
-          }
-
-          onActivateCanvas(target.canvasId);
-          onApplyPaint(target.canvasId, paintColor);
         }}
       >
-        <div ref={hostRef} className="h-full w-full" />
-
-        {!isReady ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-bg/75 backdrop-blur-sm">
-            <p className="font-comic text-sm uppercase tracking-[0.3em] text-secondary-text">
-              Preparing editor
-            </p>
-          </div>
-        ) : null}
-
+        <div ref={hostRef} className="h-screen w-screen" />
         {viewportState.canReturnToCanvas ? (
           <button
             type="button"
-            className="absolute bottom-5 right-5 rounded-full bg-title-color px-4 py-2 text-sm font-semibold text-bg shadow-[0_18px_32px_rgba(15,23,42,0.22)] transition hover:brightness-105"
+            className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-card-bg px-4 py-3 text-sm font-semibold text-text-color"
             onClick={(event) => {
               event.stopPropagation();
-              editorRef.current?.focusCanvas(activeCanvasId);
+              editorRef.current?.focusActiveCanvas();
             }}
           >
-            Recenter canvas
+            Recenter
           </button>
         ) : null}
       </div>

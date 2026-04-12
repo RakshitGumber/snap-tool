@@ -201,7 +201,7 @@ export const CreateSidebar = ({
 
   if (isCollapsed) {
     return (
-      <aside className="hidden lg:flex lg:w-[64px] lg:shrink-0 lg:flex-col lg:border-r lg:border-border-color/70 lg:bg-bg/85 lg:backdrop-blur-xl">
+      <aside className="hidden lg:flex lg:w-16 lg:shrink-0 lg:flex-col lg:border-r lg:border-border-color/70 lg:bg-bg/85 lg:backdrop-blur-xl">
         <button
           type="button"
           className="flex h-14 items-center justify-center border-b border-border-color/70 text-secondary-text transition hover:text-title-color"
@@ -226,7 +226,7 @@ export const CreateSidebar = ({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
-      className="relative flex min-h-0 shrink-0 flex-col border-b border-border-color/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(244,246,255,0.86))] backdrop-blur-xl lg:border-b-0 lg:border-r lg:w-[var(--sidebar-width)]"
+      className="relative flex min-h-0 shrink-0 flex-col border-b border-border-color/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(244,246,255,0.86))] backdrop-blur-xl lg:border-b-0 lg:border-r lg:w-(--sidebar-width)"
     >
       <div className="flex items-start justify-between gap-3 border-b border-border-color/60 px-4 py-4">
         <div>

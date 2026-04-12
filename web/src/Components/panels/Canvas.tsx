@@ -21,7 +21,10 @@ interface CanvasProps {
   onApplyPaint: (canvasId: string, color: string) => void;
   onCanvasesChange: (canvases: EditorCanvas[], activeCanvasId: string) => void;
   onDeleteCanvas: (canvasId: string) => void;
-  onDocumentChange: (canvasId: string, document: EditorCanvas["document"]) => void;
+  onDocumentChange: (
+    canvasId: string,
+    document: EditorCanvas["document"],
+  ) => void;
   onDropAsset: (
     canvasId: string,
     payload: AssetDragPayload,
@@ -172,13 +175,9 @@ export const Canvas = ({
   }, [activeCanvasId]);
 
   return (
-    <section className="min-h-0 flex-1 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9),_transparent_34%),linear-gradient(180deg,rgba(242,244,250,0.95),rgba(236,240,249,0.82))] p-3 sm:p-4 lg:p-5">
+    <section className="h-full w-full">
       <div
-        className={`relative h-full overflow-hidden rounded-[38px] border border-border-color/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,248,252,0.7))] transition ${
-          isDropActive
-            ? "shadow-[0_0_0_3px_rgba(15,23,42,0.08),0_26px_72px_rgba(15,23,42,0.16)]"
-            : "shadow-[0_24px_64px_rgba(15,23,42,0.14),0_1px_0_rgba(255,255,255,0.8)_inset]"
-        }`}
+        className="relative h-full overflow-hidden"
         onDragEnter={(event) => {
           if (hasAssetDragData(event)) {
             setIsDropActive(true);
@@ -196,7 +195,10 @@ export const Canvas = ({
         onDragLeave={(event) => {
           const nextTarget = event.relatedTarget;
 
-          if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          if (
+            !(nextTarget instanceof Node) ||
+            !event.currentTarget.contains(nextTarget)
+          ) {
             setIsDropActive(false);
           }
         }}

@@ -1,4 +1,3 @@
-import { TopPanel } from "@/Components/panels/TopPanel";
 import { Canvas } from "@/Components/panels/Canvas";
 import { CreateSidebar } from "@/Components/panels/EffectsMenu";
 import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
@@ -67,27 +66,25 @@ export const CreateRoute = () => {
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] flex-col overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(255,244,217,0.8),_transparent_30%),linear-gradient(180deg,rgba(244,246,255,1),rgba(239,242,255,0.95))]">
-      <TopPanel>
-        <CreateToolbar
-          aspectRatio={
-            canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ??
-            "1:1"
-          }
-          activeTool={activeTool}
-          isPreviewMode={isPreviewMode}
-          isSidebarCollapsed={isSidebarCollapsed}
-          sessionLabel={sessionLabel}
-          onAspectRatioChange={setRatio}
-          onAddCanvas={addCanvas}
-          onActiveToolChange={setActiveTool}
-          onCleanCanvas={() => clearCanvas(activeCanvasId)}
-          onPreviewToggle={() => setIsPreviewMode((current) => !current)}
-          onShare={() => {
-            void handleShare();
-          }}
-          onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
-        />
-      </TopPanel>
+      <CreateToolbar
+        aspectRatio={
+          canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ??
+          "1:1"
+        }
+        activeTool={activeTool}
+        isPreviewMode={isPreviewMode}
+        isSidebarCollapsed={isSidebarCollapsed}
+        sessionLabel={sessionLabel}
+        onAspectRatioChange={setRatio}
+        onAddCanvas={addCanvas}
+        onActiveToolChange={setActiveTool}
+        onCleanCanvas={() => clearCanvas(activeCanvasId)}
+        onPreviewToggle={() => setIsPreviewMode((current) => !current)}
+        onShare={() => {
+          void handleShare();
+        }}
+        onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
+      />
 
       <main className="flex min-h-0 flex-1 overflow-hidden">
         {!isPreviewMode ? (

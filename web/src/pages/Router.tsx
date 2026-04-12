@@ -1,12 +1,27 @@
 import { useEffect, useMemo, type ReactNode } from "react";
-import { create } from "zustand";
 
-import { RegisterRoute } from "./auth/register";
+import { LoginRoute } from "./user/login";
+import { RegisterRoute } from "./user/register";
 import { CreateRoute } from "./create";
 import { RootRoute } from "./root";
 import { PageNotFound } from "./not-found";
 
 import { useAuthStore } from "@/stores/useAuthStore";
+
+import { create } from "zustand";
+
+interface RouterState {
+  route: string;
+  setRoute: (path: string) => void;
+}
+
+export const useRouter = create<RouterState>((set) => ({
+  route: window.location.pathname,
+  setRoute: (path) => {
+    window.history.pushState({}, "", path);
+    set({ route: path });
+  },
+}));
 
 interface RouteConfig {
   path: string;
@@ -22,23 +37,14 @@ const ROUTES: RouteConfig[] = [
     isProtected: true,
   },
   {
-    path: "/register",
+    path: "/auth/login",
+    element: <LoginRoute />,
+  },
+  {
+    path: "/auth/register",
     element: <RegisterRoute />,
   },
 ];
-
-interface useRouterState {
-  route: string;
-  setRoute: (path: string) => void;
-}
-
-export const useRouter = create<useRouterState>((set) => ({
-  route: window.location.pathname,
-  setRoute: (path) => {
-    window.history.pushState({}, "", path);
-    set({ route: path });
-  },
-}));
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {
   if (currentPath === routeDef) return true;
@@ -79,8 +85,7 @@ export const Router = () => {
 
   useEffect(() => {
     if (activeRoute?.isProtected && !isLoading && !session) {
-      // User is not authenticated, redirect to home/login
-      setRoute("/");
+      setRoute("/auth/login");
     }
   }, [activeRoute, isLoading, session, setRoute]);
 
@@ -97,29 +102,4 @@ export const Router = () => {
   }
 
   return <main className="flex flex-col">{activeRoute.element}</main>;
-};
-
-export const Link = ({
-  to,
-  children,
-  className,
-}: {
-  to: string;
-  children?: ReactNode;
-  className?: string;
-}) => {
-  const setRoute = useRouter((state) => state.setRoute);
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (e.ctrlKey || e.metaKey || e.button !== 0) return;
-
-    e.preventDefault();
-    setRoute(to);
-  };
-
-  return (
-    <a href={to} onClick={handleClick} className={className}>
-      {children}
-    </a>
-  );
 };

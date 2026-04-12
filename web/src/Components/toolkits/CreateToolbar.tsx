@@ -7,7 +7,7 @@ import {
   type AspectRatioPreset,
   type EditorTool,
 } from "@/libs/editorSchema";
-import { useRouter } from "@/pages/Router";
+import { useRouter } from "@/pages/useRouter";
 import { ThemeButton } from "../ui/ThemeButton";
 
 interface CreateToolbarProps {

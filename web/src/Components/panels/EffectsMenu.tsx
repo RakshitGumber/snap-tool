@@ -12,7 +12,7 @@ import {
   type EditorTool,
   type EffectAsset,
 } from "@/libs/editorSchema";
-import type { CreateSidebarTab } from "@/hooks/useCreateEditorState";
+import type { CreateSidebarTab } from "@/stores/useCreateEditorStore";
 
 interface EffectsMenuProps {
   activeCanvasId: string;

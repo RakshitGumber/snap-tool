@@ -1,8 +1,10 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 import { create } from "zustand";
 
-import { CreateRoute } from "@/pages/create";
-import { RootRoute } from "@/pages/root";
+import { RegisterRoute } from "./auth/register";
+import { CreateRoute } from "./create";
+import { RootRoute } from "./root";
+import { PageNotFound } from "./not-found";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -18,6 +20,10 @@ const ROUTES: RouteConfig[] = [
     path: "/create",
     element: <CreateRoute />,
     isProtected: true,
+  },
+  {
+    path: "/register",
+    element: <RegisterRoute />,
   },
 ];
 
@@ -79,14 +85,7 @@ export const Router = () => {
   }, [activeRoute, isLoading, session, setRoute]);
 
   if (!activeRoute) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <h1>404 - Page Not Found</h1>
-        <Link to="/" className="ml-4 text-blue-500 underline">
-          Go Home
-        </Link>
-      </div>
-    );
+    return <PageNotFound />;
   }
 
   if (activeRoute.isProtected && isLoading) {

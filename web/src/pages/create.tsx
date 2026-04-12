@@ -35,7 +35,7 @@ export const CreateRoute = () => {
 
   const sessionLabel = isLoading
     ? "Session loading"
-    : session?.user?.email ?? session?.user?.name ?? "Guest session";
+    : (session?.user?.email ?? session?.user?.name ?? "Guest session");
 
   const handleShare = async () => {
     const snapshot = {
@@ -69,7 +69,10 @@ export const CreateRoute = () => {
     <div className="flex min-h-[calc(100vh-0px)] flex-col overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(255,244,217,0.8),_transparent_30%),linear-gradient(180deg,rgba(244,246,255,1),rgba(239,242,255,0.95))]">
       <TopPanel>
         <CreateToolbar
-          aspectRatio={canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ?? "1:1"}
+          aspectRatio={
+            canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ??
+            "1:1"
+          }
           activeTool={activeTool}
           isPreviewMode={isPreviewMode}
           isSidebarCollapsed={isSidebarCollapsed}
@@ -102,7 +105,9 @@ export const CreateRoute = () => {
             onCanvasSelect={setActiveCanvas}
             onPaintColorChange={setPaintColor}
             onSidebarWidthChange={setSidebarWidth}
-            onToggleCollapsed={() => setIsSidebarCollapsed((current) => !current)}
+            onToggleCollapsed={() =>
+              setIsSidebarCollapsed((current) => !current)
+            }
           />
         ) : null}
 

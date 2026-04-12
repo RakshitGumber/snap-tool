@@ -123,56 +123,56 @@ export const Canvas = ({
     editorRef.current?.setTool(activeTool);
   }, [activeTool]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) {
-        return;
-      }
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     if (isTypingTarget(event.target)) {
+  //       return;
+  //     }
 
-      if (event.key === "Delete" || event.key === "Backspace") {
-        event.preventDefault();
-        editorRef.current?.deleteSelection();
-        return;
-      }
+  //     if (event.key === "Delete" || event.key === "Backspace") {
+  //       event.preventDefault();
+  //       editorRef.current?.deleteSelection();
+  //       return;
+  //     }
 
-      if (!(event.ctrlKey || event.metaKey)) {
-        return;
-      }
+  //     if (!(event.ctrlKey || event.metaKey)) {
+  //       return;
+  //     }
 
-      if (event.code === "Period" || event.key === ".") {
-        event.preventDefault();
-        editorRef.current?.focusCanvas(activeCanvasId);
-        return;
-      }
+  //     if (event.code === "Period" || event.key === ".") {
+  //       event.preventDefault();
+  //       editorRef.current?.focusCanvas(activeCanvasId);
+  //       return;
+  //     }
 
-      if (event.code === "ArrowRight") {
-        event.preventDefault();
-        editorRef.current?.focusCanvasInDirection("right");
-        return;
-      }
+  //     if (event.code === "ArrowRight") {
+  //       event.preventDefault();
+  //       editorRef.current?.focusCanvasInDirection("right");
+  //       return;
+  //     }
 
-      if (event.code === "ArrowLeft") {
-        event.preventDefault();
-        editorRef.current?.focusCanvasInDirection("left");
-        return;
-      }
+  //     if (event.code === "ArrowLeft") {
+  //       event.preventDefault();
+  //       editorRef.current?.focusCanvasInDirection("left");
+  //       return;
+  //     }
 
-      if (event.code === "ArrowDown") {
-        event.preventDefault();
-        editorRef.current?.focusCanvasInDirection("down");
-        return;
-      }
+  //     if (event.code === "ArrowDown") {
+  //       event.preventDefault();
+  //       editorRef.current?.focusCanvasInDirection("down");
+  //       return;
+  //     }
 
-      if (event.code === "ArrowUp") {
-        event.preventDefault();
-        editorRef.current?.focusCanvasInDirection("up");
-      }
-    };
+  //     if (event.code === "ArrowUp") {
+  //       event.preventDefault();
+  //       editorRef.current?.focusCanvasInDirection("up");
+  //     }
+  //   };
 
-    window.addEventListener("keydown", handleKeyDown);
+  //   window.addEventListener("keydown", handleKeyDown);
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeCanvasId]);
+  //   return () => window.removeEventListener("keydown", handleKeyDown);
+  // }, [activeCanvasId]);
 
   return (
     <section className="h-full w-full">

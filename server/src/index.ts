@@ -14,6 +14,7 @@ const app = new Elysia()
       allowedHeaders: ["Content-Type", "Authorization"],
     }),
   )
+  .mount(auth.handler)
   .onError(({ code, error, set }) => {
     if (code === "NOT_FOUND") {
       set.status = 404;
@@ -24,8 +25,7 @@ const app = new Elysia()
     set.status = 500;
     return { ok: false, message: "Internal Server Error" };
   })
-  .mount(auth.handler)
-  .get("/", () => "Applying multiple filters to call myself single filter")
+  .get("/api", () => "Applying multiple filters to call myself single filter")
   .listen(process.env.PORT);
 
 export type App = typeof app;

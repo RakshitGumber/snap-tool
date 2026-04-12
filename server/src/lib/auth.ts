@@ -8,7 +8,7 @@ import { splitOrigins } from "@/config/helpers";
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
-    schema: schema,
+    schema: { ...schema },
   }),
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,

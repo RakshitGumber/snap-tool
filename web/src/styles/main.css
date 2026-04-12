@@ -22,6 +22,7 @@
 
 :root {
     --bg-color: #F4F6FF;
+    --bg-card-color: #ffffff;
     --text-heading: #121217;
     --text-color: #4B4D63;
     --accent-color: #37af87;
@@ -32,6 +33,7 @@
 
 .dark {
     --bg-color: #1a1a1e;
+    --bg-card-color: #2f2f3c;
     --text-heading: #F4F6FF;
     --text-color: #8A8CA8;
     --accent-color: #68dc98;
@@ -45,6 +47,7 @@
     --font-styled: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive;
 
     --color-bg: var(--bg-color);
+    --color-card-bg: var(--bg-card-color);
     --color-title-color: var(--text-heading);
     --color-text-color: var(--text-color);
     --color-accent: var(--accent-color);

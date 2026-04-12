@@ -9,7 +9,7 @@ export const Navbar = () => {
   const { session } = useAuthStore();
 
   return (
-    <nav className="max-w-7xl mx-auto flex w-full items-center justify-between p-3">
+    <nav className="bg-card-bg border-b-2 border-accent dark:border-accent/70 max-w-7xl mx-auto flex w-full items-center justify-between p-3">
       <Link
         className="hover:bg-text-color/20 rounded-lg flex items-center py-2 px-4 cursor-pointer"
         to="/"

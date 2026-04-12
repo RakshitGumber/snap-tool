@@ -1,6 +1,6 @@
 import type { CanvasActions, ShortcutMap } from "@/types/canvas";
 
-export const buildCanvasShortcuts = (actions: CanvasActions): ShortcutMap => {
+export const CanvasShortcuts = (actions: CanvasActions): ShortcutMap => {
   return {
     "ctrl+z": actions.undo,
     "ctrl+shift+z": actions.redo,
@@ -9,5 +9,10 @@ export const buildCanvasShortcuts = (actions: CanvasActions): ShortcutMap => {
     backspace: actions.delete,
     "ctrl+s": actions.save,
     "ctrl+x": actions.clear,
+    "ctrl+Period": actions.focus.this,
+    "ctrl+ArrowRight": actions.focus.next,
+    "ctrl+ArrowLeft": actions.focus.prev,
+    "ctrl+ArrowDown": actions.focus.down,
+    "ctrl+ArrowUp": actions.focus.up,
   };
 };

@@ -27,10 +27,7 @@ const app = new Elysia()
       session: session?.session,
     };
   })
-  .get(
-    "/",
-    () => "We had penetrated in your web app and will distroy everything.",
-  )
+  .get("/", () => "Server is working")
   .get(
     "/api/profile",
     (ctx) => {

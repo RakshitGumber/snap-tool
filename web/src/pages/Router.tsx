@@ -1,4 +1,10 @@
-import { useEffect, useMemo, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  type ReactNode,
+  type AnchorHTMLAttributes,
+} from "react";
+import { create } from "zustand";
 
 import { LoginRoute } from "./user/login";
 import { RegisterRoute } from "./user/register";
@@ -8,11 +14,19 @@ import { PageNotFound } from "./not-found";
 
 import { useAuthStore } from "@/stores/useAuthStore";
 
-import { create } from "zustand";
-
 interface RouterState {
   route: string;
   setRoute: (path: string) => void;
+}
+
+interface RouteConfig {
+  path: string;
+  element: ReactNode;
+  isProtected?: boolean;
+}
+
+interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  to: string;
 }
 
 export const useRouter = create<RouterState>((set) => ({
@@ -23,27 +37,11 @@ export const useRouter = create<RouterState>((set) => ({
   },
 }));
 
-interface RouteConfig {
-  path: string;
-  element: ReactNode;
-  isProtected?: boolean;
-}
-
 const ROUTES: RouteConfig[] = [
   { path: "/", element: <RootRoute /> },
-  {
-    path: "/create",
-    element: <CreateRoute />,
-    isProtected: true,
-  },
-  {
-    path: "/auth/login",
-    element: <LoginRoute />,
-  },
-  {
-    path: "/auth/register",
-    element: <RegisterRoute />,
-  },
+  { path: "/create", element: <CreateRoute />, isProtected: true },
+  { path: "/auth/login", element: <LoginRoute /> },
+  { path: "/auth/register", element: <RegisterRoute /> },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {
@@ -67,13 +65,17 @@ const matchRoute = (currentPath: string, routeDef: string): boolean => {
 };
 
 export const Router = () => {
-  const { route, setRoute } = useRouter();
+  const route = useRouter((state) => state.route);
+  const setRoute = useRouter((state) => state.setRoute);
 
-  const { session, isLoading } = useAuthStore((state) => state);
+  const session = useAuthStore((state) => state.session);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
-    const handlePopState = () =>
+    const handlePopState = () => {
       useRouter.setState({ route: window.location.pathname });
+    };
+
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
@@ -87,19 +89,50 @@ export const Router = () => {
     if (activeRoute?.isProtected && !isLoading && !session) {
       setRoute("/auth/login");
     }
-  }, [activeRoute, isLoading, session, setRoute]);
+  }, [activeRoute?.isProtected, isLoading, session, setRoute]);
 
   if (!activeRoute) {
     return <PageNotFound />;
   }
 
-  if (activeRoute.isProtected && isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+  if (activeRoute.isProtected) {
+    if (isLoading) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+          Loading...
+        </div>
+      );
+    }
+
+    if (!session) {
+      return null;
+    }
   }
 
   return <main className="flex flex-col">{activeRoute.element}</main>;
+};
+
+export const Link = ({
+  to,
+  children,
+  className,
+  onClick,
+  ...props
+}: LinkProps) => {
+  const setRoute = useRouter((state) => state.setRoute);
+
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (onClick) onClick(event);
+
+    if (event.ctrlKey || event.metaKey || event.button !== 0) return;
+
+    event.preventDefault();
+    setRoute(to);
+  };
+
+  return (
+    <a href={to} onClick={handleClick} className={className} {...props}>
+      {children}
+    </a>
+  );
 };

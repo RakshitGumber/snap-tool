@@ -60,7 +60,6 @@ export const useAuthStore = create<AuthStoreState>()(
           return null;
         }
 
-        // Fetch the active session after successful login
         const { data: sessionData } = await authClient.getSession();
 
         set({ session: sessionData, isLoading: false });

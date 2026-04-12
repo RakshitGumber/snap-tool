@@ -1,5 +1,10 @@
 import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { motion } from "framer-motion";
 import {
   ASPECT_RATIO_DIMENSIONS,
@@ -7,7 +12,7 @@ import {
   type AspectRatioPreset,
   type EditorTool,
 } from "@/libs/editorSchema";
-import { useRouter } from "@/pages/useRouter";
+import { useRouter } from "@/pages/Router";
 import { ThemeButton } from "../ui/ThemeButton";
 
 interface CreateToolbarProps {
@@ -104,7 +109,8 @@ export const CreateToolbar = ({
       event.preventDefault();
       setFocusIndex(
         (current) =>
-          (current - 1 + ASPECT_RATIO_PRESETS.length) % ASPECT_RATIO_PRESETS.length,
+          (current - 1 + ASPECT_RATIO_PRESETS.length) %
+          ASPECT_RATIO_PRESETS.length,
       );
     }
   };
@@ -146,7 +152,10 @@ export const CreateToolbar = ({
               className="flex items-center gap-2 rounded-full border border-border-color/80 bg-bg px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-title-color transition hover:border-title-color/40"
               onClick={() => setIsOpen((open) => !open)}
             >
-              <Icon icon="solar:crop-minimalistic-broken" className="text-base" />
+              <Icon
+                icon="solar:crop-minimalistic-broken"
+                className="text-base"
+              />
               Canvas
               <span className="rounded-full bg-accent-light px-2 py-1 text-[10px] text-title-color">
                 {ratioLabels[aspectRatio]}
@@ -183,7 +192,11 @@ export const CreateToolbar = ({
                       }}
                     >
                       <span className="font-medium">{ratioLabels[ratio]}</span>
-                      <span className={selected ? "text-bg/70" : "text-secondary-text"}>
+                      <span
+                        className={
+                          selected ? "text-bg/70" : "text-secondary-text"
+                        }
+                      >
                         {ASPECT_RATIO_DIMENSIONS[ratio].width} x{" "}
                         {ASPECT_RATIO_DIMENSIONS[ratio].height}
                       </span>

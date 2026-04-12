@@ -21,70 +21,61 @@ export const RegisterRoute = () => {
   return (
     <main className="h-screen">
       <Navbar />
-      <div className="px-7 items-start justify-center h-[calc(100vh-100px)] flex flex-col gap-10 w-2/3 mx-auto">
-        <h1 className="font-styled text-4xl font-bold uppercase tracking-[0.18em] text-title-color">
+      <div className="px-7 items-start justify-center h-[calc(100vh-100px)] flex flex-col gap-6 w-2/3 mx-auto">
+        <h1 className="font-styled text-4xl font-bold uppercase tracking-wide text-title-color">
           Get Started
         </h1>
-        <form className="flex flex-col justify-between gap-4 w-full">
-          <div>
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-secondary-text">
+        <form className="flex flex-col justify-between gap-5 w-full">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-semibold uppercase tracking-widest text-secondary-text">
               Username
             </span>
             <input
               type="text"
-              autoComplete="name"
-              className="w-full rounded-2xl border border-text-color/10 bg-white px-4 py-3 text-title-color outline-none transition focus:border-accent"
-              placeholder="Your name"
+              className="w-full rounded-sm border-b-2 border-accent bg-card-bg px-4 py-2 text-title-color outline-none transition focus:border-accent"
+              placeholder="Eg: GumberRakshit"
               required
             />
           </div>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-secondary-text">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-semibold uppercase tracking-widest text-secondary-text">
               Email
             </span>
             <input
               type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-2xl border border-text-color/10 bg-white px-4 py-3 text-title-color outline-none transition focus:border-accent"
-              placeholder="you@example.com"
+              className="w-full rounded-sm border-b-2 border-accent bg-card-bg px-4 py-2 text-title-color outline-none transition focus:border-accent"
+              placeholder="Eg: gumberrakshit@yomail.com"
               required
             />
-          </label>
+          </div>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.24em] text-secondary-text">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-semibold uppercase tracking-widest text-secondary-text">
               Password
             </span>
             <input
               type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-2xl border border-text-color/10 bg-white px-4 py-3 text-title-color outline-none transition focus:border-accent"
-              placeholder="Choose a password"
+              className="w-full rounded-sm border-b-2 border-accent bg-card-bg px-4 py-2 text-title-color outline-none transition focus:border-accent"
+              placeholder="Eg: ********"
               required
             />
-          </label>
-
-          <label className="flex items-center gap-3 rounded-2xl border border-text-color/10 bg-bg px-4 py-3 text-sm text-title-color">
-            <input type="checkbox" className="h-4 w-4 accent-accent" />
-            Keep me signed in on this device
-          </label>
+          </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-bold uppercase tracking-[0.24em] text-bg transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 w-full rounded-sm bg-accent px-4 py-3 text-sm font-bold uppercase text-bg cursor-pointer"
           >
-            {isLoading ? "Creating Account..." : "Register"}
+            Create
           </button>
         </form>
 
-        <span className="mt-6 text-sm text-secondary-text">
-          Already registered?{" "}
-          <Link to="/auth/login" className="font-semibold text-title-color">
+        <span className="mt-4">
+          Already a User?{" "}
+          <Link
+            to="/auth/login"
+            className="pl-1 font-semibold text-title-color"
+          >
             Sign in here
           </Link>
         </span>

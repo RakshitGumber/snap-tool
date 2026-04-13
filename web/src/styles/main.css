@@ -69,4 +69,23 @@
     body {
         @apply bg-bg text-text-color font-main;
     }
+
+    ::-webkit-scrollbar {
+        width: 4px;
+        height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-color);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--text-muted);
+        border-radius: 2px;
+        transition: background 0.3s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-color);
+    }
 }

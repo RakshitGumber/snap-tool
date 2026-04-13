@@ -120,7 +120,7 @@ export const CreateToolbar = ({
       initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="h-16 border-b-2 border-accent/80 bg-card-bg px-4 py-3 backdrop-blur-2xl"
+      className="h-16 border-b-2 border-accent/80 bg-card-bg px-4 py-3 backdrop-blur-2xl relative"
     >
       <div className="mx-auto flex max-w-400 flex-wrap items-center gap-3">
         <div className="flex items-center gap-3">

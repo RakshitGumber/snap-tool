@@ -65,7 +65,7 @@ export const CreateRoute = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="h-screen">
       <CreateToolbar
         aspectRatio={
           canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ??
@@ -86,7 +86,7 @@ export const CreateRoute = () => {
         onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
       />
 
-      <main className="flex min-h-0 flex-1 overflow-hidden">
+      <main className="flex h-[calc(100vh-65px)]">
         {!isPreviewMode ? (
           <DesignPanel
             activeCanvasId={activeCanvasId}

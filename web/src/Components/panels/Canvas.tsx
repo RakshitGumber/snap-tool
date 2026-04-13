@@ -217,7 +217,7 @@ export const Canvas = ({
   return (
     <section className="h-full w-full">
       <div
-        className="relative h-full overflow-hidden"
+        className="h-full w-full"
         onDragOver={(event) => {
           if (!hasAssetDragData(event)) {
             return;
@@ -257,7 +257,7 @@ export const Canvas = ({
           );
         }}
       >
-        <div ref={hostRef} className="h-screen w-screen" />
+        <div ref={hostRef} className="h-full w-full" />
         {viewportState.canReturnToCanvas ? (
           <button
             type="button"

@@ -1,6 +1,13 @@
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   ASPECT_RATIO_DIMENSIONS,
   CANVAS_ASSET_MIME,
@@ -70,7 +77,8 @@ const isItemOutsideCanvas = (
   );
 };
 
-const clampSidebarWidth = (width: number) => Math.min(560, Math.max(280, width));
+const clampSidebarWidth = (width: number) =>
+  Math.min(560, Math.max(280, width));
 
 const PanelCard = ({
   title,
@@ -85,9 +93,15 @@ const PanelCard = ({
 }) => (
   <section className="rounded-[28px] border border-border-color/70 bg-bg/92 p-4 shadow-[0_14px_40px_rgba(15,23,42,0.05)]">
     <div className="mb-4">
-      <p className="text-[10px] uppercase tracking-[0.34em] text-secondary-text">{eyebrow}</p>
-      <h3 className="mt-2 font-comic text-[18px] font-bold text-title-color">{title}</h3>
-      {description ? <p className="mt-2 text-sm text-secondary-text">{description}</p> : null}
+      <p className="text-[10px] uppercase tracking-[0.34em] text-secondary-text">
+        {eyebrow}
+      </p>
+      <h3 className="mt-2 font-comic text-[18px] font-bold text-title-color">
+        {title}
+      </h3>
+      {description ? (
+        <p className="mt-2 text-sm text-secondary-text">{description}</p>
+      ) : null}
     </div>
     {children}
   </section>
@@ -110,12 +124,12 @@ export const CreateSidebar = ({
   onToggleCollapsed,
 }: EffectsMenuProps) => {
   const [isResizing, setIsResizing] = useState(false);
-  const [textStyle, setTextStyle] = useState<(typeof TEXT_STYLES)[number]["id"]>(
-    TEXT_STYLES[0].id,
-  );
-  const [effectMood, setEffectMood] = useState<(typeof EFFECT_MOODS)[number]["id"]>(
-    EFFECT_MOODS[0].id,
-  );
+  const [textStyle, setTextStyle] = useState<
+    (typeof TEXT_STYLES)[number]["id"]
+  >(TEXT_STYLES[0].id);
+  const [effectMood, setEffectMood] = useState<
+    (typeof EFFECT_MOODS)[number]["id"]
+  >(EFFECT_MOODS[0].id);
   const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -151,7 +165,10 @@ export const CreateSidebar = ({
   }, [isResizing, onSidebarWidthChange]);
 
   const activeCanvas = useMemo(
-    () => canvases.find((canvas) => canvas.id === activeCanvasId) ?? canvases[0] ?? null,
+    () =>
+      canvases.find((canvas) => canvas.id === activeCanvasId) ??
+      canvases[0] ??
+      null,
     [activeCanvasId, canvases],
   );
 
@@ -211,7 +228,10 @@ export const CreateSidebar = ({
           <Icon icon="solar:panel-left-open-broken" className="text-xl" />
         </button>
         <div className="flex flex-1 items-center justify-center">
-          <span style={{ writingMode: "vertical-rl" }} className="rotate-180 text-[10px] uppercase tracking-[0.36em] text-secondary-text">
+          <span
+            style={{ writingMode: "vertical-rl" }}
+            className="rotate-180 text-[10px] uppercase tracking-[0.36em] text-secondary-text"
+          >
             Studio
           </span>
         </div>
@@ -226,11 +246,13 @@ export const CreateSidebar = ({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
-      className="relative flex min-h-0 shrink-0 flex-col border-b border-border-color/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(244,246,255,0.86))] backdrop-blur-xl lg:border-b-0 lg:border-r lg:w-(--sidebar-width)"
+      className="relative flex h-[calc(100vh-64px)] shrink-0 flex-col border-b border-border-color/70 bg-bg backdrop-blur-xl lg:border-b-0 lg:border-r lg:w-(--sidebar-width)"
     >
       <div className="flex items-start justify-between gap-3 border-b border-border-color/60 px-4 py-4">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.34em] text-secondary-text">Create board</p>
+          <p className="text-[10px] uppercase tracking-[0.34em] text-secondary-text">
+            Create board
+          </p>
           <h2 className="mt-2 font-comic text-[20px] font-bold text-title-color">
             Page, image, and frame controls
           </h2>
@@ -250,9 +272,17 @@ export const CreateSidebar = ({
         {[
           { id: "page", label: "Page", icon: "solar:document-add-broken" },
           { id: "image", label: "Image", icon: "solar:gallery-add-broken" },
-          { id: "background", label: "Background", icon: "solar:pallete-2-broken" },
+          {
+            id: "background",
+            label: "Background",
+            icon: "solar:pallete-2-broken",
+          },
           { id: "text", label: "Text", icon: "solar:text-bold-circle-broken" },
-          { id: "effects", label: "Effects", icon: "solar:magic-stick-3-broken" },
+          {
+            id: "effects",
+            label: "Effects",
+            icon: "solar:magic-stick-3-broken",
+          },
           { id: "layers", label: "Layers", icon: "solar:list-check-broken" },
         ].map((tab) => {
           const selected = activeSidebarTab === tab.id;
@@ -266,7 +296,9 @@ export const CreateSidebar = ({
                   ? "bg-title-color text-bg shadow-[0_12px_22px_rgba(15,23,42,0.14)]"
                   : "border border-border-color/70 bg-bg/90 text-title-color hover:border-title-color/30"
               }`}
-              onClick={() => onActiveSidebarTabChange(tab.id as CreateSidebarTab)}
+              onClick={() =>
+                onActiveSidebarTabChange(tab.id as CreateSidebarTab)
+              }
             >
               <Icon icon={tab.icon} className="text-base" />
               <span>{tab.label}</span>
@@ -296,8 +328,12 @@ export const CreateSidebar = ({
                   }`}
                   onClick={() => onBackgroundFill(style.fill)}
                 >
-                  <span className="block text-sm font-semibold">{style.label}</span>
-                  <span className={selected ? "text-bg/70" : "text-secondary-text"}>
+                  <span className="block text-sm font-semibold">
+                    {style.label}
+                  </span>
+                  <span
+                    className={selected ? "text-bg/70" : "text-secondary-text"}
+                  >
                     {style.fill}
                   </span>
                 </button>
@@ -368,10 +404,17 @@ export const CreateSidebar = ({
                       }}
                     >
                       <div className="flex aspect-square items-center justify-center rounded-[18px] bg-accent-light/55 p-4">
-                        <img src={asset.src} alt="" className="h-full w-full object-contain" draggable={false} />
+                        <img
+                          src={asset.src}
+                          alt=""
+                          className="h-full w-full object-contain"
+                          draggable={false}
+                        />
                       </div>
                       <div className="mt-3">
-                        <p className="font-medium text-title-color">{asset.label}</p>
+                        <p className="font-medium text-title-color">
+                          {asset.label}
+                        </p>
                         <p className="text-sm uppercase tracking-[0.18em] text-secondary-text">
                           {asset.kind}
                         </p>
@@ -475,7 +518,9 @@ export const CreateSidebar = ({
                         <span className="block font-comic text-base font-bold text-title-color">
                           {preset.label}
                         </span>
-                        <span className="text-sm text-secondary-text">{preset.sample}</span>
+                        <span className="text-sm text-secondary-text">
+                          {preset.sample}
+                        </span>
                       </button>
                     );
                   })}
@@ -511,8 +556,14 @@ export const CreateSidebar = ({
                         }`}
                         onClick={() => setEffectMood(preset.id)}
                       >
-                        <span className="block font-medium">{preset.label}</span>
-                        <span className={selected ? "text-bg/70" : "text-secondary-text"}>
+                        <span className="block font-medium">
+                          {preset.label}
+                        </span>
+                        <span
+                          className={
+                            selected ? "text-bg/70" : "text-secondary-text"
+                          }
+                        >
                           {preset.sample}
                         </span>
                       </button>
@@ -551,7 +602,9 @@ export const CreateSidebar = ({
 
                     <div className="mt-3 space-y-2 border-t border-border-color/60 pt-3">
                       {hierarchy.rootItems.length === 0 ? (
-                        <p className="text-sm text-secondary-text">No root elements yet.</p>
+                        <p className="text-sm text-secondary-text">
+                          No root elements yet.
+                        </p>
                       ) : (
                         hierarchy.rootItems.map((item) => (
                           <div
@@ -559,7 +612,9 @@ export const CreateSidebar = ({
                             className="flex items-center justify-between rounded-2xl bg-accent-light/20 px-3 py-2 text-sm"
                           >
                             <div>
-                              <p className="font-medium text-title-color">{item.assetLabel}</p>
+                              <p className="font-medium text-title-color">
+                                {item.assetLabel}
+                              </p>
                               <p className="text-secondary-text">
                                 {item.itemType} • Canvas {item.canvasIndex + 1}
                               </p>
@@ -578,71 +633,77 @@ export const CreateSidebar = ({
                     </div>
                   </div>
 
-                  {hierarchy.canvasSections.map(({ canvas, index, insideItems }) => {
-                    const selected = canvas.id === activeCanvasId;
+                  {hierarchy.canvasSections.map(
+                    ({ canvas, index, insideItems }) => {
+                      const selected = canvas.id === activeCanvasId;
 
-                    return (
-                      <div
-                        key={canvas.id}
-                        className={`rounded-2xl border p-3 transition ${
-                          selected
-                            ? "border-title-color bg-accent-light/30"
-                            : "border-border-color/70 bg-bg"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-3 text-left"
-                          onClick={() => onCanvasSelect(canvas.id)}
+                      return (
+                        <div
+                          key={canvas.id}
+                          className={`rounded-2xl border p-3 transition ${
+                            selected
+                              ? "border-title-color bg-accent-light/30"
+                              : "border-border-color/70 bg-bg"
+                          }`}
                         >
-                          <div>
-                            <p className="font-medium text-title-color">{`Canvas ${index + 1}`}</p>
-                            <p className="text-sm text-secondary-text">
-                              {insideItems.length} elements
-                            </p>
-                          </div>
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between gap-3 text-left"
+                            onClick={() => onCanvasSelect(canvas.id)}
+                          >
+                            <div>
+                              <p className="font-medium text-title-color">{`Canvas ${index + 1}`}</p>
+                              <p className="text-sm text-secondary-text">
+                                {insideItems.length} elements
+                              </p>
+                            </div>
 
-                          <span className="rounded-full border border-border-color/70 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-secondary-text">
-                            {canvas.id}
-                          </span>
-                        </button>
+                            <span className="rounded-full border border-border-color/70 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-secondary-text">
+                              {canvas.id}
+                            </span>
+                          </button>
 
-                        <div className="mt-3 space-y-2 border-t border-border-color/60 pt-3">
-                          {insideItems.length === 0 ? (
-                            <p className="text-sm text-secondary-text">No elements yet.</p>
-                          ) : (
-                            insideItems.map((item, itemIndex) => {
-                              const asset = findEffectAssetById(item.sourceId);
+                          <div className="mt-3 space-y-2 border-t border-border-color/60 pt-3">
+                            {insideItems.length === 0 ? (
+                              <p className="text-sm text-secondary-text">
+                                No elements yet.
+                              </p>
+                            ) : (
+                              insideItems.map((item, itemIndex) => {
+                                const asset = findEffectAssetById(
+                                  item.sourceId,
+                                );
 
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center justify-between rounded-2xl bg-accent-light/20 px-3 py-2 text-sm"
-                                >
-                                  <div>
-                                    <p className="font-medium text-title-color">
-                                      {asset?.label ?? item.sourceId}
-                                    </p>
-                                    <p className="text-secondary-text">
-                                      {item.type} • layer {itemIndex + 1}
-                                    </p>
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    className="rounded-full border border-border-color/70 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-secondary-text transition hover:border-title-color/30 hover:text-title-color"
-                                    onClick={() => onCanvasSelect(canvas.id)}
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center justify-between rounded-2xl bg-accent-light/20 px-3 py-2 text-sm"
                                   >
-                                    Focus
-                                  </button>
-                                </div>
-                              );
-                            })
-                          )}
+                                    <div>
+                                      <p className="font-medium text-title-color">
+                                        {asset?.label ?? item.sourceId}
+                                      </p>
+                                      <p className="text-secondary-text">
+                                        {item.type} • layer {itemIndex + 1}
+                                      </p>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      className="rounded-full border border-border-color/70 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-secondary-text transition hover:border-title-color/30 hover:text-title-color"
+                                      onClick={() => onCanvasSelect(canvas.id)}
+                                    >
+                                      Focus
+                                    </button>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    },
+                  )}
                 </div>
               </PanelCard>
             </motion.div>
@@ -678,9 +739,13 @@ export const CreateSidebar = ({
 
                 <div className="mt-4 flex items-center justify-between rounded-2xl border border-border-color/70 bg-bg px-3 py-3">
                   <div>
-                    <p className="font-medium text-title-color">Active canvas</p>
+                    <p className="font-medium text-title-color">
+                      Active canvas
+                    </p>
                     <p className="text-sm text-secondary-text">
-                      {activeCanvas ? `Canvas ${canvases.findIndex((canvas) => canvas.id === activeCanvas.id) + 1}` : "None"}
+                      {activeCanvas
+                        ? `Canvas ${canvases.findIndex((canvas) => canvas.id === activeCanvas.id) + 1}`
+                        : "None"}
                     </p>
                   </div>
                   <button

@@ -14,6 +14,7 @@ import {
   isAssetDragPayload,
 } from "@/libs/editorSchema";
 import type { ShortcutMap } from "@/types/canvas";
+import { useTheme } from "@/providers/ThemeProvider";
 
 interface CanvasProps {
   activeCanvasId: string;
@@ -154,6 +155,8 @@ export const Canvas = ({
 
   useKeyboardShortcuts(keyboardShortcuts, isReady);
 
+  const { theme } = useTheme();
+
   useEffect(() => {
     const host = hostRef.current;
 
@@ -164,6 +167,7 @@ export const Canvas = ({
     let disposed = false;
 
     void createCanvasEditor(host, {
+      theme: theme,
       onActiveCanvasChange: (canvasId) =>
         callbackRef.current.onActivateCanvas(canvasId),
       onAssetDrop: (canvasId, payload, point) =>

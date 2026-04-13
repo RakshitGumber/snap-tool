@@ -25,6 +25,7 @@ const app = new Elysia()
     set.status = 500;
     return { ok: false, message: "Internal Server Error" };
   })
+  .get("/", () => "Applying multiple filters to call myself single filter")
   .get("/api", () => "Applying multiple filters to call myself single filter")
   .listen(process.env.PORT);
 

@@ -120,17 +120,16 @@ export const CreateToolbar = ({
       initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className="border-b border-border-color/60 bg-[linear-gradient(180deg,rgba(255,248,240,0.9),rgba(244,246,255,0.92))] px-4 py-3 shadow-[0_10px_32px_rgba(15,23,42,0.06)] backdrop-blur-2xl"
+      className="h-16 border-b-2 border-accent/80 bg-card-bg px-4 py-3 backdrop-blur-2xl"
     >
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3">
+      <div className="mx-auto flex max-w-400 flex-wrap items-center gap-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setRoute("/")}
-            className="flex items-center gap-2 rounded-full border border-border-color/80 bg-bg/85 px-3 py-2 text-left text-[11px] uppercase tracking-[0.3em] text-secondary-text transition hover:border-title-color/40 hover:text-title-color"
+            className="flex items-center gap-2 rounded-full border border-border-color/80 bg-bg/85 px-3 py-2 text-left uppercase tracking-[0.3em] text-secondary-text transition hover:border-title-color/40 hover:text-title-color"
           >
             <Icon icon="solar:home-2-broken" className="text-lg" />
-            Home
           </button>
           <div className="leading-none">
             <p className="font-comic text-[19px] font-bold tracking-[0.08em] text-title-color">

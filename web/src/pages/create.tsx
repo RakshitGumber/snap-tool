@@ -65,7 +65,7 @@ export const CreateRoute = () => {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-0px)] flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,244,217,0.8),transparent_30%),linear-gradient(180deg,rgba(244,246,255,1),rgba(239,242,255,0.95))]">
+    <div className="flex h-screen flex-col">
       <CreateToolbar
         aspectRatio={
           canvases.find((canvas) => canvas.id === activeCanvasId)?.ratio ??

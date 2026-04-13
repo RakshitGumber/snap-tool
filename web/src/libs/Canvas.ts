@@ -143,6 +143,7 @@ interface CreateCanvasEditorOptions {
     payload: AssetDragPayload,
     point: CanvasPoint,
   ) => void;
+  theme: string;
   onCanvasDelete?: (canvasId: string) => void;
   onCanvasesChange?: (canvases: EditorCanvas[], activeCanvasId: string) => void;
   onDocumentChange?: (canvasId: string, document: EditorDocument) => void;
@@ -207,12 +208,13 @@ const rotateVector = (point: CanvasPoint, radians: number): CanvasPoint => ({
   y: point.x * Math.sin(radians) + point.y * Math.cos(radians),
 });
 
-const isPanPointerEvent = (event: Pick<FederatedPointerEvent, "button" | "shiftKey">) =>
-  event.button === 1 || (event.button === 0 && event.shiftKey);
+const isPanPointerEvent = (
+  event: Pick<FederatedPointerEvent, "button" | "shiftKey">,
+) => event.button === 1 || (event.button === 0 && event.shiftKey);
 
 export const createCanvasEditor = async (
   container: HTMLElement,
-  options: CreateCanvasEditorOptions = {},
+  options: CreateCanvasEditorOptions = { theme: "dark" },
 ): Promise<CanvasEditor> => {
   const app = new Application();
 
@@ -237,7 +239,12 @@ export const createCanvasEditor = async (
   const scaleHandle = new Graphics();
   const textureCache = new Map<string, Texture>();
 
-  selectionOverlay.addChild(selectionBox, rotateGuide, rotateHandle, scaleHandle);
+  selectionOverlay.addChild(
+    selectionBox,
+    rotateGuide,
+    rotateHandle,
+    scaleHandle,
+  );
   board.addChild(selectionOverlay);
   app.stage.addChild(workspace, shadows, board);
 
@@ -350,7 +357,9 @@ export const createCanvasEditor = async (
     const minX = Math.min(...sizes.map((size) => size.position.x));
     const minY = Math.min(...sizes.map((size) => size.position.y));
     const maxX = Math.max(...sizes.map((size) => size.position.x + size.width));
-    const maxY = Math.max(...sizes.map((size) => size.position.y + size.height));
+    const maxY = Math.max(
+      ...sizes.map((size) => size.position.y + size.height),
+    );
     const totalWidth = maxX - minX;
     const totalHeight = maxY - minY;
     const artboards = sizes.map((entry) => ({
@@ -364,8 +373,14 @@ export const createCanvasEditor = async (
       width: entry.width,
       height: entry.height,
     }));
-    const availableWidth = Math.max(app.screen.width - WORKSPACE_PADDING * 2, 120);
-    const availableHeight = Math.max(app.screen.height - WORKSPACE_PADDING * 2, 120);
+    const availableWidth = Math.max(
+      app.screen.width - WORKSPACE_PADDING * 2,
+      120,
+    );
+    const availableHeight = Math.max(
+      app.screen.height - WORKSPACE_PADDING * 2,
+      120,
+    );
     const fitScale = Math.min(
       availableWidth / fitWidth,
       availableHeight / fitHeight,
@@ -397,7 +412,9 @@ export const createCanvasEditor = async (
     };
 
   const getArtboardLayout = (canvasId: string) =>
-    currentLayout.artboards.find((artboard) => artboard.canvasId === canvasId) ?? null;
+    currentLayout.artboards.find(
+      (artboard) => artboard.canvasId === canvasId,
+    ) ?? null;
 
   const getCanvasById = (canvasId: string) =>
     currentCanvases.find((canvas) => canvas.id === canvasId) ?? null;
@@ -409,7 +426,8 @@ export const createCanvasEditor = async (
 
   const syncCursor = () => {
     const cursor =
-      interactionState?.mode === "pan" || interactionState?.mode === "canvasMove"
+      interactionState?.mode === "pan" ||
+      interactionState?.mode === "canvasMove"
         ? "grabbing"
         : "default";
 
@@ -475,7 +493,10 @@ export const createCanvasEditor = async (
         continue;
       }
 
-      const otherPosition = canvasPositions.get(otherCanvas.id) ?? { x: 0, y: 0 };
+      const otherPosition = canvasPositions.get(otherCanvas.id) ?? {
+        x: 0,
+        y: 0,
+      };
       const otherSize = ASPECT_RATIO_DIMENSIONS[otherCanvas.ratio];
       const candidates: ScreenPoint[] = CANVAS_SNAP_GAPS.flatMap((gap) => [
         {
@@ -524,7 +545,9 @@ export const createCanvasEditor = async (
     }
 
     const artboards = canvasId
-      ? currentLayout.artboards.filter((artboard) => artboard.canvasId === canvasId)
+      ? currentLayout.artboards.filter(
+          (artboard) => artboard.canvasId === canvasId,
+        )
       : currentLayout.artboards;
 
     for (const artboard of artboards) {
@@ -633,7 +656,10 @@ export const createCanvasEditor = async (
       }
 
       const nextZ =
-        canvas.document.items.reduce((highest, item) => Math.max(highest, item.z), -1) + 1;
+        canvas.document.items.reduce(
+          (highest, item) => Math.max(highest, item.z),
+          -1,
+        ) + 1;
 
       return {
         ...canvas,
@@ -655,7 +681,8 @@ export const createCanvasEditor = async (
 
   const duplicateDocumentItem = (canvasId: string, itemId: string) => {
     const canvas = getCanvasById(canvasId);
-    const sourceItem = canvas?.document.items.find((item) => item.id === itemId) ?? null;
+    const sourceItem =
+      canvas?.document.items.find((item) => item.id === itemId) ?? null;
 
     if (!canvas || !sourceItem) {
       return null;
@@ -664,7 +691,11 @@ export const createCanvasEditor = async (
     const duplicatedItem: CanvasItem = {
       ...sourceItem,
       id: createItemId(),
-      z: canvas.document.items.reduce((highest, item) => Math.max(highest, item.z), -1) + 1,
+      z:
+        canvas.document.items.reduce(
+          (highest, item) => Math.max(highest, item.z),
+          -1,
+        ) + 1,
     };
 
     currentCanvases = currentCanvases.map((entry) =>
@@ -707,7 +738,9 @@ export const createCanvasEditor = async (
       return null;
     }
 
-    const removedIndex = currentCanvases.findIndex((canvas) => canvas.id === canvasId);
+    const removedIndex = currentCanvases.findIndex(
+      (canvas) => canvas.id === canvasId,
+    );
 
     if (removedIndex < 0) {
       return null;
@@ -737,7 +770,7 @@ export const createCanvasEditor = async (
           },
     );
     selectedItem = null;
-    renderScene();
+    renderScene(options.theme);
     emitDocumentChange(canvasId);
   };
 
@@ -750,7 +783,9 @@ export const createCanvasEditor = async (
 
     const nextActiveCanvasId = getNextCanvasIdAfterDeletion(canvasId);
 
-    currentCanvases = currentCanvases.filter((canvas) => canvas.id !== canvasId);
+    currentCanvases = currentCanvases.filter(
+      (canvas) => canvas.id !== canvasId,
+    );
     canvasPositions.delete(canvasId);
     selectedCanvasId = null;
     selectedItem = null;
@@ -759,7 +794,7 @@ export const createCanvasEditor = async (
       setActiveCanvas(nextActiveCanvasId);
     }
 
-    renderScene();
+    renderScene(options.theme);
     options.onCanvasDelete?.(canvasId);
   };
 
@@ -804,7 +839,9 @@ export const createCanvasEditor = async (
     const selected = selectedItem;
     const artboard = getArtboardLayout(selected.canvasId);
     const canvas = getCanvasById(selected.canvasId);
-    const item = canvas?.document.items.find((entry) => entry.id === selected.itemId);
+    const item = canvas?.document.items.find(
+      (entry) => entry.id === selected.itemId,
+    );
 
     if (!artboard || !item) {
       selectedItem = null;
@@ -816,10 +853,7 @@ export const createCanvasEditor = async (
     const halfWidth = itemWidth / 2;
     const halfHeight = itemHeight / 2;
 
-    selectionOverlay.position.set(
-      artboard.x + item.x,
-      artboard.y + item.y,
-    );
+    selectionOverlay.position.set(artboard.x + item.x, artboard.y + item.y);
     selectionOverlay.rotation = degreesToRadians(item.rotation);
 
     selectionBox
@@ -848,10 +882,7 @@ export const createCanvasEditor = async (
     }
 
     event.preventDefault();
-    const point = screenToStagePoint(
-      event.clientX,
-      event.clientY,
-    );
+    const point = screenToStagePoint(event.clientX, event.clientY);
 
     if (!point) {
       return;
@@ -870,10 +901,7 @@ export const createCanvasEditor = async (
       return;
     }
 
-    const point = screenToStagePoint(
-      event.clientX,
-      event.clientY,
-    );
+    const point = screenToStagePoint(event.clientX, event.clientY);
     const worldPoint = point ? stageToWorldPoint(point) : null;
     const canvasPosition = canvasPositions.get(canvasId);
 
@@ -892,33 +920,33 @@ export const createCanvasEditor = async (
 
   const createArtboardPointerDown =
     (canvasId: string) => (event: FederatedPointerEvent) => {
-    if (isPanPointerEvent(event)) {
-      beginPan(event);
-      event.stopPropagation();
-      return;
-    }
-
-    if (currentTool === "select" && event.altKey) {
-      const duplicatedCanvasId = duplicateCanvas(canvasId);
-
-      if (!duplicatedCanvasId) {
+      if (isPanPointerEvent(event)) {
+        beginPan(event);
+        event.stopPropagation();
         return;
       }
 
-      beginCanvasMove(duplicatedCanvasId, event);
-      renderScene();
-      event.stopPropagation();
-      return;
-    }
+      if (currentTool === "select" && event.altKey) {
+        const duplicatedCanvasId = duplicateCanvas(canvasId);
 
-    setActiveCanvas(canvasId);
-    selectedCanvasId = canvasId;
-    selectedItem = null;
-    beginCanvasMove(canvasId, event);
-    renderScene();
-  };
+        if (!duplicatedCanvasId) {
+          return;
+        }
 
-  const renderScene = () => {
+        beginCanvasMove(duplicatedCanvasId, event);
+        renderScene(options.theme);
+        event.stopPropagation();
+        return;
+      }
+
+      setActiveCanvas(canvasId);
+      selectedCanvasId = canvasId;
+      selectedItem = null;
+      beginCanvasMove(canvasId, event);
+      renderScene(options.theme);
+    };
+
+  const renderScene = (theme: string) => {
     currentLayout = getBoardLayout();
 
     if (!boardOrigin) {
@@ -929,9 +957,9 @@ export const createCanvasEditor = async (
     }
 
     workspace.clear();
-    workspace
-      .roundRect(0, 0, app.screen.width, app.screen.height, 0)
-      .fill({ color: 0x0b1020 });
+    workspace.roundRect(0, 0, app.screen.width, app.screen.height, 0).fill({
+      color: theme === "dark" ? 0x1a1a1e : 0xf4f6ff,
+    });
 
     shadows.clear();
     board.removeChildren();
@@ -979,10 +1007,16 @@ export const createCanvasEditor = async (
           .stroke({ color: 0x10b981, width: 8 });
       }
       background.eventMode = "static";
-      background.cursor = interactionState?.mode === "pan" ? "grabbing" : "default";
-      background.on("pointerdown", createArtboardPointerDown(artboard.canvasId));
+      background.cursor =
+        interactionState?.mode === "pan" ? "grabbing" : "default";
+      background.on(
+        "pointerdown",
+        createArtboardPointerDown(artboard.canvasId),
+      );
 
-      for (const item of [...artboard.document.items].sort((left, right) => left.z - right.z)) {
+      for (const item of [...artboard.document.items].sort(
+        (left, right) => left.z - right.z,
+      )) {
         const asset = findEffectAssetById(item.sourceId);
 
         if (!asset) {
@@ -1015,14 +1049,11 @@ export const createCanvasEditor = async (
           setActiveCanvas(artboard.canvasId);
 
           if (currentTool !== "select") {
-            renderScene();
+            renderScene(options.theme);
             return;
           }
 
-          const point = screenToStagePoint(
-            event.clientX,
-            event.clientY,
-          );
+          const point = screenToStagePoint(event.clientX, event.clientY);
           const worldPoint = point ? stageToWorldPoint(point) : null;
 
           if (!worldPoint) {
@@ -1034,7 +1065,10 @@ export const createCanvasEditor = async (
           let duplicated = false;
 
           if (event.altKey) {
-            const duplicatedItem = duplicateDocumentItem(artboard.canvasId, item.id);
+            const duplicatedItem = duplicateDocumentItem(
+              artboard.canvasId,
+              item.id,
+            );
 
             if (!duplicatedItem) {
               return;
@@ -1063,7 +1097,7 @@ export const createCanvasEditor = async (
             startItem: { ...interactionItem },
           };
           if (duplicated) {
-            renderScene();
+            renderScene(options.theme);
           } else {
             renderSelection();
           }
@@ -1084,7 +1118,7 @@ export const createCanvasEditor = async (
   };
 
   const commitInteraction = (...canvasIds: string[]) => {
-    renderScene();
+    renderScene(options.theme);
 
     for (const canvasId of new Set(canvasIds)) {
       emitDocumentChange(canvasId);
@@ -1106,10 +1140,16 @@ export const createCanvasEditor = async (
       }
 
       boardOrigin = {
-        x: activeInteraction.startOffset.x + stagePoint.x - activeInteraction.startPointer.x,
-        y: activeInteraction.startOffset.y + stagePoint.y - activeInteraction.startPointer.y,
+        x:
+          activeInteraction.startOffset.x +
+          stagePoint.x -
+          activeInteraction.startPointer.x,
+        y:
+          activeInteraction.startOffset.y +
+          stagePoint.y -
+          activeInteraction.startPointer.y,
       };
-      renderScene();
+      renderScene(options.theme);
       return;
     }
 
@@ -1135,7 +1175,7 @@ export const createCanvasEditor = async (
         activeInteraction.canvasId,
         getSnappedCanvasPosition(activeInteraction.canvasId, proposedPosition),
       );
-      renderScene();
+      renderScene(options.theme);
       return;
     }
 
@@ -1156,7 +1196,8 @@ export const createCanvasEditor = async (
             worldPoint.x <= entry.x + entry.width &&
             worldPoint.y <= entry.y + entry.height,
         ) ?? null;
-      const nextCanvasId = hoveredArtboard?.canvasId ?? activeInteraction.canvasId;
+      const nextCanvasId =
+        hoveredArtboard?.canvasId ?? activeInteraction.canvasId;
       const nextArtboard = getArtboardLayout(nextCanvasId);
 
       if (!nextArtboard) {
@@ -1246,28 +1287,38 @@ export const createCanvasEditor = async (
       );
 
       if (event.shiftKey) {
-        const widthRatio = rawWidth / Math.max(activeInteraction.startItem.w, 0.0001);
-        const heightRatio = rawHeight / Math.max(activeInteraction.startItem.h, 0.0001);
+        const widthRatio =
+          rawWidth / Math.max(activeInteraction.startItem.w, 0.0001);
+        const heightRatio =
+          rawHeight / Math.max(activeInteraction.startItem.h, 0.0001);
         const rawScale =
           Math.abs(widthRatio - 1) >= Math.abs(heightRatio - 1)
             ? widthRatio
             : heightRatio;
         const constrainedScale = clamp(rawScale, minScale, maxScale);
 
-        updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
-          ...item,
-          w: activeInteraction.startItem.w * constrainedScale,
-          h: activeInteraction.startItem.h * constrainedScale,
-        }));
+        updateDocumentItem(
+          activeInteraction.canvasId,
+          activeInteraction.itemId,
+          (item) => ({
+            ...item,
+            w: activeInteraction.startItem.w * constrainedScale,
+            h: activeInteraction.startItem.h * constrainedScale,
+          }),
+        );
         commitInteraction(activeInteraction.canvasId);
         return;
       }
 
-      updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
-        ...item,
-        w: clamp(rawWidth, MIN_ITEM_SIZE, maxWidth),
-        h: clamp(rawHeight, MIN_ITEM_SIZE, maxHeight),
-      }));
+      updateDocumentItem(
+        activeInteraction.canvasId,
+        activeInteraction.itemId,
+        (item) => ({
+          ...item,
+          w: clamp(rawWidth, MIN_ITEM_SIZE, maxWidth),
+          h: clamp(rawHeight, MIN_ITEM_SIZE, maxHeight),
+        }),
+      );
       commitInteraction(activeInteraction.canvasId);
       return;
     }
@@ -1281,10 +1332,14 @@ export const createCanvasEditor = async (
       activeInteraction.startItem.rotation +
       radiansToDegrees(angle - activeInteraction.startAngle);
 
-    updateDocumentItem(activeInteraction.canvasId, activeInteraction.itemId, (item) => ({
-      ...item,
-      rotation,
-    }));
+    updateDocumentItem(
+      activeInteraction.canvasId,
+      activeInteraction.itemId,
+      (item) => ({
+        ...item,
+        rotation,
+      }),
+    );
     commitInteraction(activeInteraction.canvasId);
   };
 
@@ -1305,10 +1360,19 @@ export const createCanvasEditor = async (
     }
 
     const baseFitScale = currentLayout.scale / Math.max(viewportZoom, 0.0001);
-    const availableWidth = Math.max(app.screen.width - WORKSPACE_PADDING * 2, 120);
-    const availableHeight = Math.max(app.screen.height - WORKSPACE_PADDING * 2, 120);
+    const availableWidth = Math.max(
+      app.screen.width - WORKSPACE_PADDING * 2,
+      120,
+    );
+    const availableHeight = Math.max(
+      app.screen.height - WORKSPACE_PADDING * 2,
+      120,
+    );
     const desiredScale =
-      Math.min(availableWidth / artboard.width, availableHeight / artboard.height) * 0.94;
+      Math.min(
+        availableWidth / artboard.width,
+        availableHeight / artboard.height,
+      ) * 0.94;
 
     viewportZoom = clamp(desiredScale / Math.max(baseFitScale, 0.0001), 0.2, 4);
     setActiveCanvas(canvasId);
@@ -1329,10 +1393,12 @@ export const createCanvasEditor = async (
         app.screen.height / 2 -
         (nextArtboard.y + nextArtboard.height / 2) * nextLayout.scale,
     };
-    renderScene();
+    renderScene(options.theme);
   };
 
-  const focusCanvasInDirection = (direction: "left" | "right" | "up" | "down") => {
+  const focusCanvasInDirection = (
+    direction: "left" | "right" | "up" | "down",
+  ) => {
     const activeArtboard = getArtboardLayout(currentActiveCanvasId);
 
     if (!activeArtboard) {
@@ -1404,7 +1470,11 @@ export const createCanvasEditor = async (
     return true;
   };
 
-  const paintFromScreenPoint = (clientX: number, clientY: number, color: string) => {
+  const paintFromScreenPoint = (
+    clientX: number,
+    clientY: number,
+    color: string,
+  ) => {
     const target = resolveScreenTarget(clientX, clientY);
 
     if (!target) {
@@ -1458,7 +1528,7 @@ export const createCanvasEditor = async (
       interactionState = null;
     }
 
-    renderScene();
+    renderScene(options.theme);
   };
 
   const handleWheel = (event: WheelEvent) => {
@@ -1490,7 +1560,7 @@ export const createCanvasEditor = async (
       x: pointer.x - boardPoint.x * nextLayout.scale,
       y: pointer.y - boardPoint.y * nextLayout.scale,
     };
-    renderScene();
+    renderScene(options.theme);
   };
 
   selectionOverlay.eventMode = "passive";
@@ -1515,12 +1585,13 @@ export const createCanvasEditor = async (
 
     const artboard = getArtboardLayout(selected.canvasId);
     const canvas = getCanvasById(selected.canvasId);
-    const item = canvas?.document.items.find((entry) => entry.id === selected.itemId);
-    const point = screenToStagePoint(
-      event.clientX,
-      event.clientY,
+    const item = canvas?.document.items.find(
+      (entry) => entry.id === selected.itemId,
     );
-    const target = point ? stageToCanvasPoint(point, selected.canvasId, true) : null;
+    const point = screenToStagePoint(event.clientX, event.clientY);
+    const target = point
+      ? stageToCanvasPoint(point, selected.canvasId, true)
+      : null;
 
     if (!artboard || !item || !target) {
       return;
@@ -1557,12 +1628,13 @@ export const createCanvasEditor = async (
 
     const artboard = getArtboardLayout(selected.canvasId);
     const canvas = getCanvasById(selected.canvasId);
-    const item = canvas?.document.items.find((entry) => entry.id === selected.itemId);
-    const point = screenToStagePoint(
-      event.clientX,
-      event.clientY,
+    const item = canvas?.document.items.find(
+      (entry) => entry.id === selected.itemId,
     );
-    const target = point ? stageToCanvasPoint(point, selected.canvasId, true) : null;
+    const point = screenToStagePoint(event.clientX, event.clientY);
+    const target = point
+      ? stageToCanvasPoint(point, selected.canvasId, true)
+      : null;
 
     if (!artboard || !item || !target) {
       return;
@@ -1590,14 +1662,14 @@ export const createCanvasEditor = async (
   });
 
   const resizeObserver = new ResizeObserver(() => {
-    renderScene();
+    renderScene(options.theme);
   });
 
   resizeObserver.observe(container);
   app.canvas.addEventListener("wheel", handleWheel, { passive: false });
   window.addEventListener("pointermove", handlePointerMove);
   window.addEventListener("pointerup", handlePointerUp);
-  renderScene();
+  renderScene(options.theme);
 
   return {
     deleteSelection() {

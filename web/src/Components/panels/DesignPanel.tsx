@@ -1,13 +1,6 @@
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ASPECT_RATIO_DIMENSIONS,
   CANVAS_ASSET_MIME,
@@ -20,6 +13,8 @@ import {
   type EffectAsset,
 } from "@/libs/editorSchema";
 import type { CreateSidebarTab } from "@/stores/useCreateEditorStore";
+
+import clsx from "clsx";
 
 interface EffectsMenuProps {
   activeCanvasId: string;
@@ -107,7 +102,7 @@ const PanelCard = ({
   </section>
 );
 
-export const CreateSidebar = ({
+export const DesignPanel = ({
   activeCanvasId,
   activeSidebarTab,
   activeTool,
@@ -245,69 +240,17 @@ export const CreateSidebar = ({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
-      className="relative flex h-[calc(100vh-64px)] shrink-0 flex-col border-b border-border-color/70 bg-bg backdrop-blur-xl lg:border-b-0 lg:border-r lg:w-(--sidebar-width)"
+      className={clsx(
+        "relative flex select-none h-[calc(100vh-64px)] shrink-0 flex-col border-b border-border-color/70 bg-bg backdrop-blur-xl lg:border-b-0 lg:border-r",
+        `w-[${sidebarWidth}]`,
+      )}
     >
-      <div className="flex items-start justify-between gap-3 border-b border-border-color/60 px-4 py-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.34em] text-secondary-text">
-            Create board
-          </p>
-          <h2 className="mt-2 font-comic text-[20px] font-bold text-title-color">
-            Page, image, and frame controls
-          </h2>
-        </div>
-
-        <button
-          type="button"
-          className="rounded-full border border-border-color/70 bg-bg px-2 py-2 text-secondary-text transition hover:border-title-color/30 hover:text-title-color"
-          onClick={onToggleCollapsed}
-          aria-label="Collapse studio panel"
-        >
-          <Icon icon="solar:panel-left-close-broken" className="text-lg" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 border-b border-border-color/60 px-4 py-3">
-        {[
-          { id: "page", label: "Page", icon: "solar:document-add-broken" },
-          { id: "image", label: "Image", icon: "solar:gallery-add-broken" },
-          {
-            id: "background",
-            label: "Background",
-            icon: "solar:pallete-2-broken",
-          },
-          { id: "text", label: "Text", icon: "solar:text-bold-circle-broken" },
-          {
-            id: "effects",
-            label: "Effects",
-            icon: "solar:magic-stick-3-broken",
-          },
-          { id: "layers", label: "Layers", icon: "solar:list-check-broken" },
-        ].map((tab) => {
-          const selected = activeSidebarTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[10px] uppercase tracking-[0.24em] transition ${
-                selected
-                  ? "bg-title-color text-bg shadow-[0_12px_22px_rgba(15,23,42,0.14)]"
-                  : "border border-border-color/70 bg-bg/90 text-title-color hover:border-title-color/30"
-              }`}
-              onClick={() =>
-                onActiveSidebarTabChange(tab.id as CreateSidebarTab)
-              }
-            >
-              <Icon icon={tab.icon} className="text-base" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+        {/* Replace this with project name */}
+        <h2 className="mt-2 font-comic text-[20px] font-bold text-title-color">
+          New Canvas
+        </h2>
+
         <PanelCard
           eyebrow="Page"
           title="Quick styles"
@@ -764,15 +707,11 @@ export const CreateSidebar = ({
 
       <div
         role="separator"
-        aria-label="Resize studio panel"
         onPointerDown={() => {
           setIsResizing(true);
-          document.body.style.userSelect = "none";
         }}
-        className="absolute right-0 top-0 hidden h-full w-1 cursor-col-resize bg-transparent transition hover:bg-title-color/10 active:bg-title-color/20 lg:block"
+        className="absolute right-0 top-0 hidden h-full w-0.5 cursor-col-resize bg-accent-light/90 transition hover:bg-accent active:bg-accent-light lg:block"
       />
     </motion.aside>
   );
 };
-
-export const EffectsMenu = CreateSidebar;

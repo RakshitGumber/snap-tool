@@ -164,7 +164,7 @@ export const CreateToolbar = ({
             {isOpen ? (
               <div
                 role="menu"
-                className="absolute left-0 top-[calc(100%+0.5rem)] z-20 min-w-56 rounded-[24px] border border-border-color bg-bg p-2 shadow-[0_24px_64px_rgba(15,23,42,0.14)]"
+                className="absolute left-0 top-[calc(100%+0.5rem)] z-20 min-w-56 rounded-3xl border border-border-color bg-bg p-2 shadow-[0_24px_64px_rgba(15,23,42,0.14)]"
                 onKeyDown={handleMenuKeyDown}
               >
                 {ASPECT_RATIO_PRESETS.map((ratio, index) => {

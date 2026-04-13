@@ -1,5 +1,5 @@
 import { Canvas } from "@/Components/panels/Canvas";
-import { CreateSidebar } from "@/Components/panels/EffectsMenu";
+import { DesignPanel } from "@/Components/panels/DesignPanel";
 import { CreateToolbar } from "@/Components/toolkits/CreateToolbar";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCreateEditorStore } from "@/stores/useCreateEditorStore";
@@ -88,7 +88,7 @@ export const CreateRoute = () => {
 
       <main className="flex min-h-0 flex-1 overflow-hidden">
         {!isPreviewMode ? (
-          <CreateSidebar
+          <DesignPanel
             activeCanvasId={activeCanvasId}
             activeSidebarTab={activeSidebarTab}
             activeTool={activeTool}

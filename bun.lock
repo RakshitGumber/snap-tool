@@ -32,6 +32,7 @@
         "@elysiajs/eden": "^1.4.9",
         "@fontsource-variable/mulish": "^5.2.8",
         "@fontsource-variable/raleway": "^5.2.8",
+        "@fontsource/carter-one": "^5.2.8",
         "@fontsource/kaushan-script": "^5.2.8",
         "@fontsource/lato": "^5.2.7",
         "@iconify/react": "^6.0.2",
@@ -204,6 +205,8 @@
     "@fontsource-variable/mulish": ["@fontsource-variable/mulish@5.2.8", "", {}, "sha512-WK2SG2nQhQD+9dPOEw6V6tFgs8b5SodnUB5fuPOLj+2HIR2uPlwj+sUHMfMDGkz57us6xhEiJDaxRy8omad/DA=="],
 
     "@fontsource-variable/raleway": ["@fontsource-variable/raleway@5.2.8", "", {}, "sha512-PahqGI7bkz4a80m91Jt65DRsuFQmRip5vGDbI9sChVSKjLrdDfXbeGIwnTPi/ZVCOoQrbLnqzBOLQpLohnz+WA=="],
+
+    "@fontsource/carter-one": ["@fontsource/carter-one@5.2.8", "", {}, "sha512-7ZfDV7oXwaisG+BPhWDYqsKMPNHsF9y7k9XU8Obdv0DXr2ob05yTR9vNXHJ9QiF/4hnGp3ejVnPvfGpr9TQnNA=="],
 
     "@fontsource/kaushan-script": ["@fontsource/kaushan-script@5.2.8", "", {}, "sha512-iZ5n3EvASrFjJFdqIxW3snotnbIznnWiwy3UlIwgZmsOOfAckWJ0QPLKp5sj3jBHwsQ3NawvrIgKTQQrfbep4g=="],
 

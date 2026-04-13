@@ -114,7 +114,7 @@ export const Router = () => {
     }
   }
 
-  return <div className="flex flex-col">{activeRoute.element}</div>;
+  return <>{activeRoute.element}</>;
 };
 
 export const Link = ({

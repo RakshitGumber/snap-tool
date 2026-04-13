@@ -6,7 +6,7 @@ import { Navbar } from "@/Components/main/Navbar";
 
 export const RootRoute = () => {
   return (
-    <section className="max-w-7xl mx-auto flex flex-col items-center">
+    <section className="flex flex-col items-center">
       <Navbar />
       <Hero />
       <Mentions />

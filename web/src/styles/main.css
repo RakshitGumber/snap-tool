@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
+/* mulish-latin-wght-normal */
 @font-face {
-    font-family: 'Lato';
+    font-family: 'Mulish Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 200 1000;
+    src: url(@fontsource-variable/mulish/files/mulish-latin-wght-normal.woff2) format('woff2-variations');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+    font-family: 'Kaushan Script';
     font-style: normal;
     font-display: swap;
     font-weight: 400;
-    src: url(@fontsource/lato/files/lato-latin-400-normal.woff2) format('woff2'),
-        url(@fontsource/lato/files/lato-latin-400-normal.woff) format('woff');
+    src: url(@fontsource/kaushan-script/files/kaushan-script-latin-400-normal.woff2) format('woff2'),
+        url(@fontsource/kaushan-script/files/kaushan-script-latin-400-normal.woff) format('woff');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-
-@font-face {
-    font-family: 'Raleway Variable';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 100 900;
-    src: url(@fontsource-variable/raleway/files/raleway-latin-wght-normal.woff2) format('woff2-variations');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 
 :root {
     --bg-color: #F4F6FF;
@@ -43,8 +43,8 @@
 }
 
 @theme {
-    --font-main: 'Lato', sans-serif;
-    --font-styled: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive;
+    --font-main: 'Mulish Variable', sans-serif;
+    --font-comic: "Kaushan Script", 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', cursive;
 
     --color-bg: var(--bg-color);
     --color-card-bg: var(--bg-card-color);
@@ -59,7 +59,7 @@
 
 @layer base {
     ::selection {
-        @apply bg-accent-light text-title-color;
+        @apply bg-accent/80 text-title-color;
     }
 
     html {
@@ -70,22 +70,4 @@
         @apply bg-bg text-text-color font-main;
     }
 
-    ::-webkit-scrollbar {
-        width: 4px;
-        height: 5px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: var(--bg-color);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--text-muted);
-        border-radius: 2px;
-        transition: background 0.3s ease;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-color);
-    }
 }

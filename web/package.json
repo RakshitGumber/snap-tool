@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
+    "@fontsource-variable/mulish": "^5.2.8",
     "@fontsource-variable/raleway": "^5.2.8",
+    "@fontsource/kaushan-script": "^5.2.8",
     "@fontsource/lato": "^5.2.7",
     "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",

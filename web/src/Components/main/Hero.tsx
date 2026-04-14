@@ -1,10 +1,11 @@
-import { Link } from "@/pages/Router";
-import { Icon } from "@iconify/react";
+// import { Link } from "@/pages/Router";
+// import { Icon } from "@iconify/react";
+import { HeroAnimation } from "../ui/HeroAnimation";
 
 export const Hero = () => {
   return (
     <main className="h-screen max-w-7xl w-full flex items-stretch">
-      <div className="flex flex-col flex-1 justify-end gap-12 px-7 py-24">
+      {/* <div className="flex flex-col flex-1 justify-end gap-12 px-7 py-24">
         <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold">
           Releasing a new version everyday.
         </div>
@@ -33,10 +34,8 @@ export const Hero = () => {
             </Link>
           </div>
         </div>
-      </div>
-      <div className="relative flex flex-col flex-1 items-center justify-end py-24">
-        <div className="mb-12 bg-white h-100 w-100 shadow-lg shadow-accent-light border-2 border-accent/80"></div>
-      </div>
+      </div> */}
+      <HeroAnimation />
     </main>
   );
 };

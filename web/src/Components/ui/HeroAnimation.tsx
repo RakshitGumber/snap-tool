@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 export const HeroAnimation = () => {
   return (
-    <div className="relative flex flex-1 items-center justify-center">
+    <div className="relative flex flex-1 items-end justify-center mb-12 py-24">
       <motion.div className="relative border-16 border-white border-b-80 -rotate-6">
         <motion.div
           initial={{ background: "white" }}
@@ -18,7 +18,7 @@ export const HeroAnimation = () => {
             className="absolute top-20 drop-shadow-2xl drop-shadow-teal-200 z-2"
           />
         </motion.div>
-        <motion.h1 className="text-[#dc68ac] absolute top-0 p-4 text-5xl font-heading drop-shadow-sm drop-shadow-rose-400">
+        <motion.h1 className="text-white absolute top-0 p-4 text-5xl font-heading drop-shadow-lg">
           Frankly Nice
         </motion.h1>
       </motion.div>

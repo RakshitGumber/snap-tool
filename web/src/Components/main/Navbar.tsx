@@ -13,8 +13,7 @@ const parentVariants = {
 };
 
 export const Navbar = () => {
-  const { session, signOut } = useAuthStore();
-  const [showProfile, setShowProfile] = useState(false);
+  const { session } = useAuthStore();
 
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -34,12 +33,6 @@ export const Navbar = () => {
     update(latest, prevScroll);
     setPrevScroll(latest);
   });
-
-  useEffect(() => {
-    window.addEventListener("scroll", () => setShowProfile(false));
-
-    removeEventListener("scroll", () => setShowProfile(false));
-  }, [showProfile]);
 
   return (
     <motion.header
@@ -82,18 +75,6 @@ export const Navbar = () => {
           </div>
           {session?.user ? (
             <>
-              <button
-                className="rounded-full cursor-pointer"
-                onClick={() => setShowProfile(true)}
-              >
-                <img
-                  src={
-                    session.user.image ??
-                    `https://ui-avatars.com/api/?name=${session.user.name}&background=37af87&font-size=0.4&bold=true&color=fff`
-                  }
-                  className="rounded-full w-8"
-                />
-              </button>
               <Link
                 to="/create"
                 className="rounded-lg font-semibold hover:bg-accent-light items-center flex gap-1 text-xl px-3 py-1 hover:text-title-color"
@@ -113,16 +94,6 @@ export const Navbar = () => {
               Register
               <Icon icon="solar:add-square-broken" className="text-xl" />
             </Link>
-          )}
-          {showProfile && (
-            <div className="absolute top-18 rounded-b-lg border-b-2 border-accent right-30 w-50 bg-card-bg p-4">
-              <button
-                className="w-full bg-accent py-1 text-lg rounded-lg text-bg font-semibold"
-                onClick={signOut}
-              >
-                Log Out
-              </button>
-            </div>
           )}
         </div>
       </nav>

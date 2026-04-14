@@ -2,14 +2,20 @@ import { Icon } from "@iconify/react";
 
 export const Footer = () => {
   return (
-    <footer className="my-12">
+    <footer className="my-12 max-w-7xl w-full px-7">
       <section className="flex flex-col items-start">
         <div className="w-full flex items-center justify-between">
-          <p className="text-lg font-semibold font-mono">
-            Crafted with Caffine and Codex.
+          <p className="text-lg font-semibold font-heading text-title-color tracking-widest">
+            Crafted with Caffine and Serotonin.
           </p>
           <div className="flex flex-col gap-8 pb-4 transition-colors duration-200 sm:flex-row sm:flex-nowrap sm:items-center">
             <div className="flex flex-row gap-4">
+              <a href="https://gumberrakshit.com">
+                <Icon
+                  icon="solar:accessibility-broken"
+                  className="text-3xl fill-title-color transition-colors duration-200"
+                />
+              </a>
               <a href="https://github.com/RakshitGumber">
                 <Icon
                   icon="simple-icons:github"
@@ -31,7 +37,7 @@ export const Footer = () => {
             </div>
           </div>
         </div>
-        <p className="text-center text-sm font-medium text-secondary-text transition-colors duration-200">
+        <p className="text-center text-md font-medium transition-colors duration-200">
           &copy; 2026 Rakshit Gumber. All rights reserved.
         </p>
       </section>

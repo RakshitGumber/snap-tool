@@ -4,8 +4,11 @@ import { Icon } from "@iconify/react";
 export const Hero = () => {
   return (
     <main className="h-screen max-w-7xl w-full flex items-stretch">
-      <div className="flex flex-col flex-1 justify-center px-7 py-24">
-        <div className="flex flex-col gap-8">
+      <div className="flex flex-col flex-1 justify-end gap-12 px-7 py-24">
+        <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold">
+          Releasing a new version everyday.
+        </div>
+        <div className="flex flex-col gap-6">
           <h1 className="text-6xl font-comic tracking-wider font-semibold text-title-color capitalize leading-snug">
             Minimalist solution for creating your next post
           </h1>
@@ -24,14 +27,16 @@ export const Hero = () => {
                 learn more{" "}
                 <Icon
                   icon="ooui:link-external-ltr"
-                  className="text-accent-light mb-1"
+                  className="text-accent mb-1"
                 />
               </button>
             </Link>
           </div>
         </div>
       </div>
-      <div className="flex flex-col flex-1">Hello</div>
+      <div className="relative flex flex-col flex-1 items-center justify-end py-24">
+        <div className="mb-12 bg-white h-100 w-100 shadow-lg shadow-accent-light border-2 border-accent/80"></div>
+      </div>
     </main>
   );
 };

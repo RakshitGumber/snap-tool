@@ -17,10 +17,10 @@ export const Navbar = () => {
   }, [showProfile]);
 
   return (
-    <header className="h-18 bg-card-bg border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center">
+    <header className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30">
       <nav className="max-w-7xl flex items-center justify-between p-6 flex-1">
         <Link className="rounded-lg flex items-center cursor-pointer" to="/">
-          <h1 className="font-heading text-2xl text-title-color hover:text-accent font-medium tracking-widest capitalize select-none">
+          <h1 className="font-heading text-2xl text-title-color hover:text-accent tracking-wider capitalize select-none">
             Single Filter
           </h1>
         </Link>

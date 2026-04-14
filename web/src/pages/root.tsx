@@ -6,12 +6,12 @@ import { Navbar } from "@/Components/main/Navbar";
 
 export const RootRoute = () => {
   return (
-    <section className="flex flex-col items-center">
+    <main className="flex flex-col items-center">
       <Navbar />
       <Hero />
       <Mentions />
       <Features />
       <Footer />
-    </section>
+    </main>
   );
 };

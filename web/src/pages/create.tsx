@@ -1,3 +1,9 @@
+import { Board } from "@/Components/panels/Board";
+
 export const CreateRoute = () => {
-  return <div></div>;
+  return (
+    <main>
+      <Board />
+    </main>
+  );
 };

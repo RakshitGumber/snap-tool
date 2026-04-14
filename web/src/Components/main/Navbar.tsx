@@ -10,12 +10,9 @@ export const Navbar = () => {
 
   return (
     <header className="h-18 bg-card-bg border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center">
-      <nav className="max-w-7xl flex items-center justify-between p-3 flex-1">
-        <Link
-          className="hover:bg-text-color/30 rounded-lg flex items-center py-2 px-4 cursor-pointer"
-          to="/"
-        >
-          <h1 className="font-heading text-2xl text-accent  font-medium tracking-widest capitalize select-none">
+      <nav className="max-w-7xl flex items-center justify-between p-6 flex-1">
+        <Link className="rounded-lg flex items-center cursor-pointer" to="/">
+          <h1 className="font-heading text-2xl text-title-color hover:text-accent font-medium tracking-widest capitalize select-none">
             Single Filter
           </h1>
         </Link>
@@ -24,18 +21,33 @@ export const Navbar = () => {
             <Link to="/">Home</Link>
           </li>
           <li className="flex px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg">
-            <Link to="/">Home</Link>
+            <Link to="/about">About</Link>
           </li>
           <li className="flex px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg">
-            <Link to="/">Home</Link>
+            <Link to="/contribute">Contribute</Link>
           </li>
         </ul>
         <div className="relative flex items-center gap-3">
-          <ThemeButton />
+          <div className="flex gap-2">
+            <a
+              href="https://github.com/RakshitGumber/snap-tool"
+              className="rounded-lg font-semibold hover:bg-accent-light items-center flex gap-1 text-xl p-2 text-title-color"
+            >
+              <Icon icon="simple-icons:github" />
+            </a>
+            <ThemeButton />
+          </div>
           {session?.user ? (
-            <div className="rounded-full px-3 py-2 font-semibold text-title-color">
-              Signed in
-            </div>
+            <Link
+              to="/create"
+              className="rounded-lg font-semibold hover:bg-accent-light items-center flex gap-1 text-xl px-3 py-1 hover:text-title-color"
+            >
+              <span className="text-lg text-title-color">Create</span>
+              <Icon
+                icon="ooui:link-external-ltr"
+                className="text-accent mb-0.5"
+              />
+            </Link>
           ) : (
             <Link
               to="/auth/register"

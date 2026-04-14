@@ -1,14 +1,39 @@
 import { Link } from "@/pages/Router";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 
 import { Icon } from "@iconify/react";
 
 import { ThemeButton } from "../ui/ThemeButton";
 import { useEffect, useState } from "react";
 
+const parentVariants = {
+  visible: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: "-4rem" },
+};
+
 export const Navbar = () => {
   const { session, signOut } = useAuthStore();
   const [showProfile, setShowProfile] = useState(false);
+
+  const { scrollY } = useScroll();
+  const [hidden, setHidden] = useState(false);
+  const [prevScroll, setPrevScroll] = useState(0);
+
+  function update(latest: number, prev: number): void {
+    if (latest < prev) {
+      setHidden(false);
+      // console.log("visible");
+    } else if (latest > 100 && latest > prev) {
+      setHidden(true);
+      // console.log("hidden");
+    }
+  }
+
+  useMotionValueEvent(scrollY, "change", (latest: number) => {
+    update(latest, prevScroll);
+    setPrevScroll(latest);
+  });
 
   useEffect(() => {
     window.addEventListener("scroll", () => setShowProfile(false));
@@ -17,7 +42,16 @@ export const Navbar = () => {
   }, [showProfile]);
 
   return (
-    <header className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30">
+    <motion.header
+      className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30"
+      variants={parentVariants}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{
+        ease: [0.1, 0.25, 0.3, 1],
+        duration: 0.6,
+        staggerChildren: 0.05,
+      }}
+    >
       <nav className="max-w-7xl flex items-center justify-between p-6 flex-1">
         <Link className="rounded-lg flex items-center cursor-pointer" to="/">
           <h1 className="font-heading text-2xl text-title-color hover:text-accent tracking-wider capitalize select-none">
@@ -92,6 +126,6 @@ export const Navbar = () => {
           )}
         </div>
       </nav>
-    </header>
+    </motion.header>
   );
 };

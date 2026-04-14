@@ -6,6 +6,8 @@ import {
 } from "react";
 import { create } from "zustand";
 
+import Lenis from "lenis";
+
 import { LoginRoute } from "./user/login";
 import { RegisterRoute } from "./user/register";
 import { CreateRoute } from "./create";
@@ -99,6 +101,19 @@ export const Router = () => {
   if (!activeRoute) {
     return <PageNotFound />;
   }
+
+  useEffect(() => {
+    const lenis = new Lenis();
+
+    function raf(time: any) {
+      lenis.raf(time * 0.6);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => lenis.destroy();
+  }, []);
 
   if (activeRoute.isProtected) {
     if (isLoading) {

@@ -1,20 +1,37 @@
+import { Link } from "@/pages/Router";
+import { Icon } from "@iconify/react";
+
 export const Hero = () => {
   return (
-    <main className="h-170 max-w-7xl flex flex-col lg:gap-10 gap-4 items-center justify-center">
-      <h1 className="lg:text-8xl text-6xl font-styled font-extrabold text-title-color  text-center capitalize leading-snug">
-        Create your next post without over designing
-      </h1>
-      <span className="lg:text-3xl text-2xl text-center">
-        You don't have to be a professional to design amazing posts.
-      </span>
-      <div className="flex gap-8 my-4">
-        <button className="px-8 py-4 outline-none bg-accent text-bg text-xl font-semibold font-styled capitalize rounded-lg cursor-pointer">
-          Get Started
-        </button>
-        <button className="px-8 py-4 outline-none text-secondary-text text-xl font-semibold font-styled rounded-lg cursor-pointer">
-          Take a Shot
-        </button>
+    <main className="h-screen max-w-7xl w-full flex items-stretch">
+      <div className="flex flex-col flex-1 justify-center px-7 py-24">
+        <div className="flex flex-col gap-8">
+          <h1 className="text-6xl font-comic tracking-wider font-semibold text-title-color capitalize leading-snug">
+            Minimalist solution for creating your next post
+          </h1>
+          <span className="text-2xl text px-1 w-3/4">
+            Make professional grade posts in simple click. Making post wasn't
+            this easy.
+          </span>
+          <div className="flex items-start gap-4 my-4 px-1">
+            <Link to="/create">
+              <button className="px-6 py-3 bg-accent text-bg text-xl font-bold capitalize rounded-lg cursor-pointer">
+                Create Now
+              </button>
+            </Link>
+            <Link to="/about">
+              <button className="px-6 py-3 text-xl font-semibold rounded-lg cursor-pointer capitalize flex gap-2 items-center hover:text-title-color">
+                learn more{" "}
+                <Icon
+                  icon="ooui:link-external-ltr"
+                  className="text-accent-light mb-1"
+                />
+              </button>
+            </Link>
+          </div>
+        </div>
       </div>
+      <div className="flex flex-col flex-1">Hello</div>
     </main>
   );
 };

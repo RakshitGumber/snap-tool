@@ -22,24 +22,33 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
   const appRef = useRef<Application | null>(null);
 
   useEffect(() => {
-    if (!hostRef.current) return;
+    const host = hostRef.current;
+    if (!host) return;
+
+    let isDisposed = false;
     const app = new Application();
     appRef.current = app;
 
     const initPixi = async () => {
       await app.init({
-        resizeTo: hostRef.current!,
+        resizeTo: host,
         antialias: true,
         backgroundAlpha: 0,
       });
-      hostRef.current?.appendChild(app.canvas);
+      if (isDisposed) {
+        app.destroy({ removeView: true }, true);
+        return () => {};
+      }
+
+      host.replaceChildren();
+      host.appendChild(app.canvas);
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
 
       // Update store with actual canvas size
       useBoardStore.getState().setBoardSize({
-        width: hostRef.current!.clientWidth,
-        height: hostRef.current!.clientHeight,
+        width: host.clientWidth,
+        height: host.clientHeight,
       });
 
       // Setup Scene Graph
@@ -159,7 +168,11 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
     });
 
     return () => {
+      isDisposed = true;
       cleanupStore();
+      appRef.current = null;
+      app.destroy({ removeView: true }, true);
+      host.replaceChildren();
     };
   }, [isDark]); // Only re-mount canvas if dark mode changes (or handle palette dynamically inside subscribe)
 

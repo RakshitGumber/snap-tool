@@ -10,7 +10,7 @@ const heroContentReveal: Variants = {
     y: 0,
     transition: {
       delay: 0.3,
-      duration: 0.7,
+      duration: 1,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   },
@@ -23,7 +23,6 @@ export const Hero = () => {
         variants={heroContentReveal}
         initial="hidden"
         animate="visible"
-
         className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-12 px-7 py-20 lg:py-24 sm:text-center text-left lg:text-left"
       >
         <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold mx-auto lg:mx-0">
@@ -37,7 +36,7 @@ export const Hero = () => {
             Make professional grade posts in simple click. Making post wasn't
             this easy.
           </span>
-          <div className="flex flex-wrap justify-start sm:justify-center items-center lg:items-start gap-4 my-4 px-1">
+          <div className="flex flex-wrap justify-start sm:justify-center lg:justify-start items-center lg:items-start gap-4 my-4 px-1">
             <Link to="/create">
               <button className="lg:px-6 lg:py-3 px-3 py-2 bg-accent text-bg sm:text-xl font-bold capitalize rounded-lg cursor-pointer">
                 Create Now

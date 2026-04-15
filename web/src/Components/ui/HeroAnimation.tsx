@@ -7,8 +7,8 @@ const heroAnimationReveal: Variants = {
     y: 0,
     scale: 1,
     transition: {
-      delay: 0.12,
-      duration: 0.75,
+      delay: 0.6,
+      duration: 2,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   },
@@ -22,7 +22,7 @@ export const HeroAnimation = () => {
       animate="visible"
       className="relative flex w-full flex-1 items-center justify-center lg:items-end mb-8 lg:mb-12 py-8 md:py-12 lg:py-24"
     >
-      <motion.div className="relative border-12 md:border-16 border-white border-b-56 md:border-b-72 lg:border-b-80 -rotate-6">
+      <motion.div className="relative border-12 md:border-16 border-white border-b-56 md:border-b-72 lg:border-b-80 -rotate-6 shadow-[6px_6px_15px_#0008]">
         <motion.div
           initial={{ background: "white" }}
           animate={{

@@ -26,6 +26,7 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
     if (!host) return;
 
     let isDisposed = false;
+    let isInitialized = false;
     const app = new Application();
     appRef.current = app;
 
@@ -35,6 +36,7 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
         antialias: true,
         backgroundAlpha: 0,
       });
+      isInitialized = true;
       if (isDisposed) {
         app.destroy({ removeView: true }, true);
         return () => {};
@@ -171,8 +173,10 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
       isDisposed = true;
       cleanupStore();
       appRef.current = null;
-      app.destroy({ removeView: true }, true);
-      host.replaceChildren();
+      if (isInitialized) {
+        app.destroy({ removeView: true }, true);
+        host.replaceChildren();
+      }
     };
   }, [isDark]); // Only re-mount canvas if dark mode changes (or handle palette dynamically inside subscribe)
 

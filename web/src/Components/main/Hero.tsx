@@ -1,11 +1,31 @@
 import { Link } from "@/pages/Router";
 import { Icon } from "@iconify/react";
+import { motion, type Variants } from "framer-motion";
 import { HeroAnimation } from "../ui/HeroAnimation";
+
+const heroContentReveal: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 0.3,
+      duration: 0.7,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 export const Hero = () => {
   return (
     <main className="min-h-screen max-w-7xl w-full flex flex-col lg:flex-row items-center lg:items-stretch py-12 lg:py-0">
-      <div className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-12 px-7 py-20 lg:py-24 sm:text-center text-left lg:text-left">
+      <motion.div
+        variants={heroContentReveal}
+        initial="hidden"
+        animate="visible"
+
+        className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-12 px-7 py-20 lg:py-24 sm:text-center text-left lg:text-left"
+      >
         <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold mx-auto lg:mx-0">
           Releasing a new version everyday.
         </div>
@@ -34,7 +54,7 @@ export const Hero = () => {
             </Link>
           </div>
         </div>
-      </div>
+      </motion.div>
       <HeroAnimation />
     </main>
   );

@@ -1,8 +1,27 @@
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
+
+const heroAnimationReveal: Variants = {
+  hidden: { opacity: 0, y: 24, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: 0.12,
+      duration: 0.75,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  },
+};
 
 export const HeroAnimation = () => {
   return (
-    <div className="relative flex w-full flex-1 items-center justify-center lg:items-end mb-8 lg:mb-12 py-8 md:py-12 lg:py-24">
+    <motion.div
+      variants={heroAnimationReveal}
+      initial="hidden"
+      animate="visible"
+      className="relative flex w-full flex-1 items-center justify-center lg:items-end mb-8 lg:mb-12 py-8 md:py-12 lg:py-24"
+    >
       <motion.div className="relative border-12 md:border-16 border-white border-b-56 md:border-b-72 lg:border-b-80 -rotate-6">
         <motion.div
           initial={{ background: "white" }}
@@ -22,6 +41,6 @@ export const HeroAnimation = () => {
           Frankly Nice
         </motion.h1>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };

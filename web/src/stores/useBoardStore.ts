@@ -9,6 +9,11 @@ export type BoardFrame = {
   title: string;
 };
 
+export type FrameDimensions = {
+  width: number;
+  height: number;
+};
+
 export type ViewportState = {
   x: number;
   y: number;
@@ -31,15 +36,11 @@ type BoardActions = {
   setBoardSize: (size: BoardSize) => void;
   setViewport: (viewport: ViewportState) => void;
   selectFrame: (frameId: string | null) => void;
-  addFrame: () => void;
+  addFrame: (size: FrameDimensions) => void;
+  resizeSelectedFrame: (size: FrameDimensions) => void;
   updateFramePosition: (frameId: string, x: number, y: number) => void;
   removeSelectedFrame: () => void;
 };
-
-// May not be required in the future
-
-const FRAME_WIDTH = 320;
-const FRAME_HEIGHT = 220;
 
 export const useBoardStore = create<BoardState & BoardActions>((set, get) => ({
   frames: [],
@@ -74,27 +75,40 @@ export const useBoardStore = create<BoardState & BoardActions>((set, get) => ({
     set({ selectedFrameId: frameId });
   },
 
-  addFrame: () => {
+  addFrame: ({ width, height }) => {
     const { boardSize, viewport, frames } = get();
     if (!boardSize.width) return;
+    if (width <= 0 || height <= 0) return;
 
-    const x =
-      (boardSize.width / 2 - viewport.x) / viewport.scale - FRAME_WIDTH / 2;
-    const y =
-      (boardSize.height / 2 - viewport.y) / viewport.scale - FRAME_HEIGHT / 2;
+    const x = (boardSize.width / 2 - viewport.x) / viewport.scale - width / 2;
+    const y = (boardSize.height / 2 - viewport.y) / viewport.scale - height / 2;
     const cascade = (frames.length % 6) * 28;
 
     const newFrame: BoardFrame = {
       id: crypto.randomUUID(),
       x: x + cascade,
       y: y + cascade,
-      width: FRAME_WIDTH,
-      height: FRAME_HEIGHT,
+      width,
+      height,
       title: `Frame ${frames.length + 1}`,
     };
 
     set({ frames: [...frames, newFrame], selectedFrameId: newFrame.id });
   },
+
+  resizeSelectedFrame: ({ width, height }) =>
+    set((state) => {
+      if (!state.selectedFrameId) return state;
+      if (width <= 0 || height <= 0) return state;
+
+      return {
+        frames: state.frames.map((frame) =>
+          frame.id === state.selectedFrameId
+            ? { ...frame, width, height }
+            : frame,
+        ),
+      };
+    }),
 
   updateFramePosition: (id, x, y) =>
     set((state) => ({

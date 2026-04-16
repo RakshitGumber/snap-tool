@@ -6,11 +6,7 @@ import { useBoardStore } from "@/stores/useBoardStore";
 const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 2.25;
 
-const getPalette = (isDark: boolean) => ({
-  boardFill: isDark ? "#1a1a1e" : "#f4f6ff",
-});
-
-export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
+export const BoardCanvas = () => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
 
@@ -93,15 +89,14 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
       app.stage.on("pointerupoutside", onPointerUp);
 
       const unsubscribe = useBoardStore.subscribe((state) => {
-        const palette = getPalette(isDark);
+        // const palette = getPalette(isDark);
 
         world.position.set(state.viewport.x, state.viewport.y);
         world.scale.set(state.viewport.scale);
 
         background.clear();
-        background
-          .rect(0, 0, state.boardSize.width, state.boardSize.height)
-          .fill(palette.boardFill);
+        background.rect(0, 0, state.boardSize.width, state.boardSize.height);
+        // .fill(palette.boardFill);
 
         framesLayer
           .removeChildren()
@@ -161,7 +156,7 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
         host.replaceChildren();
       }
     };
-  }, [isDark]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -205,7 +200,7 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
       ref={hostRef}
       tabIndex={0}
       onWheel={handleWheel}
-      className="h-full w-full touch-none outline-none"
+      className="h-screen w-full overflow-hidden touch-none outline-none"
       aria-label="Canvas board"
     />
   );

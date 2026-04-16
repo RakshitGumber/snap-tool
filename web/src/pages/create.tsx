@@ -2,7 +2,7 @@ import { Board } from "@/Components/Board";
 
 export const CreateRoute = () => {
   return (
-    <main className="h-screen w-screen bg-bg">
+    <main className="h-full w-full bg-bg">
       <Board />
     </main>
   );

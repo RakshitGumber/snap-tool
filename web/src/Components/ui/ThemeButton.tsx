@@ -1,4 +1,4 @@
-import { useTheme } from "@/providers/ThemeProvider";
+import { useTheme } from "@/providers/useTheme";
 import { Icon } from "@iconify/react";
 
 const isDarkTheme = (theme: "dark" | "light" | "system") => {

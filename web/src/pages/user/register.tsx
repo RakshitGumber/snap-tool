@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { Link, useRouter } from "../Router";
+import { Link } from "../Router";
+import { useRouter } from "../routerStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Navbar } from "@/Components/main/Navbar";
 

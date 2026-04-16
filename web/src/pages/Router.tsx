@@ -4,7 +4,6 @@ import {
   type ReactNode,
   type AnchorHTMLAttributes,
 } from "react";
-import { create } from "zustand";
 
 import Lenis from "lenis";
 
@@ -13,13 +12,9 @@ import { RegisterRoute } from "./user/register";
 import { CreateRoute } from "./create";
 import { RootRoute } from "./root";
 import { PageNotFound } from "./not-found";
+import { useRouter } from "./routerStore";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-
-interface RouterState {
-  route: string;
-  setRoute: (path: string) => void;
-}
 
 interface RouteConfig {
   path: string;
@@ -30,14 +25,6 @@ interface RouteConfig {
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   to: string;
 }
-
-export const useRouter = create<RouterState>((set) => ({
-  route: window.location.pathname,
-  setRoute: (path) => {
-    window.history.pushState({}, "", path);
-    set({ route: path });
-  },
-}));
 
 const ROUTES: RouteConfig[] = [
   { path: "/", element: <RootRoute /> },
@@ -98,14 +85,10 @@ export const Router = () => {
     }
   }, [activeRoute?.isProtected, isLoading, session, setRoute]);
 
-  if (!activeRoute) {
-    return <PageNotFound />;
-  }
-
   useEffect(() => {
     const lenis = new Lenis();
 
-    function raf(time: any) {
+    function raf(time: number) {
       lenis.raf(time * 0.6);
       requestAnimationFrame(raf);
     }
@@ -114,6 +97,10 @@ export const Router = () => {
 
     return () => lenis.destroy();
   }, []);
+
+  if (!activeRoute) {
+    return <PageNotFound />;
+  }
 
   if (activeRoute.isProtected) {
     if (isLoading) {

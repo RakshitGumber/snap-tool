@@ -43,7 +43,6 @@ export const BoardCanvas = () => {
   const setBoardSize = useBoardViewportStore((state) => state.setBoardSize);
   const panBy = useBoardViewportStore((state) => state.panBy);
   const zoomAt = useBoardViewportStore((state) => state.zoomAt);
-  const canMoveCanvas = canvases.length > 1;
 
   useEffect(() => {
     canvasesRef.current = canvases;
@@ -87,11 +86,6 @@ export const BoardCanvas = () => {
       const panState = panStateRef.current;
 
       if (dragState) {
-        if (canvasesRef.current.length <= 1) {
-          dragStateRef.current = null;
-          return;
-        }
-
         const activeCanvas = canvasesRef.current.find(
           (canvas) => canvas.id === dragState.canvasId,
         );
@@ -152,11 +146,6 @@ export const BoardCanvas = () => {
       event.stopPropagation();
       setActiveCanvas(canvasId);
       setSelectedCanvas(canvasId);
-
-      if (!canMoveCanvas) {
-        dragStateRef.current = null;
-        return;
-      }
 
       const rect = event.currentTarget.getBoundingClientRect();
       const currentViewport = viewportRef.current;
@@ -222,13 +211,10 @@ export const BoardCanvas = () => {
                 tabIndex={0}
                 aria-label={canvas.title}
                 onPointerDown={handleCanvasPointerDown(canvas.id)}
-                className={[
-                  "relative h-full w-full overflow-hidden bg-white outline outline-1 outline-border-color/70",
-                  isActive ? "outline-2 outline-accent" : "",
-                  isSelected ? "outline-2 outline-accent" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
+                className={clsx(
+                  "relative h-full w-full overflow-hidden border border-border-color/70 bg-white",
+                  (isActive || isSelected) && "border-2 border-accent",
+                )}
                 style={{ background: canvas.background }}
               />
             </div>

@@ -1,4 +1,6 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef } from "react";
+
+import { Icon } from "@iconify/react";
 
 import {
   BoardSidebar,
@@ -11,7 +13,9 @@ import {
   CANVAS_BACKGROUND_PRESETS,
   CANVAS_PRESETS,
   DEFAULT_CANVAS_PRESET_ID,
+  DEFAULT_SIDEBAR_WIDTH,
   FIT_PADDING,
+  SNAP_GAP,
   getCanvasBackgroundById,
   getCanvasPresetById,
   getCanvasPresetIdFromSize,
@@ -24,7 +28,11 @@ import { useRouter } from "@/pages/routerStore";
 import { useBoardUiStore } from "@/stores/useBoardUiStore";
 import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
 import { useCanvasStore } from "@/stores/useCanvasStore";
-import type { CanvasNavigationDirection, CanvasPresetId } from "@/types/canvas";
+import type {
+  CanvasFrame,
+  CanvasNavigationDirection,
+  CanvasPresetId,
+} from "@/types/canvas";
 
 const downloadTextFile = (filename: string, content: string) => {
   const blob = new Blob([content], { type: "application/json" });
@@ -36,31 +44,74 @@ const downloadTextFile = (filename: string, content: string) => {
   window.URL.revokeObjectURL(url);
 };
 
-const getCanvasCenterPosition = ({
-  boardWidth,
-  boardHeight,
-  viewportX,
-  viewportY,
-  scale,
-  canvasWidth,
-  canvasHeight,
-  canvasIndex,
-}: {
-  boardWidth: number;
-  boardHeight: number;
-  viewportX: number;
-  viewportY: number;
-  scale: number;
-  canvasWidth: number;
-  canvasHeight: number;
-  canvasIndex: number;
-}) => {
-  const offset = Math.min(canvasIndex, 3) * 40;
+const MAX_CANVASES_PER_ROW = 4;
+
+const getLeftMostCanvas = (canvases: CanvasFrame[]) =>
+  canvases.reduce((leftMost, canvas) => (canvas.x < leftMost.x ? canvas : leftMost));
+
+const getRightMostCanvas = (canvases: CanvasFrame[]) =>
+  canvases.reduce((rightMost, canvas) =>
+    canvas.x + canvas.width > rightMost.x + rightMost.width ? canvas : rightMost,
+  );
+
+const getNextCanvasPosition = (canvases: CanvasFrame[]) => {
+  if (!canvases.length) {
+    return { x: 0, y: 0 };
+  }
+
+  const nextCanvasIndex = canvases.length;
+  const nextColumnIndex = nextCanvasIndex % MAX_CANVASES_PER_ROW;
+
+  if (nextColumnIndex === 0) {
+    const previousRow = canvases.slice(
+      Math.max(0, nextCanvasIndex - MAX_CANVASES_PER_ROW),
+      nextCanvasIndex,
+    );
+    const leftMostCanvas = getLeftMostCanvas(previousRow);
+
+    return {
+      x: leftMostCanvas.x,
+      y: leftMostCanvas.y + leftMostCanvas.height + SNAP_GAP,
+    };
+  }
+
+  const currentRowStartIndex =
+    Math.floor(nextCanvasIndex / MAX_CANVASES_PER_ROW) * MAX_CANVASES_PER_ROW;
+  const currentRow = canvases.slice(currentRowStartIndex, nextCanvasIndex);
+  const rightMostCanvas = getRightMostCanvas(currentRow);
 
   return {
-    x: (boardWidth / 2 - viewportX) / scale - canvasWidth / 2 + offset,
-    y: (boardHeight / 2 - viewportY) / scale - canvasHeight / 2 + offset,
+    x: rightMostCanvas.x + rightMostCanvas.width + SNAP_GAP,
+    y: rightMostCanvas.y,
   };
+};
+
+const isCanvasOutsideViewport = ({
+  canvas,
+  viewport,
+  boardSize,
+  padding = 0,
+}: {
+  canvas: CanvasFrame;
+  viewport: { x: number; y: number; scale: number };
+  boardSize: { width: number; height: number };
+  padding?: number;
+}) => {
+  if (!boardSize.width || !boardSize.height) {
+    return false;
+  }
+
+  const left = canvas.x * viewport.scale + viewport.x;
+  const top = canvas.y * viewport.scale + viewport.y;
+  const right = left + canvas.width * viewport.scale;
+  const bottom = top + canvas.height * viewport.scale;
+
+  return (
+    left < padding ||
+    top < padding ||
+    right > boardSize.width - padding ||
+    bottom > boardSize.height - padding
+  );
 };
 
 const BOARD_SIDEBAR_SECTIONS: BoardSidebarSection[] = [
@@ -111,17 +162,17 @@ export const Board = () => {
   const boardSize = useBoardViewportStore((state) => state.boardSize);
   const viewport = useBoardViewportStore((state) => state.viewport);
   const fitCanvas = useBoardViewportStore((state) => state.fitCanvas);
+  const setViewport = useBoardViewportStore((state) => state.setViewport);
   const setCanPanBoard = useBoardViewportStore((state) => state.setCanPanBoard);
 
-  const sidebarWidth = useBoardUiStore((state) => state.sidebarWidth);
   const openSectionId = useBoardUiStore((state) => state.openSectionId);
   const isFileMenuOpen = useBoardUiStore((state) => state.isFileMenuOpen);
   const isPresetMenuOpen = useBoardUiStore((state) => state.isPresetMenuOpen);
-  const setSidebarWidth = useBoardUiStore((state) => state.setSidebarWidth);
-  const resetSidebarWidth = useBoardUiStore((state) => state.resetSidebarWidth);
+  const isSidebarOpen = useBoardUiStore((state) => state.isSidebarOpen);
   const setOpenSectionId = useBoardUiStore((state) => state.setOpenSectionId);
   const setFileMenuOpen = useBoardUiStore((state) => state.setFileMenuOpen);
   const setPresetMenuOpen = useBoardUiStore((state) => state.setPresetMenuOpen);
+  const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
 
   const hasFittedInitialCanvasRef = useRef(false);
 
@@ -138,6 +189,14 @@ export const Board = () => {
   const activeBackground = activeCanvas
     ? getCanvasBackgroundById(activeCanvas.backgroundPresetId)
     : CANVAS_BACKGROUND_PRESETS[0];
+  const shouldShowCenterCanvasButton = activeCanvas
+    ? isCanvasOutsideViewport({
+        canvas: activeCanvas,
+        viewport,
+        boardSize,
+        padding: 24,
+      })
+    : false;
 
   useEffect(() => {
     if (canvases.length) return;
@@ -166,20 +225,25 @@ export const Board = () => {
     fitCanvas(nextCanvas, FIT_PADDING);
   };
 
+  const handleCenterActiveCanvas = () => {
+    if (!activeCanvas || !boardSize.width || !boardSize.height) return;
+
+    const scale = viewport.scale;
+    const centerX = activeCanvas.x + activeCanvas.width / 2;
+    const centerY = activeCanvas.y + activeCanvas.height / 2;
+
+    setViewport({
+      scale,
+      x: boardSize.width / 2 - centerX * scale,
+      y: boardSize.height / 2 - centerY * scale,
+    });
+  };
+
   const handleAddCanvas = () => {
     const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-    if (!preset.size || !boardSize.width || !boardSize.height) return;
+    if (!preset.size) return;
 
-    const position = getCanvasCenterPosition({
-      boardWidth: boardSize.width,
-      boardHeight: boardSize.height,
-      viewportX: viewport.x,
-      viewportY: viewport.y,
-      scale: viewport.scale,
-      canvasWidth: preset.size.width,
-      canvasHeight: preset.size.height,
-      canvasIndex: canvases.length,
-    });
+    const position = getNextCanvasPosition(canvases);
 
     const nextCanvas = addCanvas(preset.size, position);
     setPresetMenuOpen(false);
@@ -209,7 +273,8 @@ export const Board = () => {
       version: 1,
       savedAt: new Date().toISOString(),
       viewport,
-      sidebarWidth,
+      sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+      isSidebarOpen,
       activeCanvasId,
       selectedCanvasId,
       canvases,
@@ -272,24 +337,6 @@ export const Board = () => {
     },
   ];
 
-  const handleSidebarResizeStart = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const startingWidth = sidebarWidth;
-    const startingX = event.clientX;
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const delta = moveEvent.clientX - startingX;
-      setSidebarWidth(startingWidth + delta);
-    };
-
-    const handlePointerUp = () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-  };
-
   return (
     <main className="flex h-screen flex-col bg-bg">
       <BoardTopRibbon
@@ -308,23 +355,49 @@ export const Board = () => {
       />
 
       <div className="flex min-h-0 flex-1">
-        <BoardSidebar
-          width={sidebarWidth}
-          activeCanvas={activeCanvas}
-          activeBackground={activeBackground}
-          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-          sections={BOARD_SIDEBAR_SECTIONS}
-          openSectionId={openSectionId}
-          onSectionToggle={(sectionId: BoardSidebarSectionId) =>
-            setOpenSectionId(sectionId)
-          }
-          onBackgroundSelect={applyBackgroundToActiveCanvas}
-          onResizeStart={handleSidebarResizeStart}
-          onResizeReset={resetSidebarWidth}
-        />
+        {isSidebarOpen ? (
+          <BoardSidebar
+            activeCanvas={activeCanvas}
+            activeBackground={activeBackground}
+            backgroundPresets={CANVAS_BACKGROUND_PRESETS}
+            sections={BOARD_SIDEBAR_SECTIONS}
+            openSectionId={openSectionId}
+            onSectionToggle={(sectionId: BoardSidebarSectionId) =>
+              setOpenSectionId(sectionId)
+            }
+            onBackgroundSelect={applyBackgroundToActiveCanvas}
+            onToggleSidebar={() => setSidebarOpen(false)}
+          />
+        ) : null}
 
-        <section className="min-w-0 flex-1 bg-bg">
+        <section className="relative min-w-0 flex-1 bg-bg">
+          {!isSidebarOpen ? (
+            <div className="absolute left-4 top-4 z-20">
+              <button
+                type="button"
+                aria-label="Open sidebar"
+                onClick={() => setSidebarOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-card-bg/95 text-title-color shadow-lg outline outline-1 outline-border-color/60 backdrop-blur transition hover:bg-accent-light"
+              >
+                <Icon icon="solar:sidebar-minimalistic-linear" className="text-lg" />
+              </button>
+            </div>
+          ) : null}
+
           <BoardCanvas />
+
+          {shouldShowCenterCanvasButton ? (
+            <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+              <button
+                type="button"
+                onClick={handleCenterActiveCanvas}
+                className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-card-bg/95 px-4 py-2 text-sm font-semibold text-title-color shadow-lg outline outline-1 outline-border-color/60 backdrop-blur"
+              >
+                <Icon icon="solar:target-linear" className="text-base" />
+                <span>Center canvas</span>
+              </button>
+            </div>
+          ) : null}
         </section>
       </div>
     </main>

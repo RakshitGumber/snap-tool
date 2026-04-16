@@ -1,10 +1,11 @@
 import { Icon } from "@iconify/react";
 
+import { DEFAULT_SIDEBAR_WIDTH } from "@/board/config";
+
 import { BoardAccordionSection } from "./BoardAccordionSection";
 import type { BoardSidebarProps } from "./types";
 
 export const BoardSidebar = ({
-  width,
   activeCanvas,
   activeBackground,
   backgroundPresets,
@@ -12,14 +13,28 @@ export const BoardSidebar = ({
   openSectionId,
   onSectionToggle,
   onBackgroundSelect,
-  onResizeStart,
-  onResizeReset,
+  onToggleSidebar,
 }: BoardSidebarProps) => {
   return (
     <aside
       className="relative z-10 flex h-full shrink-0 flex-col border-r-2 border-accent bg-card-bg/95 backdrop-blur-3xl"
-      style={{ width }}
+      style={{ width: DEFAULT_SIDEBAR_WIDTH }}
     >
+      <div className="flex items-center justify-between border-b border-border-color/50 px-4 py-3">
+        <div className="pointer-events-none text-secondary-text">
+          <Icon icon="solar:sidebar-minimalistic-linear" className="text-lg" />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={onToggleSidebar}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-title-color transition hover:bg-accent-light"
+        >
+          <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="mb-4 rounded-xl bg-bg/70 px-4 py-3">
           <p className="text-xs uppercase tracking-[0.16em] text-secondary-text">
@@ -90,20 +105,6 @@ export const BoardSidebar = ({
             />
           ))}
         </div>
-      </div>
-
-      <button
-        type="button"
-        aria-label="Resize sidebar"
-        onPointerDown={onResizeStart}
-        onDoubleClick={onResizeReset}
-        className="absolute inset-y-0 right-0 flex w-3 -translate-x-1/2 cursor-col-resize items-center justify-center"
-      >
-        <span className="h-14 w-[2px] rounded-full bg-accent/70" />
-      </button>
-
-      <div className="pointer-events-none absolute bottom-4 right-5 text-secondary-text">
-        <Icon icon="solar:sidebar-minimalistic-linear" className="text-lg" />
       </div>
     </aside>
   );

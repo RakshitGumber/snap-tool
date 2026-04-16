@@ -1,4 +1,4 @@
-import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import type {
   CanvasBackgroundPreset,
@@ -44,7 +44,6 @@ export type BoardTopRibbonProps = {
 };
 
 export type BoardSidebarProps = {
-  width: number;
   activeCanvas: CanvasFrame | null;
   activeBackground: CanvasBackgroundPreset | null;
   backgroundPresets: CanvasBackgroundPreset[];
@@ -52,6 +51,5 @@ export type BoardSidebarProps = {
   openSectionId: BoardSidebarSectionId;
   onSectionToggle: (sectionId: BoardSidebarSectionId) => void;
   onBackgroundSelect: (backgroundPresetId: string) => void;
-  onResizeStart: (event: ReactPointerEvent<HTMLButtonElement>) => void;
-  onResizeReset: () => void;
+  onToggleSidebar: () => void;
 };

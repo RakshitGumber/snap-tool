@@ -1,7 +1,6 @@
 import {
   useEffect,
   useRef,
-  useState,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent,
 } from "react";
@@ -12,7 +11,6 @@ import { SNAP_GAP, SNAP_THRESHOLD } from "@/board/config";
 import { resolveCanvasSnap } from "@/board/snap";
 import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
 import { useCanvasStore } from "@/stores/useCanvasStore";
-import type { SnapGuide } from "@/types/canvas";
 
 type DragState = {
   canvasId: string;
@@ -25,19 +23,12 @@ type PanState = {
   y: number;
 };
 
-const GUIDE_STYLES: Record<SnapGuide["mode"], string> = {
-  gap: "bg-accent/50",
-  flush: "bg-title-color/70",
-};
-
 export const BoardCanvas = () => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const panStateRef = useRef<PanState | null>(null);
   const canvasesRef = useRef(useCanvasStore.getState().canvases);
   const viewportRef = useRef(useBoardViewportStore.getState().viewport);
-
-  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
 
   const canvases = useCanvasStore((state) => state.canvases);
   const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
@@ -98,7 +89,6 @@ export const BoardCanvas = () => {
       if (dragState) {
         if (canvasesRef.current.length <= 1) {
           dragStateRef.current = null;
-          setSnapGuides([]);
           return;
         }
 
@@ -120,7 +110,6 @@ export const BoardCanvas = () => {
         });
 
         moveCanvas(dragState.canvasId, snapPreview.x, snapPreview.y);
-        setSnapGuides(snapPreview.guides);
         return;
       }
 
@@ -133,7 +122,6 @@ export const BoardCanvas = () => {
     const handlePointerUp = () => {
       dragStateRef.current = null;
       panStateRef.current = null;
-      setSnapGuides([]);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -167,7 +155,6 @@ export const BoardCanvas = () => {
 
       if (!canMoveCanvas) {
         dragStateRef.current = null;
-        setSnapGuides([]);
         return;
       }
 
@@ -235,46 +222,18 @@ export const BoardCanvas = () => {
                 tabIndex={0}
                 aria-label={canvas.title}
                 onPointerDown={handleCanvasPointerDown(canvas.id)}
-                className={clsx(
+                className={[
                   "relative h-full w-full overflow-hidden bg-white outline outline-1 outline-border-color/70",
-                  isActive && "outline-2 outline-accent",
-                  isSelected && "outline-2 outline-accent",
-                )}
+                  isActive ? "outline-2 outline-accent" : "",
+                  isSelected ? "outline-2 outline-accent" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 style={{ background: canvas.background }}
               />
             </div>
           );
         })}
-
-        {snapGuides.map((guide, index) =>
-          guide.axis === "x" ? (
-            <div
-              key={`${guide.axis}-${guide.position}-${index}`}
-              className={clsx(
-                "pointer-events-none absolute w-px",
-                GUIDE_STYLES[guide.mode],
-              )}
-              style={{
-                left: guide.position,
-                top: guide.start,
-                height: Math.max(guide.end - guide.start, 1),
-              }}
-            />
-          ) : (
-            <div
-              key={`${guide.axis}-${guide.position}-${index}`}
-              className={clsx(
-                "pointer-events-none absolute h-px",
-                GUIDE_STYLES[guide.mode],
-              )}
-              style={{
-                left: guide.start,
-                top: guide.position,
-                width: Math.max(guide.end - guide.start, 1),
-              }}
-            />
-          ),
-        )}
       </div>
 
       {!boardSize.width ? null : (

@@ -52,7 +52,7 @@ export const BoardPresetControl = ({
       </button>
 
       {isPresetMenuOpen ? (
-        <div className="absolute right-0 top-full z-30 mt-2 min-w-52 rounded-xl bg-card-bg p-2 outline outline-1 outline-border-color/60">
+        <div className="absolute right-0 top-full z-50 mt-2 min-w-52 rounded-xl bg-card-bg p-2 outline outline-1 outline-border-color/60">
           {presets.map((preset) => {
             const isActive = preset.id === activePreset.id;
             const detail = preset.size

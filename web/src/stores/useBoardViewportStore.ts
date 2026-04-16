@@ -30,7 +30,7 @@ export const useBoardViewportStore = create<
     y: 0,
     scale: 1,
   },
-  canPanBoard: false,
+  canPanBoard: true,
 
   setBoardSize: (boardSize) => set({ boardSize }),
 

@@ -145,8 +145,8 @@ export const Board = () => {
   }, [canvases.length, initializeDefaultCanvas]);
 
   useEffect(() => {
-    setCanPanBoard(canvases.length > 1);
-  }, [canvases.length, setCanPanBoard]);
+    setCanPanBoard(true);
+  }, [setCanPanBoard]);
 
   useEffect(() => {
     if (!activeCanvas || !boardSize.width || hasFittedInitialCanvasRef.current) {

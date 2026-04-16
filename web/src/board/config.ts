@@ -25,12 +25,12 @@ export const CANVAS_PRESETS: CanvasPreset[] = [
   {
     id: "landscape",
     label: "landscape",
-    size: { width: 1280, height: 720 },
+    size: { width: 640, height: 360 },
   },
   {
     id: "portrait",
     label: "portrait",
-    size: { width: 720, height: 1280 },
+    size: { width: 360, height: 640 },
   },
   {
     id: "custom",

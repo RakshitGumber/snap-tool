@@ -8,13 +8,6 @@ const MAX_ZOOM = 2.25;
 
 const getPalette = (isDark: boolean) => ({
   boardFill: isDark ? "#1a1a1e" : "#f4f6ff",
-  gridMinor: isDark ? 0x1f2133 : 0xdde0f0,
-  gridMajor: isDark ? 0x68dc98 : 0x37af87,
-  frameFill: isDark ? "#292936" : "#ffffff",
-  frameStroke: isDark ? "#1f2133" : "#dde0f0",
-  frameAccent: isDark ? "#68dc98" : "#37af87",
-  frameTitle: isDark ? "#f4f6ff" : "#33333c",
-  frameShadow: isDark ? "rgba(0,0,0,0.2)" : "rgba(51,51,60,0.1)",
 });
 
 export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
@@ -53,14 +46,12 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
         height: host.clientHeight,
       });
 
-      // Setup Scene Graph
       const background = new Graphics();
       const world = new Container();
       const framesLayer = new Container();
       world.addChild(framesLayer);
       app.stage.addChild(background, world);
 
-      // Handle Pan & Drag using Zustand getState() to avoid stale closures
       let panStart: { x: number; y: number } | null = null;
       let dragStart: { id: string; offX: number; offY: number } | null = null;
 
@@ -101,21 +92,17 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
       app.stage.on("pointerup", onPointerUp);
       app.stage.on("pointerupoutside", onPointerUp);
 
-      // Subscribe to Zustand updates to render Pixi (High Performance)
       const unsubscribe = useBoardStore.subscribe((state) => {
         const palette = getPalette(isDark);
 
-        // 1. Update Camera
         world.position.set(state.viewport.x, state.viewport.y);
         world.scale.set(state.viewport.scale);
 
-        // 2. Draw Background
         background.clear();
         background
           .rect(0, 0, state.boardSize.width, state.boardSize.height)
           .fill(palette.boardFill);
 
-        // 3. Render Frames (Re-creating simply for clean code, can optimize later if frame count > 500)
         framesLayer
           .removeChildren()
           .forEach((c) => c.destroy({ children: true }));
@@ -129,10 +116,8 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
 
           const card = new Graphics()
             .roundRect(0, 0, frame.width, frame.height, 28)
-            .fill(palette.frameFill)
             .stroke({
               width: isSelected ? 3 : 2,
-              color: isSelected ? palette.frameAccent : palette.frameStroke,
             });
 
           const label = new Text({
@@ -140,7 +125,6 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
             style: {
               fontFamily: "Mulish Variable",
               fontSize: 24,
-              fill: palette.frameTitle,
             },
           });
           label.position.set(24, 54);
@@ -158,7 +142,6 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
         });
       });
 
-      // Trigger initial render
       useBoardStore.setState((s) => ({ ...s }));
 
       return unsubscribe;
@@ -178,9 +161,8 @@ export const BoardCanvas = ({ isDark }: { isDark: boolean }) => {
         host.replaceChildren();
       }
     };
-  }, [isDark]); // Only re-mount canvas if dark mode changes (or handle palette dynamically inside subscribe)
+  }, [isDark]);
 
-  // 2. Global Keyboard Handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;

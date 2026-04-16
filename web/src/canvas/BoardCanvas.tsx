@@ -1,207 +1,274 @@
-import { useEffect, useRef, type WheelEvent } from "react";
-import { Application, Container, Graphics, Text } from "pixi.js";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent,
+} from "react";
 
-import { useBoardStore } from "@/stores/useBoardStore";
+import clsx from "clsx";
 
-const MIN_ZOOM = 0.35;
-const MAX_ZOOM = 2.25;
+import { SNAP_GAP, SNAP_THRESHOLD } from "@/board/config";
+import { resolveCanvasSnap } from "@/board/snap";
+import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
+import type { SnapGuide } from "@/types/canvas";
+
+type DragState = {
+  canvasId: string;
+  offsetX: number;
+  offsetY: number;
+};
+
+type PanState = {
+  x: number;
+  y: number;
+};
+
+const GUIDE_STYLES: Record<SnapGuide["mode"], string> = {
+  gap: "bg-accent/50",
+  flush: "bg-title-color/70",
+};
 
 export const BoardCanvas = () => {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const appRef = useRef<Application | null>(null);
+  const dragStateRef = useRef<DragState | null>(null);
+  const panStateRef = useRef<PanState | null>(null);
+  const canvasesRef = useRef(useCanvasStore.getState().canvases);
+  const viewportRef = useRef(useBoardViewportStore.getState().viewport);
+
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([]);
+
+  const canvases = useCanvasStore((state) => state.canvases);
+  const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
+  const selectedCanvasId = useCanvasStore((state) => state.selectedCanvasId);
+  const moveCanvas = useCanvasStore((state) => state.moveCanvas);
+  const setActiveCanvas = useCanvasStore((state) => state.setActiveCanvas);
+  const setSelectedCanvas = useCanvasStore((state) => state.setSelectedCanvas);
+
+  const boardSize = useBoardViewportStore((state) => state.boardSize);
+  const viewport = useBoardViewportStore((state) => state.viewport);
+  const canPanBoard = useBoardViewportStore((state) => state.canPanBoard);
+  const setBoardSize = useBoardViewportStore((state) => state.setBoardSize);
+  const panBy = useBoardViewportStore((state) => state.panBy);
+  const zoomAt = useBoardViewportStore((state) => state.zoomAt);
+
+  useEffect(() => {
+    canvasesRef.current = canvases;
+  }, [canvases]);
+
+  useEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    let isDisposed = false;
-    let isInitialized = false;
-    const app = new Application();
-    appRef.current = app;
-
-    const initPixi = async () => {
-      await app.init({
-        resizeTo: host,
-        antialias: true,
-        backgroundAlpha: 0,
+    const observer = new ResizeObserver(([entry]) => {
+      setBoardSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
       });
-      isInitialized = true;
-      if (isDisposed) {
-        app.destroy({ removeView: true }, true);
-        return () => {};
-      }
-
-      host.replaceChildren();
-      host.appendChild(app.canvas);
-      app.stage.eventMode = "static";
-      app.stage.hitArea = app.screen;
-
-      // Update store with actual canvas size
-      useBoardStore.getState().setBoardSize({
-        width: host.clientWidth,
-        height: host.clientHeight,
-      });
-
-      const background = new Graphics();
-      const world = new Container();
-      const framesLayer = new Container();
-      world.addChild(framesLayer);
-      app.stage.addChild(background, world);
-
-      let panStart: { x: number; y: number } | null = null;
-      let dragStart: { id: string; offX: number; offY: number } | null = null;
-
-      background.eventMode = "static";
-      background.cursor = "grab";
-
-      background.on("pointerdown", (e) => {
-        useBoardStore.getState().selectFrame(null);
-        panStart = { x: e.global.x, y: e.global.y };
-        background.cursor = "grabbing";
-      });
-
-      app.stage.on("globalpointermove", (e) => {
-        const state = useBoardStore.getState();
-
-        if (dragStart) {
-          state.updateFramePosition(
-            dragStart.id,
-            (e.global.x - world.x) / world.scale.x - dragStart.offX,
-            (e.global.y - world.y) / world.scale.y - dragStart.offY,
-          );
-        } else if (panStart) {
-          state.setViewport({
-            ...state.viewport,
-            x: state.viewport.x + (e.global.x - panStart.x),
-            y: state.viewport.y + (e.global.y - panStart.y),
-          });
-          panStart = { x: e.global.x, y: e.global.y };
-        }
-      });
-
-      const onPointerUp = () => {
-        panStart = null;
-        dragStart = null;
-        background.cursor = "grab";
-      };
-
-      app.stage.on("pointerup", onPointerUp);
-      app.stage.on("pointerupoutside", onPointerUp);
-
-      const unsubscribe = useBoardStore.subscribe((state) => {
-        // const palette = getPalette(isDark);
-
-        world.position.set(state.viewport.x, state.viewport.y);
-        world.scale.set(state.viewport.scale);
-
-        background.clear();
-        background.rect(0, 0, state.boardSize.width, state.boardSize.height);
-        // .fill(palette.boardFill);
-
-        framesLayer
-          .removeChildren()
-          .forEach((c) => c.destroy({ children: true }));
-
-        state.frames.forEach((frame) => {
-          const isSelected = state.selectedFrameId === frame.id;
-          const container = new Container();
-          container.position.set(frame.x, frame.y);
-          container.eventMode = "static";
-          container.cursor = "grab";
-
-          const card = new Graphics()
-            .roundRect(0, 0, frame.width, frame.height, 28)
-            .stroke({
-              width: isSelected ? 3 : 2,
-            });
-
-          const label = new Text({
-            text: frame.title,
-            style: {
-              fontFamily: "Mulish Variable",
-              fontSize: 24,
-            },
-          });
-          label.position.set(24, 54);
-
-          container.addChild(card, label);
-
-          container.on("pointerdown", (e) => {
-            e.stopPropagation();
-            state.selectFrame(frame.id);
-            const pos = e.getLocalPosition(container);
-            dragStart = { id: frame.id, offX: pos.x, offY: pos.y };
-          });
-
-          framesLayer.addChild(container);
-        });
-      });
-
-      useBoardStore.setState((s) => ({ ...s }));
-
-      return unsubscribe;
-    };
-
-    let cleanupStore = () => {};
-    initPixi().then((unsub) => {
-      cleanupStore = unsub;
     });
 
-    return () => {
-      isDisposed = true;
-      cleanupStore();
-      appRef.current = null;
-      if (isInitialized) {
-        app.destroy({ removeView: true }, true);
-        host.replaceChildren();
-      }
-    };
-  }, []);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [setBoardSize]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-      if (e.key === "Delete" || e.key === "Backspace") {
-        useBoardStore.getState().removeSelectedFrame();
-      }
+    const getWorldPoint = (clientX: number, clientY: number) => {
+      const host = hostRef.current;
+      if (!host) return { x: 0, y: 0 };
+
+      const rect = host.getBoundingClientRect();
+      const currentViewport = viewportRef.current;
+
+      return {
+        x: (clientX - rect.left - currentViewport.x) / currentViewport.scale,
+        y: (clientY - rect.top - currentViewport.y) / currentViewport.scale,
+      };
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
-  // 3. Wheel / Zoom Handling
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    const state = useBoardStore.getState();
-    if (!state.boardSize.width) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+      const panState = panStateRef.current;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pointerX = e.clientX - rect.left;
-    const pointerY = e.clientY - rect.top;
+      if (dragState) {
+        const activeCanvas = canvasesRef.current.find(
+          (canvas) => canvas.id === dragState.canvasId,
+        );
+        if (!activeCanvas) return;
 
-    const worldX = (pointerX - state.viewport.x) / state.viewport.scale;
-    const worldY = (pointerY - state.viewport.y) / state.viewport.scale;
+        const worldPoint = getWorldPoint(event.clientX, event.clientY);
+        const nextX = worldPoint.x - dragState.offsetX;
+        const nextY = worldPoint.y - dragState.offsetY;
+        const snapPreview = resolveCanvasSnap({
+          activeCanvas,
+          canvases: canvasesRef.current,
+          nextX,
+          nextY,
+          threshold: SNAP_THRESHOLD,
+          gap: SNAP_GAP,
+        });
 
-    const zoomFactor = Math.exp(-e.deltaY * 0.0015);
-    const scale = Math.min(
-      Math.max(state.viewport.scale * zoomFactor, MIN_ZOOM),
-      MAX_ZOOM,
-    );
+        moveCanvas(dragState.canvasId, snapPreview.x, snapPreview.y);
+        setSnapGuides(snapPreview.guides);
+        return;
+      }
 
-    state.setViewport({
-      scale,
-      x: pointerX - worldX * scale,
-      y: pointerY - worldY * scale,
-    });
+      if (!panState) return;
+
+      panBy(event.clientX - panState.x, event.clientY - panState.y);
+      panStateRef.current = { x: event.clientX, y: event.clientY };
+    };
+
+    const handlePointerUp = () => {
+      dragStateRef.current = null;
+      panStateRef.current = null;
+      setSnapGuides([]);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [moveCanvas, panBy]);
+
+  const handleSurfacePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+
+    setSelectedCanvas(null);
+    if (!canPanBoard) return;
+
+    panStateRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+
+  const handleCanvasPointerDown =
+    (canvasId: string) => (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+
+      event.stopPropagation();
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const currentViewport = viewportRef.current;
+      const offsetX =
+        (event.clientX - rect.left) / Math.max(currentViewport.scale, 0.0001);
+      const offsetY =
+        (event.clientY - rect.top) / Math.max(currentViewport.scale, 0.0001);
+
+      dragStateRef.current = {
+        canvasId,
+        offsetX,
+        offsetY,
+      };
+      setActiveCanvas(canvasId);
+      setSelectedCanvas(canvasId);
+    };
+
+  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    zoomAt(event.clientX - rect.left, event.clientY - rect.top, event.deltaY);
   };
 
   return (
     <div
       ref={hostRef}
-      tabIndex={0}
+      onPointerDown={handleSurfacePointerDown}
       onWheel={handleWheel}
-      className="h-screen w-full overflow-hidden touch-none outline-none"
+      className="relative h-full w-full overflow-hidden bg-bg touch-none"
       aria-label="Canvas board"
-    />
+    >
+      <div
+        className="absolute left-0 top-0 h-full w-full origin-top-left"
+        style={{
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+        }}
+      >
+        {canvases.map((canvas) => {
+          const isActive = canvas.id === activeCanvasId;
+          const isSelected = canvas.id === selectedCanvasId;
+
+          return (
+            <div
+              key={canvas.id}
+              className="absolute"
+              style={{
+                left: canvas.x,
+                top: canvas.y,
+                width: canvas.width,
+                height: canvas.height,
+              }}
+            >
+              <div
+                className={clsx(
+                  "pointer-events-none absolute -top-6 left-0 text-xs font-semibold text-secondary-text",
+                  isActive && "text-title-color",
+                )}
+              >
+                {canvas.title}
+              </div>
+
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={canvas.title}
+                onPointerDown={handleCanvasPointerDown(canvas.id)}
+                className={clsx(
+                  "relative h-full w-full overflow-hidden bg-white outline outline-1 outline-border-color/70",
+                  isActive && "outline-2 outline-accent",
+                  isSelected && "outline-2 outline-accent",
+                )}
+                style={{ background: canvas.background }}
+              />
+            </div>
+          );
+        })}
+
+        {snapGuides.map((guide, index) =>
+          guide.axis === "x" ? (
+            <div
+              key={`${guide.axis}-${guide.position}-${index}`}
+              className={clsx(
+                "pointer-events-none absolute w-px",
+                GUIDE_STYLES[guide.mode],
+              )}
+              style={{
+                left: guide.position,
+                top: guide.start,
+                height: Math.max(guide.end - guide.start, 1),
+              }}
+            />
+          ) : (
+            <div
+              key={`${guide.axis}-${guide.position}-${index}`}
+              className={clsx(
+                "pointer-events-none absolute h-px",
+                GUIDE_STYLES[guide.mode],
+              )}
+              style={{
+                left: guide.start,
+                top: guide.position,
+                width: Math.max(guide.end - guide.start, 1),
+              }}
+            />
+          ),
+        )}
+      </div>
+
+      {!boardSize.width ? null : (
+        <div className="pointer-events-none absolute bottom-4 right-4 rounded-lg bg-card-bg/90 px-3 py-2 text-xs text-secondary-text outline outline-1 outline-border-color/60">
+          Ctrl+. to focus • Ctrl+Arrow to move
+        </div>
+      )}
+    </div>
   );
 };

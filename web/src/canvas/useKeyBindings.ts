@@ -1,5 +1,13 @@
 import { useEffect } from "react";
-import { type ShortcutMap } from "@/types/canvas";
+
+import type { ShortcutMap } from "@/types/canvas";
+
+const MODIFIER_KEYS = new Set(["control", "meta", "shift", "alt"]);
+
+const getNormalizedKey = (event: KeyboardEvent) => {
+  if (event.key === ".") return ".";
+  return event.key.toLowerCase();
+};
 
 export const useKeyboardShortcuts = (
   shortcuts: ShortcutMap,
@@ -8,28 +16,35 @@ export const useKeyboardShortcuts = (
   useEffect(() => {
     if (!isActive) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
-      const keys: string[] = [];
-      if (e.ctrlKey || e.metaKey) keys.push("ctrl"); // Combines Cmd/Ctrl
-      if (e.shiftKey) keys.push("shift");
-      if (e.altKey) keys.push("alt");
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
 
-      const keyStr = e.key.toLowerCase();
-      if (!["control", "meta", "shift", "alt"].includes(keyStr)) {
-        keys.push(keyStr);
+      const keys: string[] = [];
+      if (event.ctrlKey || event.metaKey) keys.push("ctrl");
+      if (event.shiftKey) keys.push("shift");
+      if (event.altKey) keys.push("alt");
+
+      const key = getNormalizedKey(event);
+      if (!MODIFIER_KEYS.has(key)) {
+        keys.push(key);
       }
 
       const shortcutKey = keys.join("+");
+      const action = shortcuts[shortcutKey];
+      if (!action) return;
 
-      if (shortcuts[shortcutKey]) {
-        e.preventDefault();
-        shortcuts[shortcutKey]();
-      }
+      event.preventDefault();
+      action();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [shortcuts, isActive]);
+  }, [isActive, shortcuts]);
 };

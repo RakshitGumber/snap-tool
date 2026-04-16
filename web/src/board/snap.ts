@@ -74,65 +74,99 @@ export const resolveCanvasSnap = ({
   canvases
     .filter((canvas) => canvas.id !== activeCanvas.id)
     .forEach((canvas) => {
+      const canvasRight = canvas.x + canvas.width;
+      const canvasBottom = canvas.y + canvas.height;
+      const canvasCenterX = canvas.x + canvas.width / 2;
+      const canvasCenterY = canvas.y + canvas.height / 2;
+
+      const guideStartY = Math.min(nextY, canvas.y);
+      const guideEndY = Math.max(nextBottom, canvasBottom);
+      const guideStartX = Math.min(nextX, canvas.x);
+      const guideEndX = Math.max(nextRight, canvasRight);
+
+      horizontalCandidates.push(
+        {
+          value: canvas.x,
+          guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
+        },
+        {
+          value: canvasCenterX - activeCanvas.width / 2,
+          guide: buildGuide("x", canvasCenterX, guideStartY, guideEndY, "flush"),
+        },
+        {
+          value: canvasRight - activeCanvas.width,
+          guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
+        },
+      );
+
+      verticalCandidates.push(
+        {
+          value: canvas.y,
+          guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
+        },
+        {
+          value: canvasCenterY - activeCanvas.height / 2,
+          guide: buildGuide("y", canvasCenterY, guideStartX, guideEndX, "flush"),
+        },
+        {
+          value: canvasBottom - activeCanvas.height,
+          guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
+        },
+      );
+
       const overlapsVertically = rangesOverlap(
         nextY,
         nextBottom,
         canvas.y,
-        canvas.y + canvas.height,
+        canvasBottom,
         threshold,
       );
       const overlapsHorizontally = rangesOverlap(
         nextX,
         nextRight,
         canvas.x,
-        canvas.x + canvas.width,
+        canvasRight,
         threshold,
       );
 
       if (overlapsVertically) {
-        const guideStart = Math.min(nextY, canvas.y);
-        const guideEnd = Math.max(nextBottom, canvas.y + canvas.height);
-
         horizontalCandidates.push(
           {
-            value: canvas.x + canvas.width + gap,
-            guide: buildGuide("x", canvas.x + canvas.width, guideStart, guideEnd, "gap"),
+            value: canvasRight + gap,
+            guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "gap"),
           },
           {
-            value: canvas.x + canvas.width,
-            guide: buildGuide("x", canvas.x + canvas.width, guideStart, guideEnd, "flush"),
+            value: canvasRight,
+            guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
           },
           {
             value: canvas.x - activeCanvas.width - gap,
-            guide: buildGuide("x", canvas.x, guideStart, guideEnd, "gap"),
+            guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "gap"),
           },
           {
             value: canvas.x - activeCanvas.width,
-            guide: buildGuide("x", canvas.x, guideStart, guideEnd, "flush"),
+            guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
           },
         );
       }
 
       if (overlapsHorizontally) {
-        const guideStart = Math.min(nextX, canvas.x);
-        const guideEnd = Math.max(nextRight, canvas.x + canvas.width);
-
         verticalCandidates.push(
           {
-            value: canvas.y + canvas.height + gap,
-            guide: buildGuide("y", canvas.y + canvas.height, guideStart, guideEnd, "gap"),
+            value: canvasBottom + gap,
+            guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "gap"),
           },
           {
-            value: canvas.y + canvas.height,
-            guide: buildGuide("y", canvas.y + canvas.height, guideStart, guideEnd, "flush"),
+            value: canvasBottom,
+            guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
           },
           {
             value: canvas.y - activeCanvas.height - gap,
-            guide: buildGuide("y", canvas.y, guideStart, guideEnd, "gap"),
+            guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "gap"),
           },
           {
             value: canvas.y - activeCanvas.height,
-            guide: buildGuide("y", canvas.y, guideStart, guideEnd, "flush"),
+            guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
           },
         );
       }

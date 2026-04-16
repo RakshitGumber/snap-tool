@@ -9,7 +9,7 @@ import type {
 export const MIN_ZOOM = 0.35;
 export const MAX_ZOOM = 2.25;
 export const SNAP_THRESHOLD = 16;
-export const SNAP_GAP = 24;
+export const SNAP_GAP = 40;
 export const FIT_PADDING = 48;
 
 export const DEFAULT_SIDEBAR_WIDTH = 352;

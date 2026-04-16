@@ -1,11 +1,10 @@
 import { Link } from "@/pages/Router";
-import { useAuthStore } from "@/stores/useAuthStore";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 
 import { Icon } from "@iconify/react";
 
 import { ThemeButton } from "../ui/ThemeButton";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const parentVariants = {
   visible: { opacity: 1, y: 0 },
@@ -19,8 +18,6 @@ const navItems = [
 ];
 
 export const Navbar = () => {
-  const { session } = useAuthStore();
-
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [prevScroll, setPrevScroll] = useState(0);
@@ -103,30 +100,14 @@ export const Navbar = () => {
             </a>
             <ThemeButton />
           </div>
-          {session?.user ? (
-            <>
-              <Link
-                to="/create"
-                className="rounded-lg font-semibold hover:bg-accent-light items-center flex gap-1 text-xl px-3 py-1 hover:text-title-color"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span className="text-lg text-title-color">Create</span>
-                <Icon
-                  icon="ooui:link-external-ltr"
-                  className="text-accent mb-0.5"
-                />
-              </Link>
-            </>
-          ) : (
-            <Link
-              to="/auth/register"
-              className="font-styled px-3 py-2 rounded-lg gap-2 flex items-center justify-center font-semibold text-bg tracking-wide bg-accent cursor-pointer"
-              onClick={() => setMenuOpen(false)}
-            >
-              Register
-              <Icon icon="solar:add-square-broken" className="text-xl" />
-            </Link>
-          )}
+          <Link
+            to="/create"
+            className="font-styled px-3 py-2 rounded-lg gap-2 flex items-center justify-center font-semibold text-bg tracking-wide bg-accent cursor-pointer"
+            onClick={() => setMenuOpen(false)}
+          >
+            Create
+            <Icon icon="solar:add-square-broken" className="text-xl" />
+          </Link>
         </div>
 
         {menuOpen ? (

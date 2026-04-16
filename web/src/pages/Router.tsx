@@ -5,19 +5,14 @@ import {
   type AnchorHTMLAttributes,
 } from "react";
 
-import { LoginRoute } from "./user/login";
-import { RegisterRoute } from "./user/register";
 import { CreateRoute } from "./create";
 import { RootRoute } from "./root";
 import { PageNotFound } from "./not-found";
 import { useRouter } from "./routerStore";
 
-import { useAuthStore } from "@/stores/useAuthStore";
-
 interface RouteConfig {
   path: string;
   element: ReactNode;
-  isProtected?: boolean;
 }
 
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -26,9 +21,7 @@ interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 
 const ROUTES: RouteConfig[] = [
   { path: "/", element: <RootRoute /> },
-  { path: "/create", element: <CreateRoute />, isProtected: true },
-  { path: "/auth/login", element: <LoginRoute /> },
-  { path: "/auth/register", element: <RegisterRoute /> },
+  { path: "/create", element: <CreateRoute /> },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {
@@ -53,11 +46,6 @@ const matchRoute = (currentPath: string, routeDef: string): boolean => {
 
 export const Router = () => {
   const route = useRouter((state) => state.route);
-  const setRoute = useRouter((state) => state.setRoute);
-
-  const session = useAuthStore((state) => state.session);
-  const isLoading = useAuthStore((state) => state.isLoading);
-  const refreshSession = useAuthStore((state) => state.refreshSession);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -68,37 +56,13 @@ export const Router = () => {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  useEffect(() => {
-    void refreshSession();
-  }, [refreshSession]);
-
   const activeRoute = useMemo(
     () => ROUTES.find((r) => matchRoute(route, r.path)),
     [route],
   );
 
-  useEffect(() => {
-    if (activeRoute?.isProtected && !isLoading && !session) {
-      setRoute("/auth/login");
-    }
-  }, [activeRoute?.isProtected, isLoading, session, setRoute]);
-
   if (!activeRoute) {
     return <PageNotFound />;
-  }
-
-  if (activeRoute.isProtected) {
-    if (isLoading) {
-      return (
-        <div className="flex h-screen items-center justify-center">
-          Loading...
-        </div>
-      );
-    }
-
-    if (!session) {
-      return null;
-    }
   }
 
   return <>{activeRoute.element}</>;

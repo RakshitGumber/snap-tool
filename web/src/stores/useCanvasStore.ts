@@ -1,9 +1,11 @@
 import { create } from "zustand";
 
 import {
+  DEFAULT_CANVAS_PRESET_ID,
   DEFAULT_BACKGROUND_PRESET_ID,
   createCanvasFrame,
   getCanvasBackgroundById,
+  getCanvasPresetById,
 } from "@/board/config";
 import type { CanvasFrame, CanvasSize } from "@/types/canvas";
 
@@ -25,8 +27,12 @@ type CanvasActions = {
   resetBoard: (size: CanvasSize, position?: { x: number; y: number }) => CanvasFrame;
 };
 
-const createDefaultCanvas = (position: { x: number; y: number }, index: number) =>
-  createCanvasFrame({ width: 1080, height: 1080 }, position, index);
+const createDefaultCanvas = (position: { x: number; y: number }, index: number) => {
+  const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+  const size = preset.size ?? { width: 500, height: 500 };
+
+  return createCanvasFrame(size, position, index);
+};
 
 export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => ({
   canvases: [],

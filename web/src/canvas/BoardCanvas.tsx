@@ -52,6 +52,7 @@ export const BoardCanvas = () => {
   const setBoardSize = useBoardViewportStore((state) => state.setBoardSize);
   const panBy = useBoardViewportStore((state) => state.panBy);
   const zoomAt = useBoardViewportStore((state) => state.zoomAt);
+  const canMoveCanvas = canvases.length > 1;
 
   useEffect(() => {
     canvasesRef.current = canvases;
@@ -95,6 +96,12 @@ export const BoardCanvas = () => {
       const panState = panStateRef.current;
 
       if (dragState) {
+        if (canvasesRef.current.length <= 1) {
+          dragStateRef.current = null;
+          setSnapGuides([]);
+          return;
+        }
+
         const activeCanvas = canvasesRef.current.find(
           (canvas) => canvas.id === dragState.canvasId,
         );
@@ -155,6 +162,14 @@ export const BoardCanvas = () => {
       if (event.button !== 0) return;
 
       event.stopPropagation();
+      setActiveCanvas(canvasId);
+      setSelectedCanvas(canvasId);
+
+      if (!canMoveCanvas) {
+        dragStateRef.current = null;
+        setSnapGuides([]);
+        return;
+      }
 
       const rect = event.currentTarget.getBoundingClientRect();
       const currentViewport = viewportRef.current;
@@ -168,8 +183,6 @@ export const BoardCanvas = () => {
         offsetX,
         offsetY,
       };
-      setActiveCanvas(canvasId);
-      setSelectedCanvas(canvasId);
     };
 
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {

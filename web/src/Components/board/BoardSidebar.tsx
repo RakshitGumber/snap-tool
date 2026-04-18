@@ -18,15 +18,10 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   uploads: "solar:gallery-add-linear",
 };
 
-export const BoardSidebar = ({
-  isOpen,
-  sections,
-  openSectionId,
-  onSectionToggle,
-  onToggleSidebar,
-}: BoardSidebarProps) => {
+export const BoardSidebar = () => {
   const canvasShell = useCanvasShell();
-  const activeSection = sections.find((section) => section.id === openSectionId) ?? sections[0];
+  const activeSection =
+    sections.find((section) => section.id === openSectionId) ?? sections[0];
   const shouldShowSectionMeta = activeSection?.id !== "overview";
 
   return (
@@ -35,7 +30,9 @@ export const BoardSidebar = ({
         "relative z-10 flex h-full shrink-0 bg-card-bg/95 backdrop-blur-3xl",
         isOpen ? "border-r border-border-color/60" : "border-r-2 border-accent",
       )}
-      style={{ width: isOpen ? DEFAULT_SIDEBAR_WIDTH : DEFAULT_ACCESS_PANEL_WIDTH }}
+      style={{
+        width: isOpen ? DEFAULT_SIDEBAR_WIDTH : DEFAULT_ACCESS_PANEL_WIDTH,
+      }}
     >
       <div
         className={clsx(
@@ -56,9 +53,7 @@ export const BoardSidebar = ({
                   onClick={() => onSectionToggle(section.id)}
                   className={clsx(
                     "flex w-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-center transition hover:bg-secondary-text/20",
-                    isActive
-                      ? "text-title-color"
-                      : "text-secondary-text",
+                    isActive ? "text-title-color" : "text-secondary-text",
                   )}
                 >
                   <Icon icon={SECTION_ICONS[section.id]} className="text-xl" />

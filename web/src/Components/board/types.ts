@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { CanvasBackgroundPreset, CanvasPreset } from "@/types/canvas";
+import type { CanvasPreset } from "@/types/canvas";
 
 export type BoardMenuAction = {
   id: string;
@@ -11,6 +11,7 @@ export type BoardMenuAction = {
 };
 
 export type BoardSidebarSectionId =
+  | "overview"
   | "background"
   | "elements"
   | "text"
@@ -37,10 +38,8 @@ export type BoardTopRibbonProps = {
 
 export type BoardSidebarProps = {
   isOpen: boolean;
-  backgroundPresets: CanvasBackgroundPreset[];
   sections: BoardSidebarSection[];
   openSectionId: BoardSidebarSectionId;
   onSectionToggle: (sectionId: BoardSidebarSectionId) => void;
-  onBackgroundSelect: (backgroundPresetId: string) => void;
   onToggleSidebar: (isOpen: boolean) => void;
 };

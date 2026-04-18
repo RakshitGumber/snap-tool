@@ -1,3 +1,5 @@
+export { BoardBackgroundPanel } from "./BoardBackgroundPanel";
+export { BoardOverviewPanel } from "./BoardOverviewPanel";
 export { BoardSidebar } from "./BoardSidebar";
 export { BoardTopRibbon } from "./BoardTopRibbon";
 export { BoardUploadsPanel } from "./BoardUploadsPanel";

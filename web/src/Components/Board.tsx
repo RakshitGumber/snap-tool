@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 
 import {
+  BoardBackgroundPanel,
+  BoardOverviewPanel,
   BoardSidebar,
   BoardTopRibbon,
   BoardUploadsPanel,
@@ -112,32 +114,6 @@ const isCanvasOutsideViewport = ({
     bottom > boardSize.height - padding
   );
 };
-
-const BOARD_SIDEBAR_SECTIONS: BoardSidebarSection[] = [
-  {
-    id: "background",
-    label: "Background",
-    description: "Canvas fill",
-  },
-  {
-    id: "elements",
-    label: "Elements",
-    description: "Coming soon",
-    isPlaceholder: true,
-  },
-  {
-    id: "text",
-    label: "Text",
-    description: "Coming soon",
-    isPlaceholder: true,
-  },
-  {
-    id: "uploads",
-    label: "Uploads",
-    description: "Images and links",
-    content: <BoardUploadsPanel />,
-  },
-];
 
 export const Board = () => {
   const setRoute = useRouter((state) => state.setRoute);
@@ -333,6 +309,55 @@ export const Board = () => {
     },
   ];
 
+  const sidebarSections: BoardSidebarSection[] = [
+    {
+      id: "overview",
+      label: "Overview",
+      description: "Canvas summary and quick actions",
+      content: (
+        <BoardOverviewPanel
+          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
+          sizePresets={CANVAS_PRESETS}
+          onBackgroundSelect={applyBackgroundToActiveCanvas}
+          onSelectPreset={handleSelectPreset}
+          onOpenUploads={() => {
+            setOpenSectionId("uploads");
+            setSidebarOpen(true);
+          }}
+        />
+      ),
+    },
+    {
+      id: "background",
+      label: "Background",
+      description: "Canvas fill",
+      content: (
+        <BoardBackgroundPanel
+          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
+          onBackgroundSelect={applyBackgroundToActiveCanvas}
+        />
+      ),
+    },
+    {
+      id: "elements",
+      label: "Elements",
+      description: "Coming soon",
+      isPlaceholder: true,
+    },
+    {
+      id: "text",
+      label: "Text",
+      description: "Coming soon",
+      isPlaceholder: true,
+    },
+    {
+      id: "uploads",
+      label: "Uploads",
+      description: "Images and links",
+      content: <BoardUploadsPanel />,
+    },
+  ];
+
   return (
     <main className="flex h-screen flex-col bg-bg">
       <BoardTopRibbon
@@ -349,14 +374,12 @@ export const Board = () => {
       <div className="flex min-h-0 flex-1">
         <BoardSidebar
           isOpen={isSidebarOpen}
-          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-          sections={BOARD_SIDEBAR_SECTIONS}
+          sections={sidebarSections}
           openSectionId={openSectionId}
           onSectionToggle={(sectionId: BoardSidebarSectionId) => {
             setOpenSectionId(sectionId);
             setSidebarOpen(true);
           }}
-          onBackgroundSelect={applyBackgroundToActiveCanvas}
           onToggleSidebar={setSidebarOpen}
         />
 

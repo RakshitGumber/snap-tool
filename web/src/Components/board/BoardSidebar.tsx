@@ -6,14 +6,12 @@ import {
   DEFAULT_DESIGN_PANEL_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from "@/board/config";
-import {
-  useActiveCanvas,
-  useActiveCanvasBackground,
-} from "@/stores/useCanvasStore";
+import { useActiveCanvas } from "@/stores/useCanvasStore";
 
 import type { BoardSidebarProps, BoardSidebarSectionId } from "./types";
 
 const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
+  overview: "solar:document-text-linear",
   background: "solar:pallete-2-linear",
   elements: "solar:widget-5-linear",
   text: "solar:text-field-focus-linear",
@@ -22,62 +20,13 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
 
 export const BoardSidebar = ({
   isOpen,
-  backgroundPresets,
   sections,
   openSectionId,
   onSectionToggle,
-  onBackgroundSelect,
   onToggleSidebar,
 }: BoardSidebarProps) => {
   const activeCanvas = useActiveCanvas();
-  const activeBackground = useActiveCanvasBackground();
   const activeSection = sections.find((section) => section.id === openSectionId) ?? sections[0];
-  const contentSection =
-    activeSection?.id === "background"
-      ? {
-          ...activeSection,
-          content: (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-card-bg/80 px-3 py-3">
-                <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-                  Current background
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 rounded-lg outline outline-1 outline-border-color/60"
-                    style={{ background: activeBackground?.preview }}
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-title-color">
-                      {activeBackground?.label ?? "White"}
-                    </p>
-                    <p className="text-xs text-secondary-text">Canvas fill</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {backgroundPresets.map((backgroundPreset) => (
-                  <button
-                    key={backgroundPreset.id}
-                    type="button"
-                    onClick={() => onBackgroundSelect(backgroundPreset.id)}
-                    className="rounded-lg bg-card-bg/80 p-2 text-left transition hover:bg-accent-light"
-                  >
-                    <div
-                      className="h-12 rounded-md outline outline-1 outline-border-color/60"
-                      style={{ background: backgroundPreset.preview }}
-                    />
-                    <span className="mt-2 block text-xs font-semibold text-title-color">
-                      {backgroundPreset.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ),
-        }
-      : activeSection;
 
   return (
     <aside
@@ -134,10 +83,10 @@ export const BoardSidebar = ({
                 {activeCanvas?.title ?? "Canvas"}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-title-color">
-                {contentSection?.label ?? "Design"}
+                {activeSection?.label ?? "Design"}
               </h2>
               <p className="mt-1 text-sm text-secondary-text">
-                {contentSection?.description ?? "Select a panel option"}
+                {activeSection?.description ?? "Select a panel option"}
               </p>
             </div>
 
@@ -152,12 +101,12 @@ export const BoardSidebar = ({
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            {contentSection?.isPlaceholder ? (
+            {activeSection?.isPlaceholder ? (
               <div className="rounded-xl bg-bg/70 px-4 py-4 text-sm text-secondary-text">
                 Coming soon
               </div>
             ) : (
-              contentSection?.content
+              activeSection?.content
             )}
           </div>
         </div>

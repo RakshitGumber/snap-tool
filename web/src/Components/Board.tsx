@@ -352,19 +352,8 @@ export const Board = () => {
     {
       id: "overview",
       label: "Overview",
-      description: "Canvas summary and quick actions",
-      content: (
-        <BoardOverviewPanel
-          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-          presetGroups={CANVAS_PRESET_GROUPS}
-          onBackgroundSelect={applyBackgroundToActiveCanvas}
-          onSelectPreset={handleSelectPreset}
-          onOpenUploads={() => {
-            setOpenSectionId("uploads");
-            setSidebarOpen(true);
-          }}
-        />
-      ),
+      description: "Canvas contents and details",
+      content: <BoardOverviewPanel />,
     },
     {
       id: "background",

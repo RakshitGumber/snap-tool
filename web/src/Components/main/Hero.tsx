@@ -29,14 +29,14 @@ export const Hero = () => {
           Releasing a new version everyday.
         </div>
         <div className="flex flex-col gap-6">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-comic tracking-wider font-semibold text-title-color capitalize leading-snug">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-sans tracking-wider font-bold text-title-color capitalize leading-snug">
             Minimalist solution for creating your next post
           </h1>
           <span className="text-lg lg:text-2xl text px-1 w-full md:w-4/5 lg:w-3/4 mx-auto lg:mx-0">
             Make professional grade posts in simple click. Making post wasn't
             this easy.
           </span>
-          <div className="flex flex-wrap justify-start sm:justify-center lg:justify-start items-center lg:items-start gap-4 my-4 px-1">
+          <div className="flex flex-wrap justify-start sm:justify-center lg:justify-start items-center lg:items-start gap-4 my-4 px-1 font-sans">
             <Link to="/create">
               <button className="lg:px-6 lg:py-3 px-3 py-2 bg-accent text-bg sm:text-xl font-bold capitalize rounded-lg cursor-pointer">
                 Create Now
@@ -54,7 +54,9 @@ export const Hero = () => {
           </div>
         </div>
       </motion.div>
-      <HeroAnimation />
+      <div className="hidden md:block">
+        <HeroAnimation />
+      </div>
     </main>
   );
 };

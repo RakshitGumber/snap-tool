@@ -6,6 +6,7 @@ import {
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
+  getCanvasPresetIdFromSize,
 } from "@/board/config";
 import type { CanvasFrame, CanvasSize } from "@/types/canvas";
 
@@ -137,3 +138,41 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     return canvas;
   },
 }));
+
+export const useActiveCanvas = () =>
+  useCanvasStore((state) =>
+    state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
+    state.canvases[0] ??
+    null,
+  );
+
+export const useActiveCanvasPreset = () =>
+  useCanvasStore((state) => {
+    const activeCanvas =
+      state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
+      state.canvases[0] ??
+      null;
+
+    if (!activeCanvas) {
+      return getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+    }
+
+    return getCanvasPresetById(
+      getCanvasPresetIdFromSize({
+        width: activeCanvas.width,
+        height: activeCanvas.height,
+      }),
+    );
+  });
+
+export const useActiveCanvasBackground = () =>
+  useCanvasStore((state) => {
+    const activeCanvas =
+      state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
+      state.canvases[0] ??
+      null;
+
+    return activeCanvas
+      ? getCanvasBackgroundById(activeCanvas.backgroundPresetId)
+      : null;
+  });

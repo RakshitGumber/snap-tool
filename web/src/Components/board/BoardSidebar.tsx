@@ -1,13 +1,15 @@
 import { Icon } from "@iconify/react";
 
 import { DEFAULT_SIDEBAR_WIDTH } from "@/board/config";
+import {
+  useActiveCanvas,
+  useActiveCanvasBackground,
+} from "@/stores/useCanvasStore";
 
 import { BoardAccordionSection } from "./BoardAccordionSection";
 import type { BoardSidebarProps } from "./types";
 
 export const BoardSidebar = ({
-  activeCanvas,
-  activeBackground,
   backgroundPresets,
   sections,
   openSectionId,
@@ -15,6 +17,9 @@ export const BoardSidebar = ({
   onBackgroundSelect,
   onToggleSidebar,
 }: BoardSidebarProps) => {
+  const activeCanvas = useActiveCanvas();
+  const activeBackground = useActiveCanvasBackground();
+
   return (
     <aside
       className="relative z-10 flex h-full shrink-0 flex-col border-r-2 border-accent bg-card-bg/95 backdrop-blur-3xl"

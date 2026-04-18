@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 
-import type {
-  CanvasBackgroundPreset,
-  CanvasFrame,
-  CanvasPreset,
-} from "@/types/canvas";
+import type { CanvasBackgroundPreset, CanvasPreset } from "@/types/canvas";
 
 export type BoardMenuAction = {
   id: string;
@@ -29,10 +25,6 @@ export type BoardSidebarSection = {
 };
 
 export type BoardTopRibbonProps = {
-  canvasCount: number;
-  activeCanvas: CanvasFrame | null;
-  activePreset: CanvasPreset;
-  zoomPercentage: number;
   fileActions: BoardMenuAction[];
   presets: CanvasPreset[];
   isFileMenuOpen: boolean;
@@ -44,8 +36,6 @@ export type BoardTopRibbonProps = {
 };
 
 export type BoardSidebarProps = {
-  activeCanvas: CanvasFrame | null;
-  activeBackground: CanvasBackgroundPreset | null;
   backgroundPresets: CanvasBackgroundPreset[];
   sections: BoardSidebarSection[];
   openSectionId: BoardSidebarSectionId;

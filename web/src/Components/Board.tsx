@@ -16,9 +16,7 @@ import {
   DEFAULT_SIDEBAR_WIDTH,
   FIT_PADDING,
   SNAP_GAP,
-  getCanvasBackgroundById,
   getCanvasPresetById,
-  getCanvasPresetIdFromSize,
 } from "@/board/config";
 import { getNearestCanvasInDirection } from "@/board/navigation";
 import { BoardCanvas } from "@/canvas";
@@ -27,7 +25,7 @@ import { useKeyboardShortcuts } from "@/canvas/useKeyBindings";
 import { useRouter } from "@/pages/routerStore";
 import { useBoardUiStore } from "@/stores/useBoardUiStore";
 import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
-import { useCanvasStore } from "@/stores/useCanvasStore";
+import { useActiveCanvas, useCanvasStore } from "@/stores/useCanvasStore";
 import type {
   CanvasFrame,
   CanvasNavigationDirection,
@@ -176,19 +174,7 @@ export const Board = () => {
 
   const hasFittedInitialCanvasRef = useRef(false);
 
-  const activeCanvas =
-    canvases.find((canvas) => canvas.id === activeCanvasId) ?? canvases[0] ?? null;
-  const activeCanvasPreset = activeCanvas
-    ? getCanvasPresetById(
-        getCanvasPresetIdFromSize({
-          width: activeCanvas.width,
-          height: activeCanvas.height,
-        }),
-      )
-    : getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-  const activeBackground = activeCanvas
-    ? getCanvasBackgroundById(activeCanvas.backgroundPresetId)
-    : CANVAS_BACKGROUND_PRESETS[0];
+  const activeCanvas = useActiveCanvas();
   const shouldShowCenterCanvasButton = activeCanvas
     ? isCanvasOutsideViewport({
         canvas: activeCanvas,
@@ -340,10 +326,6 @@ export const Board = () => {
   return (
     <main className="flex h-screen flex-col bg-bg">
       <BoardTopRibbon
-        canvasCount={canvases.length}
-        activeCanvas={activeCanvas}
-        activePreset={activeCanvasPreset}
-        zoomPercentage={Math.round(viewport.scale * 100)}
         fileActions={fileActions}
         presets={CANVAS_PRESETS}
         isFileMenuOpen={isFileMenuOpen}
@@ -357,8 +339,6 @@ export const Board = () => {
       <div className="flex min-h-0 flex-1">
         {isSidebarOpen ? (
           <BoardSidebar
-            activeCanvas={activeCanvas}
-            activeBackground={activeBackground}
             backgroundPresets={CANVAS_BACKGROUND_PRESETS}
             sections={BOARD_SIDEBAR_SECTIONS}
             openSectionId={openSectionId}

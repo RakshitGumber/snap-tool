@@ -39,15 +39,15 @@ export const BoardFileMenu = ({
       >
         <Icon
           icon="solar:hamburger-menu-linear"
-          className="text-lg text-white"
+          className="text-2xl text-title-color"
         />
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-text">
+        <span className="text-sm font-semibold uppercase tracking-[0.16em] text-secondary-text">
           File
         </span>
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-48 rounded-xl bg-card-bg p-2 outline outline-1 outline-border-color/60">
+        <div className="absolute left-0 top-full z-50 mt-2 min-w-48 rounded-xl bg-card-bg p-2 outline outline-border-color/60">
           {actions.map((action) => (
             <button
               key={action.id}
@@ -58,9 +58,7 @@ export const BoardFileMenu = ({
               }}
               className={clsx(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition hover:bg-accent-light",
-                action.tone === "danger"
-                  ? "text-rose-500"
-                  : "text-title-color",
+                action.tone === "danger" ? "text-rose-500" : "text-title-color",
               )}
             >
               <Icon icon={action.icon} className="text-lg" />

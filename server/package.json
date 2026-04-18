@@ -8,16 +8,11 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.6.2",
     "@elysiajs/cors": "^1.4.1",
     "@libsql/client": "^0.17.2",
-    "@sinclair/typebox": "^0.34.49",
     "better-auth": "^1.6.2",
     "drizzle-orm": "^0.45.2",
-    "drizzle-typebox": "^0.3.3",
-    "elysia": "latest",
-    "nodemailer": "^8.0.5",
-    "postgres": "^3.4.9"
+    "elysia": "latest"
   },
   "devDependencies": {
     "bun-types": "latest",

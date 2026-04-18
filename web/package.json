@@ -12,7 +12,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@elysiajs/eden": "^1.4.9",
     "@fontsource-variable/mulish": "^5.2.8",
     "@fontsource/carter-one": "^5.2.8",
     "@fontsource/kaushan-script": "^5.2.8",

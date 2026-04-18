@@ -3,18 +3,15 @@ import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
-import type { CanvasPresetId } from "@/types/canvas";
+import type { CanvasPreset, CanvasPresetId } from "@/types/canvas";
 
-import type { BoardTopRibbonProps } from "./types";
-
-type BoardPresetControlProps = Pick<
-  BoardTopRibbonProps,
-  | "activePreset"
-  | "presets"
-  | "isPresetMenuOpen"
-  | "onPresetMenuOpenChange"
-  | "onSelectPreset"
->;
+type BoardPresetControlProps = {
+  activePreset: CanvasPreset;
+  presets: CanvasPreset[];
+  isPresetMenuOpen: boolean;
+  onPresetMenuOpenChange: (isOpen: boolean) => void;
+  onSelectPreset: (presetId: CanvasPresetId) => void;
+};
 
 export const BoardPresetControl = ({
   activePreset,

@@ -30,6 +30,17 @@ export type CanvasFrame = {
   height: number;
   background: string;
   backgroundPresetId: string;
+  images: BoardImageItem[];
+};
+
+export type BoardImageItem = {
+  id: string;
+  assetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  alt: string;
 };
 
 export type BoardSize = {

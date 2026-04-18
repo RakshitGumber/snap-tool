@@ -28,7 +28,6 @@ export const HeroAnimation = () => {
 
   useEffect(() => {
     const timers = new Set<ReturnType<typeof setTimeout>>();
-    let cancelled = false;
 
     const wait = (ms: number) =>
       new Promise<void>((resolve) => {
@@ -72,8 +71,6 @@ export const HeroAnimation = () => {
     void runSequence();
 
     return () => {
-      cancelled = true;
-
       for (const timeoutId of timers) {
         clearTimeout(timeoutId);
       }

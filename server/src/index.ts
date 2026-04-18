@@ -1,7 +1,7 @@
 import cors from "@elysiajs/cors";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 
-import { auth } from "@/lib/auth";
+import { auth } from "./lib/auth";
 
 import { splitOrigins } from "./config/helpers";
 

@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import {
   BoardSidebar,
   BoardTopRibbon,
+  BoardUploadsPanel,
   type BoardMenuAction,
   type BoardSidebarSection,
   type BoardSidebarSectionId,
@@ -133,8 +134,8 @@ const BOARD_SIDEBAR_SECTIONS: BoardSidebarSection[] = [
   {
     id: "uploads",
     label: "Uploads",
-    description: "Coming soon",
-    isPlaceholder: true,
+    description: "Images and links",
+    content: <BoardUploadsPanel />,
   },
 ];
 
@@ -144,6 +145,7 @@ export const Board = () => {
   const canvases = useCanvasStore((state) => state.canvases);
   const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
   const selectedCanvasId = useCanvasStore((state) => state.selectedCanvasId);
+  const selectedImageId = useCanvasStore((state) => state.selectedImageId);
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
   );
@@ -154,6 +156,7 @@ export const Board = () => {
   const applyBackgroundToActiveCanvas = useCanvasStore(
     (state) => state.applyBackgroundToActiveCanvas,
   );
+  const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
   const removeActiveCanvas = useCanvasStore((state) => state.removeActiveCanvas);
   const resetBoard = useCanvasStore((state) => state.resetBoard);
 
@@ -287,7 +290,14 @@ export const Board = () => {
   };
 
   const shortcuts = CanvasShortcuts({
-    delete: removeActiveCanvas,
+    delete: () => {
+      if (selectedImageId) {
+        removeSelectedImage();
+        return;
+      }
+
+      removeActiveCanvas();
+    },
     save: handleSaveBoard,
     clear: handleClearBoard,
     focus: {

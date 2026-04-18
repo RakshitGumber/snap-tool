@@ -138,5 +138,6 @@ export const createCanvasFrame = (
     height: size.height,
     background: backgroundPreset.value,
     backgroundPresetId: backgroundPreset.id,
+    images: [],
   };
 };

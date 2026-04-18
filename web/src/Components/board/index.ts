@@ -1,5 +1,6 @@
 export { BoardSidebar } from "./BoardSidebar";
 export { BoardTopRibbon } from "./BoardTopRibbon";
+export { BoardUploadsPanel } from "./BoardUploadsPanel";
 export type {
   BoardMenuAction,
   BoardSidebarProps,

@@ -38,6 +38,9 @@
     --accent-color-light: #37af878f;
     --border-color: #DDE0F0;
     --text-muted: #8284A0;
+    --scrollbar-track: #E9ECF8;
+    --scrollbar-thumb: #B2B8D2;
+    --scrollbar-thumb-hover: #37af87;
 }
 
 .dark {
@@ -49,6 +52,9 @@
     --accent-color-light: #68dc988f;
     --border-color: #1F2133;
     --text-muted: #797b92;
+    --scrollbar-track: #1F2133;
+    --scrollbar-thumb: #4A4D66;
+    --scrollbar-thumb-hover: #68dc98;
 }
 
 @theme {
@@ -74,10 +80,30 @@
 
     html {
         scroll-behavior: smooth;
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
 
     body {
         @apply bg-bg text-text-color font-main;
+    }
+
+    *::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: var(--scrollbar-track);
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border: 2px solid var(--scrollbar-track);
+        border-radius: 999px;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background: var(--scrollbar-thumb-hover);
     }
 
 }

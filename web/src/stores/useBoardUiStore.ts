@@ -20,7 +20,7 @@ export const useBoardUiStore = create<BoardUiState & BoardUiActions>((set) => ({
   openSectionId: "background",
   isFileMenuOpen: false,
   isPresetMenuOpen: false,
-  isSidebarOpen: true,
+  isSidebarOpen: false,
 
   setOpenSectionId: (openSectionId) => set({ openSectionId }),
 

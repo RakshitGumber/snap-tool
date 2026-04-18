@@ -36,10 +36,11 @@ export type BoardTopRibbonProps = {
 };
 
 export type BoardSidebarProps = {
+  isOpen: boolean;
   backgroundPresets: CanvasBackgroundPreset[];
   sections: BoardSidebarSection[];
   openSectionId: BoardSidebarSectionId;
   onSectionToggle: (sectionId: BoardSidebarSectionId) => void;
   onBackgroundSelect: (backgroundPresetId: string) => void;
-  onToggleSidebar: () => void;
+  onToggleSidebar: (isOpen: boolean) => void;
 };

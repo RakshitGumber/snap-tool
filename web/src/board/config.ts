@@ -12,8 +12,11 @@ export const SNAP_THRESHOLD = 16;
 export const SNAP_GAP = 40;
 export const FIT_PADDING = 48;
 
-export const DEFAULT_SIDEBAR_WIDTH = 352;
-export const MIN_SIDEBAR_WIDTH = 288;
+export const DEFAULT_ACCESS_PANEL_WIDTH = 64;
+export const DEFAULT_DESIGN_PANEL_WIDTH = 352;
+export const DEFAULT_SIDEBAR_WIDTH =
+  DEFAULT_ACCESS_PANEL_WIDTH + DEFAULT_DESIGN_PANEL_WIDTH;
+export const MIN_SIDEBAR_WIDTH = 352;
 export const MAX_SIDEBAR_WIDTH = 448;
 
 export const CANVAS_PRESETS: CanvasPreset[] = [

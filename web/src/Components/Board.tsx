@@ -337,33 +337,20 @@ export const Board = () => {
       />
 
       <div className="flex min-h-0 flex-1">
-        {isSidebarOpen ? (
-          <BoardSidebar
-            backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-            sections={BOARD_SIDEBAR_SECTIONS}
-            openSectionId={openSectionId}
-            onSectionToggle={(sectionId: BoardSidebarSectionId) =>
-              setOpenSectionId(sectionId)
-            }
-            onBackgroundSelect={applyBackgroundToActiveCanvas}
-            onToggleSidebar={() => setSidebarOpen(false)}
-          />
-        ) : null}
+        <BoardSidebar
+          isOpen={isSidebarOpen}
+          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
+          sections={BOARD_SIDEBAR_SECTIONS}
+          openSectionId={openSectionId}
+          onSectionToggle={(sectionId: BoardSidebarSectionId) => {
+            setOpenSectionId(sectionId);
+            setSidebarOpen(true);
+          }}
+          onBackgroundSelect={applyBackgroundToActiveCanvas}
+          onToggleSidebar={setSidebarOpen}
+        />
 
         <section className="relative min-w-0 flex-1 bg-bg">
-          {!isSidebarOpen ? (
-            <div className="absolute left-4 top-4 z-20">
-              <button
-                type="button"
-                aria-label="Open sidebar"
-                onClick={() => setSidebarOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-card-bg/95 text-title-color shadow-lg outline outline-1 outline-border-color/60 backdrop-blur transition hover:bg-accent-light"
-              >
-                <Icon icon="solar:sidebar-minimalistic-linear" className="text-lg" />
-              </button>
-            </div>
-          ) : null}
-
           <BoardCanvas />
 
           {shouldShowCenterCanvasButton ? (

@@ -1,6 +1,7 @@
 import {
   memo,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
@@ -11,13 +12,15 @@ import clsx from "clsx";
 
 import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import {
-  useActiveCanvas,
-  useCanvasImageById,
+  useCanvasImage,
+  useCanvasImageIds,
+  useCanvasShell,
   useCanvasStore,
   useSelectedImageId,
 } from "@/stores/useCanvasStore";
-import { useAssetById, useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
+import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { getDraggedAssetId } from "@/uploads/drag";
+import { useResolvedAssetMedia } from "@/uploads/media";
 
 type ImageDragState = {
   imageId: string;
@@ -40,10 +43,10 @@ type CanvasImageItemProps = {
 
 const CanvasImageItem = memo(
   ({ imageId, isSelected, onPointerDown }: CanvasImageItemProps) => {
-    const image = useCanvasImageById(imageId);
-    const asset = useAssetById(image?.assetId ?? "");
+    const image = useCanvasImage(imageId);
+    const media = useResolvedAssetMedia(image?.assetId, "full");
 
-    if (!image || !asset) {
+    if (!image || !media) {
       return null;
     }
 
@@ -63,7 +66,7 @@ const CanvasImageItem = memo(
         }}
       >
         <img
-          src={asset.src}
+          src={media.src}
           alt={image.alt}
           draggable={false}
           className="pointer-events-none h-full w-full select-none object-contain"
@@ -82,7 +85,8 @@ export const BoardCanvas = memo(function BoardCanvas() {
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
 
-  const canvas = useActiveCanvas();
+  const canvasShell = useCanvasShell();
+  const imageIds = useCanvasImageIds();
   const selectedImageId = useSelectedImageId();
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
   const insertImageOnCanvasAtPoint = useCanvasStore(
@@ -91,37 +95,37 @@ export const BoardCanvas = memo(function BoardCanvas() {
   const clearSelection = useBoardSelectionStore((state) => state.clearSelection);
   const setSelectedImage = useBoardSelectionStore((state) => state.setSelectedImage);
 
+  const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  });
+
+  const flushPointerMove = useEffectEvent(() => {
+    frameRequestRef.current = null;
+
+    const pointer = pointerSnapshotRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!pointer || !dragState) {
+      return;
+    }
+
+    const localPoint = getCanvasPoint(pointer.clientX, pointer.clientY);
+    moveImageOnCanvas(
+      dragState.imageId,
+      localPoint.x - dragState.offsetX,
+      localPoint.y - dragState.offsetY,
+    );
+  });
+
   useEffect(() => {
-    const getCanvasPoint = (clientX: number, clientY: number) => {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) {
-        return { x: 0, y: 0 };
-      }
-
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top,
-      };
-    };
-
-    const flushPointerMove = () => {
-      frameRequestRef.current = null;
-
-      const pointer = pointerSnapshotRef.current;
-      const dragState = dragStateRef.current;
-
-      if (!pointer || !dragState) {
-        return;
-      }
-
-      const localPoint = getCanvasPoint(pointer.clientX, pointer.clientY);
-      moveImageOnCanvas(
-        dragState.imageId,
-        localPoint.x - dragState.offsetX,
-        localPoint.y - dragState.offsetY,
-      );
-    };
-
     const schedulePointerMove = (clientX: number, clientY: number) => {
       pointerSnapshotRef.current = { clientX, clientY };
 
@@ -161,7 +165,7 @@ export const BoardCanvas = memo(function BoardCanvas() {
         window.cancelAnimationFrame(frameRequestRef.current);
       }
     };
-  }, [moveImageOnCanvas]);
+  }, []);
 
   const handleSurfacePointerDown = () => {
     clearSelection();
@@ -216,7 +220,7 @@ export const BoardCanvas = memo(function BoardCanvas() {
     event.preventDefault();
     setDropTargetActive(false);
 
-    const asset = useUploadLibraryStore.getState().assetsById[assetId];
+    const asset = useUploadLibraryStore.getState().assetMetaById[assetId];
     if (!asset) {
       return;
     }
@@ -228,7 +232,7 @@ export const BoardCanvas = memo(function BoardCanvas() {
     });
   };
 
-  if (!canvas) {
+  if (!canvasShell) {
     return null;
   }
 
@@ -251,12 +255,12 @@ export const BoardCanvas = memo(function BoardCanvas() {
             dropTargetActive && "outline outline-2 outline-accent outline-offset-[-4px]",
           )}
           style={{
-            width: canvas.width,
-            height: canvas.height,
-            background: canvas.background,
+            width: canvasShell.width,
+            height: canvasShell.height,
+            background: canvasShell.background,
           }}
         >
-          {canvas.imageOrder.map((imageId) => (
+          {imageIds.map((imageId) => (
             <CanvasImageItem
               key={imageId}
               imageId={imageId}

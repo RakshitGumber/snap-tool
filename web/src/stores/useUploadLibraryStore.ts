@@ -1,33 +1,51 @@
 import { create } from "zustand";
 
 import { useCanvasStore } from "@/stores/useCanvasStore";
-import type { StoredUploadLibraryAsset, UploadLibraryAsset } from "@/types/uploads";
+import type {
+  StoredUploadAssetMeta,
+  UploadAssetMediaVariant,
+  UploadLibraryAssetMeta,
+  UploadResolvedAssetMedia,
+} from "@/types/uploads";
 import { createLocalUploadAsset, resolveAssetFromUrl } from "@/uploads/imports";
-import { readStoredUploadAssets, saveStoredUploadAsset } from "@/uploads/storage";
+import {
+  readStoredUploadAssetBinary,
+  readStoredUploadAssetMeta,
+  saveStoredUploadAssetBinary,
+  saveStoredUploadAssetMeta,
+} from "@/uploads/storage";
 
 type UploadLibraryState = {
   assetOrder: string[];
-  assetsById: Record<string, UploadLibraryAsset>;
-  isHydrated: boolean;
-  isImporting: boolean;
-  error: string | null;
+  assetMetaById: Record<string, UploadLibraryAssetMeta>;
+  resolvedMediaByAssetId: Record<
+    string,
+    Partial<Record<UploadAssetMediaVariant, UploadResolvedAssetMedia>>
+  >;
+  status: "idle" | "hydrating" | "ready" | "error";
+  importStatus: "idle" | "running" | "error";
+  lastError: string | null;
 };
 
 type UploadLibraryActions = {
   hydrateLibrary: () => Promise<void>;
-  addLocalFiles: (files: File[]) => Promise<UploadLibraryAsset[]>;
-  importFromUrl: (input: string) => Promise<UploadLibraryAsset>;
+  addLocalFiles: (files: File[]) => Promise<UploadLibraryAssetMeta[]>;
+  importFromUrl: (input: string) => Promise<UploadLibraryAssetMeta>;
   insertAssetOnActiveCanvas: (assetId: string) => string | null;
+  resolveAssetMedia: (
+    assetId: string,
+    variant: UploadAssetMediaVariant,
+  ) => Promise<UploadResolvedAssetMedia | null>;
   clearError: () => void;
 };
 
-const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAsset[] = [
+const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAssetMeta[] = [
   {
     id: "built-in-ferret",
     name: "Ferret",
     source: "built-in",
-    src: "/images/ferret.png",
-    thumbnailSrc: "/images/ferret.png",
+    previewUrl: "/images/ferret.png",
+    remoteUrl: "/images/ferret.png",
     storageKind: "bundled",
     width: 2000,
     height: 1480,
@@ -37,8 +55,10 @@ const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAsset[] = [
 
 const MAX_FILE_IMPORT_CONCURRENCY = 4;
 const runtimeAssetUrls = new Map<string, string>();
+const mediaPromises = new Map<string, Promise<UploadResolvedAssetMedia | null>>();
+let hydrationPromise: Promise<void> | null = null;
 
-const sortAssets = (assets: UploadLibraryAsset[]) =>
+const sortAssets = (assets: UploadLibraryAssetMeta[]) =>
   [...assets].sort((left, right) => {
     if (left.source === "built-in" && right.source !== "built-in") return -1;
     if (left.source !== "built-in" && right.source === "built-in") return 1;
@@ -46,18 +66,35 @@ const sortAssets = (assets: UploadLibraryAsset[]) =>
     return right.addedAt.localeCompare(left.addedAt);
   });
 
-const toNormalizedAssets = (assets: UploadLibraryAsset[]) => ({
+const toNormalizedAssets = (assets: UploadLibraryAssetMeta[]) => ({
   assetOrder: assets.map((asset) => asset.id),
-  assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
+  assetMetaById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
 });
 
-const trackRuntimeAssetUrl = (assetId: string, url: string) => {
-  const previousUrl = runtimeAssetUrls.get(assetId);
+const mergeBuiltInAndStoredAssets = (storedAssets: StoredUploadAssetMeta[]) => {
+  const byId = new Map<string, UploadLibraryAssetMeta>();
+
+  for (const asset of BUILT_IN_ASSET_DEFINITIONS) {
+    byId.set(asset.id, asset);
+  }
+
+  for (const asset of storedAssets) {
+    byId.set(asset.id, asset);
+  }
+
+  return sortAssets([...byId.values()]);
+};
+
+const getMediaCacheKey = (assetId: string, variant: UploadAssetMediaVariant) =>
+  `${assetId}:${variant}`;
+
+const trackRuntimeAssetUrl = (cacheKey: string, url: string) => {
+  const previousUrl = runtimeAssetUrls.get(cacheKey);
   if (previousUrl && previousUrl !== url) {
     URL.revokeObjectURL(previousUrl);
   }
 
-  runtimeAssetUrls.set(assetId, url);
+  runtimeAssetUrls.set(cacheKey, url);
 };
 
 const clearRuntimeAssetUrls = () => {
@@ -67,63 +104,6 @@ const clearRuntimeAssetUrls = () => {
 
   runtimeAssetUrls.clear();
 };
-
-const toRuntimeAsset = (asset: StoredUploadLibraryAsset): UploadLibraryAsset | null => {
-  if (asset.storageKind === "indexeddb-blob") {
-    if (!asset.blob) return null;
-
-    const localUrl = URL.createObjectURL(asset.blob);
-    trackRuntimeAssetUrl(asset.id, localUrl);
-
-    return {
-      ...asset,
-      src: localUrl,
-      thumbnailSrc: localUrl,
-    };
-  }
-
-  const src = asset.src ?? asset.thumbnailSrc;
-  if (!src) return null;
-
-  return {
-    ...asset,
-    src,
-    thumbnailSrc: asset.thumbnailSrc ?? src,
-  };
-};
-
-const persistLocalAsset = async (asset: Awaited<ReturnType<typeof createLocalUploadAsset>>) => {
-  await saveStoredUploadAsset({
-    id: asset.id,
-    name: asset.name,
-    source: asset.source,
-    mimeType: asset.mimeType,
-    width: asset.width,
-    height: asset.height,
-    addedAt: asset.addedAt,
-    storageKind: asset.storageKind,
-    blob: asset.blob,
-  });
-};
-
-const persistRemoteAsset = async (asset: UploadLibraryAsset) => {
-  await saveStoredUploadAsset({
-    id: asset.id,
-    name: asset.name,
-    source: asset.source,
-    src: asset.src,
-    thumbnailSrc: asset.thumbnailSrc,
-    originalUrl: asset.originalUrl,
-    mimeType: asset.mimeType,
-    width: asset.width,
-    height: asset.height,
-    addedAt: asset.addedAt,
-    storageKind: asset.storageKind,
-  });
-};
-
-const isSupportedImageFile = (file: File) =>
-  file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
 
 const mapWithConcurrency = async <TInput, TOutput>(
   items: TInput[],
@@ -148,6 +128,39 @@ const mapWithConcurrency = async <TInput, TOutput>(
   return results;
 };
 
+const isSupportedImageFile = (file: File) =>
+  file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+
+const setResolvedMediaState = ({
+  assetId,
+  variant,
+  src,
+  set,
+}: {
+  assetId: string;
+  variant: UploadAssetMediaVariant;
+  src: string;
+  set: (
+    updater:
+      | Partial<UploadLibraryState>
+      | ((state: UploadLibraryState) => Partial<UploadLibraryState>),
+  ) => void;
+}) => {
+  set((state) => ({
+    resolvedMediaByAssetId: {
+      ...state.resolvedMediaByAssetId,
+      [assetId]: {
+        ...state.resolvedMediaByAssetId[assetId],
+        [variant]: {
+          assetId,
+          variant,
+          src,
+        },
+      },
+    },
+  }));
+};
+
 if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", clearRuntimeAssetUrls);
 }
@@ -155,40 +168,51 @@ if (typeof window !== "undefined") {
 export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryActions>(
   (set, get) => ({
     assetOrder: [],
-    assetsById: {},
-    isHydrated: false,
-    isImporting: false,
-    error: null,
+    assetMetaById: {},
+    resolvedMediaByAssetId: {},
+    status: "idle",
+    importStatus: "idle",
+    lastError: null,
 
     hydrateLibrary: async () => {
-      if (get().isHydrated) {
+      if (get().status === "ready") {
         return;
       }
 
-      try {
-        const storedAssets = await readStoredUploadAssets();
-        clearRuntimeAssetUrls();
-
-        const runtimeAssets = storedAssets
-          .map(toRuntimeAsset)
-          .filter((asset): asset is UploadLibraryAsset => asset !== null);
-        const nextAssets = sortAssets([...BUILT_IN_ASSET_DEFINITIONS, ...runtimeAssets]);
-
-        set({
-          ...toNormalizedAssets(nextAssets),
-          isHydrated: true,
-          error: null,
-        });
-      } catch (error) {
-        set({
-          ...toNormalizedAssets(BUILT_IN_ASSET_DEFINITIONS),
-          isHydrated: true,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Unable to restore your upload library.",
-        });
+      if (hydrationPromise) {
+        return hydrationPromise;
       }
+
+      set({
+        status: "hydrating",
+        lastError: null,
+      });
+
+      hydrationPromise = (async () => {
+        try {
+          const storedAssets = await readStoredUploadAssetMeta();
+          const nextAssets = mergeBuiltInAndStoredAssets(storedAssets);
+
+          set({
+            ...toNormalizedAssets(nextAssets),
+            status: "ready",
+            lastError: null,
+          });
+        } catch (error) {
+          set({
+            ...toNormalizedAssets(BUILT_IN_ASSET_DEFINITIONS),
+            status: "error",
+            lastError:
+              error instanceof Error
+                ? error.message
+                : "Unable to restore your upload library.",
+          });
+        } finally {
+          hydrationPromise = null;
+        }
+      })();
+
+      return hydrationPromise;
     },
 
     addLocalFiles: async (files) => {
@@ -196,65 +220,96 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
 
       if (!imageFiles.length) {
         const error = "Add at least one image file.";
-        set({ error });
+        set({ lastError: error });
         throw new Error(error);
       }
 
-      const nextAssets = await mapWithConcurrency(
+      const createdAssets = await mapWithConcurrency(
         imageFiles,
         MAX_FILE_IMPORT_CONCURRENCY,
         async (file) => {
           const createdAsset = await createLocalUploadAsset(file);
-          await persistLocalAsset(createdAsset);
-          trackRuntimeAssetUrl(createdAsset.id, createdAsset.src);
 
-          return {
-            id: createdAsset.id,
-            name: createdAsset.name,
-            source: createdAsset.source,
-            src: createdAsset.src,
-            thumbnailSrc: createdAsset.thumbnailSrc,
-            mimeType: createdAsset.mimeType,
-            width: createdAsset.width,
-            height: createdAsset.height,
-            addedAt: createdAsset.addedAt,
-            storageKind: createdAsset.storageKind,
-          } satisfies UploadLibraryAsset;
+          await saveStoredUploadAssetMeta(createdAsset.meta);
+          await saveStoredUploadAssetBinary({
+            id: `${createdAsset.meta.id}:full`,
+            assetId: createdAsset.meta.id,
+            variant: "full",
+            mimeType: createdAsset.meta.mimeType,
+            blob: createdAsset.originalBlob,
+          });
+          await saveStoredUploadAssetBinary({
+            id: `${createdAsset.meta.id}:preview`,
+            assetId: createdAsset.meta.id,
+            variant: "preview",
+            mimeType: createdAsset.previewMimeType,
+            blob: createdAsset.previewBlob,
+          });
+
+          return createdAsset;
         },
       );
 
+      const nextMeta = createdAssets.map((asset) => asset.meta);
+
       set((state) => {
         const currentAssets = state.assetOrder
-          .map((assetId) => state.assetsById[assetId])
-          .filter((asset): asset is UploadLibraryAsset => asset !== undefined);
-        const mergedAssets = sortAssets([...currentAssets, ...nextAssets]);
+          .map((assetId) => state.assetMetaById[assetId])
+          .filter((asset): asset is UploadLibraryAssetMeta => asset !== undefined);
+        const mergedAssets = sortAssets([...currentAssets, ...nextMeta]);
 
         return {
           ...toNormalizedAssets(mergedAssets),
-          error: null,
+          lastError: null,
+          status: state.status === "idle" ? "ready" : state.status,
         };
       });
 
-      return nextAssets;
+      for (const createdAsset of createdAssets) {
+        const previewUrl = URL.createObjectURL(createdAsset.previewBlob);
+        const fullUrl = URL.createObjectURL(createdAsset.originalBlob);
+
+        trackRuntimeAssetUrl(getMediaCacheKey(createdAsset.meta.id, "preview"), previewUrl);
+        trackRuntimeAssetUrl(getMediaCacheKey(createdAsset.meta.id, "full"), fullUrl);
+
+        setResolvedMediaState({
+          assetId: createdAsset.meta.id,
+          variant: "preview",
+          src: previewUrl,
+          set,
+        });
+        setResolvedMediaState({
+          assetId: createdAsset.meta.id,
+          variant: "full",
+          src: fullUrl,
+          set,
+        });
+      }
+
+      return nextMeta;
     },
 
     importFromUrl: async (input) => {
-      set({ isImporting: true, error: null });
+      set({
+        importStatus: "running",
+        lastError: null,
+      });
 
       try {
         const asset = await resolveAssetFromUrl(input);
-        await persistRemoteAsset(asset);
+        await saveStoredUploadAssetMeta(asset);
 
         set((state) => {
           const currentAssets = state.assetOrder
-            .map((assetId) => state.assetsById[assetId])
-            .filter((currentAsset): currentAsset is UploadLibraryAsset => currentAsset !== undefined);
+            .map((assetId) => state.assetMetaById[assetId])
+            .filter((currentAsset): currentAsset is UploadLibraryAssetMeta => currentAsset !== undefined);
           const mergedAssets = sortAssets([...currentAssets, asset]);
 
           return {
             ...toNormalizedAssets(mergedAssets),
-            isImporting: false,
-            error: null,
+            importStatus: "idle",
+            lastError: null,
+            status: state.status === "idle" ? "ready" : state.status,
           };
         });
 
@@ -264,8 +319,8 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
           error instanceof Error ? error.message : "Unable to import that URL.";
 
         set({
-          isImporting: false,
-          error: message,
+          importStatus: "error",
+          lastError: message,
         });
 
         throw error instanceof Error ? error : new Error(message);
@@ -273,13 +328,92 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
     },
 
     insertAssetOnActiveCanvas: (assetId) => {
-      const asset = get().assetsById[assetId];
+      const asset = get().assetMetaById[assetId];
       if (!asset) return null;
 
       return useCanvasStore.getState().insertImageOnActiveCanvas(asset);
     },
 
-    clearError: () => set({ error: null }),
+    resolveAssetMedia: async (assetId, variant) => {
+      const cached = get().resolvedMediaByAssetId[assetId]?.[variant];
+      if (cached) {
+        return cached;
+      }
+
+      const promiseKey = getMediaCacheKey(assetId, variant);
+      const existingPromise = mediaPromises.get(promiseKey);
+      if (existingPromise) {
+        return existingPromise;
+      }
+
+      const asset = get().assetMetaById[assetId];
+      if (!asset) {
+        return null;
+      }
+
+      const nextPromise = (async () => {
+        try {
+          if (asset.storageKind === "bundled" || asset.storageKind === "remote-url") {
+            const src =
+              variant === "preview"
+                ? asset.previewUrl ?? asset.remoteUrl
+                : asset.remoteUrl ?? asset.previewUrl;
+            if (!src) {
+              return null;
+            }
+
+            setResolvedMediaState({
+              assetId,
+              variant,
+              src,
+              set,
+            });
+
+            return {
+              assetId,
+              variant,
+              src,
+            } satisfies UploadResolvedAssetMedia;
+          }
+
+          const binary =
+            (await readStoredUploadAssetBinary(assetId, variant)) ??
+            (variant === "preview"
+              ? await readStoredUploadAssetBinary(assetId, "full")
+              : null);
+
+          if (!binary) {
+            return null;
+          }
+
+          const src = URL.createObjectURL(binary.blob);
+          trackRuntimeAssetUrl(promiseKey, src);
+          setResolvedMediaState({
+            assetId,
+            variant,
+            src,
+            set,
+          });
+
+          return {
+            assetId,
+            variant,
+            src,
+          } satisfies UploadResolvedAssetMedia;
+        } finally {
+          mediaPromises.delete(promiseKey);
+        }
+      })();
+
+      mediaPromises.set(promiseKey, nextPromise);
+      return nextPromise;
+    },
+
+    clearError: () =>
+      set({
+        lastError: null,
+        importStatus: get().importStatus === "error" ? "idle" : get().importStatus,
+      }),
   }),
 );
 
@@ -287,4 +421,4 @@ export const useAssetIds = () =>
   useUploadLibraryStore((state) => state.assetOrder);
 
 export const useAssetById = (assetId: string) =>
-  useUploadLibraryStore((state) => state.assetsById[assetId] ?? null);
+  useUploadLibraryStore((state) => state.assetMetaById[assetId] ?? null);

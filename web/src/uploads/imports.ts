@@ -1,25 +1,83 @@
-import type { UploadAssetSource, UploadLibraryAsset } from "@/types/uploads";
+import type { UploadAssetSource, UploadLibraryAssetMeta } from "@/types/uploads";
 
 type ResolvedImportAsset = Pick<
-  UploadLibraryAsset,
-  "name" | "source" | "src" | "thumbnailSrc" | "originalUrl" | "mimeType" | "width" | "height"
+  UploadLibraryAssetMeta,
+  | "name"
+  | "source"
+  | "originalUrl"
+  | "previewUrl"
+  | "remoteUrl"
+  | "mimeType"
+  | "width"
+  | "height"
 >;
 
-export const loadImageDimensions = (src: string) =>
-  new Promise<{ width: number; height: number }>((resolve, reject) => {
+const MAX_PREVIEW_EDGE = 256;
+
+const loadImageElement = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
 
     image.decoding = "async";
     image.referrerPolicy = "no-referrer";
-    image.onload = () => {
-      resolve({
-        width: image.naturalWidth || image.width,
-        height: image.naturalHeight || image.height,
-      });
-    };
+    image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("Image failed to load."));
     image.src = src;
   });
+
+export const loadImageDimensions = async (src: string) => {
+  const image = await loadImageElement(src);
+
+  return {
+    width: image.naturalWidth || image.width,
+    height: image.naturalHeight || image.height,
+  };
+};
+
+const createPreviewBlob = async ({
+  src,
+  mimeType,
+}: {
+  src: string;
+  mimeType?: string;
+}) => {
+  const image = await loadImageElement(src);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const longestEdge = Math.max(width, height, 1);
+  const scale = Math.min(MAX_PREVIEW_EDGE / longestEdge, 1);
+  const previewWidth = Math.max(1, Math.round(width * scale));
+  const previewHeight = Math.max(1, Math.round(height * scale));
+
+  if (scale >= 1 && mimeType && mimeType !== "image/svg+xml") {
+    return {
+      blob: null,
+      width,
+      height,
+    };
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = previewWidth;
+  canvas.height = previewHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Unable to create an image preview.");
+  }
+
+  context.drawImage(image, 0, 0, previewWidth, previewHeight);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/webp", 0.82);
+  });
+
+  return {
+    blob,
+    width: previewWidth,
+    height: previewHeight,
+  };
+};
 
 const getYouTubeVideoId = (input: string) => {
   try {
@@ -93,14 +151,14 @@ const resolveGitHubRepositoryPreview = async (
   }
 
   const versionKey = Date.now().toString(36);
-  const previewSrc = `https://opengraph.githubassets.com/${versionKey}/${repositoryPath.owner}/${repositoryPath.repo}`;
-  const { width, height } = await loadImageDimensions(previewSrc);
+  const previewUrl = `https://opengraph.githubassets.com/${versionKey}/${repositoryPath.owner}/${repositoryPath.repo}`;
+  const { width, height } = await loadImageDimensions(previewUrl);
 
   return {
     name: `${repositoryPath.owner}/${repositoryPath.repo}`,
     source: "github",
-    src: previewSrc,
-    thumbnailSrc: previewSrc,
+    previewUrl,
+    remoteUrl: previewUrl,
     originalUrl: repositoryPath.originalUrl,
     mimeType: "image/png",
     width,
@@ -117,15 +175,15 @@ const resolveYouTubeThumbnail = async (input: string): Promise<ResolvedImportAss
     `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
   ];
 
-  for (const thumbnailSrc of thumbnailCandidates) {
+  for (const previewUrl of thumbnailCandidates) {
     try {
-      const { width, height } = await loadImageDimensions(thumbnailSrc);
+      const { width, height } = await loadImageDimensions(previewUrl);
 
       return {
         name: `YouTube ${videoId}`,
         source: "youtube",
-        src: thumbnailSrc,
-        thumbnailSrc,
+        previewUrl,
+        remoteUrl: previewUrl,
         originalUrl: input,
         mimeType: "image/jpeg",
         width,
@@ -155,14 +213,15 @@ const resolveDirectImageUrl = async (input: string): Promise<ResolvedImportAsset
     throw new Error("Enter a valid URL.");
   }
 
-  const { width, height } = await loadImageDimensions(url.toString());
+  const remoteUrl = url.toString();
+  const { width, height } = await loadImageDimensions(remoteUrl);
 
   return {
     name: buildImageUrlName(url),
     source: "image-url",
-    src: url.toString(),
-    thumbnailSrc: url.toString(),
-    originalUrl: url.toString(),
+    previewUrl: remoteUrl,
+    remoteUrl,
+    originalUrl: remoteUrl,
     mimeType: undefined,
     width,
     height,
@@ -174,23 +233,31 @@ export const createLocalUploadAsset = async (file: File) => {
 
   try {
     const { width, height } = await loadImageDimensions(localUrl);
+    const preview = await createPreviewBlob({
+      src: localUrl,
+      mimeType: file.type || "image/*",
+    });
 
     return {
-      id: crypto.randomUUID(),
-      name: file.name,
-      source: "local-file" as UploadAssetSource,
-      src: localUrl,
-      thumbnailSrc: localUrl,
-      mimeType: file.type || "image/*",
-      width,
-      height,
-      addedAt: new Date().toISOString(),
-      storageKind: "indexeddb-blob" as const,
-      blob: file,
+      meta: {
+        id: crypto.randomUUID(),
+        name: file.name,
+        source: "local-file" as UploadAssetSource,
+        mimeType: file.type || "image/*",
+        width,
+        height,
+        addedAt: new Date().toISOString(),
+        storageKind: "local-indexeddb" as const,
+        originalUrl: undefined,
+        previewUrl: null,
+        remoteUrl: null,
+      } satisfies UploadLibraryAssetMeta,
+      originalBlob: file,
+      previewBlob: preview.blob ?? file,
+      previewMimeType: preview.blob?.type || file.type || "image/*",
     };
-  } catch (error) {
+  } finally {
     URL.revokeObjectURL(localUrl);
-    throw error;
   }
 };
 
@@ -207,7 +274,7 @@ export const resolveAssetFromUrl = async (input: string) => {
       addedAt: new Date().toISOString(),
       storageKind: "remote-url" as const,
       ...youTubeAsset,
-    };
+    } satisfies UploadLibraryAssetMeta;
   }
 
   const gitHubAsset = await resolveGitHubRepositoryPreview(trimmedUrl);
@@ -217,7 +284,7 @@ export const resolveAssetFromUrl = async (input: string) => {
       addedAt: new Date().toISOString(),
       storageKind: "remote-url" as const,
       ...gitHubAsset,
-    };
+    } satisfies UploadLibraryAssetMeta;
   }
 
   const directImageAsset = await resolveDirectImageUrl(trimmedUrl);
@@ -227,5 +294,5 @@ export const resolveAssetFromUrl = async (input: string) => {
     addedAt: new Date().toISOString(),
     storageKind: "remote-url" as const,
     ...directImageAsset,
-  };
+  } satisfies UploadLibraryAssetMeta;
 };

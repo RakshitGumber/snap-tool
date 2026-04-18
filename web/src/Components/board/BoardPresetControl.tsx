@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
 import { getCanvasPresetGroupIcon } from "@/board/config";
+import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import type {
   CanvasPresetGroup,
   CanvasPresetId,
@@ -27,7 +28,6 @@ export const BoardPresetControl = ({
   onSelectPreset,
 }: BoardPresetControlProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const [activeGroupId, setActiveGroupId] =
     useState<CanvasPresetGroupId | null>(null);
   const menuOffsetX = 0;
@@ -46,18 +46,14 @@ export const BoardPresetControl = ({
   const activeGroup =
     presetGroups.find((group) => group.id === activeGroupId) ?? null;
 
-  useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      // If the click is outside the parent container, close the menu
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setActiveGroupId(null);
-        onPresetMenuOpenChange(false);
-      }
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [onPresetMenuOpenChange]);
+  useDismissibleLayer({
+    containerRef,
+    isOpen: isPresetMenuOpen,
+    onDismiss: () => {
+      setActiveGroupId(null);
+      onPresetMenuOpenChange(false);
+    },
+  });
 
   return (
     <div ref={containerRef} className="relative">
@@ -85,7 +81,6 @@ export const BoardPresetControl = ({
 
       {isPresetMenuOpen && (
         <div
-          ref={menuRef}
           className="bg-card-bg absolute left-0 top-full mt-2 z-50 w-72 overflow-y-auto p-2"
           style={{
             maxHeight: menuMaxHeight,

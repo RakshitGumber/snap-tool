@@ -73,6 +73,8 @@ export type CanvasRecord = Omit<CanvasFrame, "images"> & {
   imagesById: Record<string, BoardImageItem>;
 };
 
+export type CanvasShell = Omit<CanvasRecord, "imageOrder" | "imagesById">;
+
 export type CanvasActions = {
   delete: () => void;
   save: () => void;

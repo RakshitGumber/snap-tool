@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 
 import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
-import type { UploadLibraryAsset } from "@/types/uploads";
+import type { UploadLibraryAssetMeta } from "@/types/uploads";
 
 import { useCanvasStore } from "./useCanvasStore";
 
-const asset: UploadLibraryAsset = {
+const asset: UploadLibraryAssetMeta = {
   id: "asset-1",
   name: "Sample image",
   source: "built-in",
-  src: "/images/sample.png",
-  thumbnailSrc: "/images/sample.png",
+  previewUrl: "/images/sample.png",
+  remoteUrl: "/images/sample.png",
   width: 1200,
   height: 800,
   addedAt: "2026-04-18T00:00:00.000Z",
@@ -18,7 +18,7 @@ const asset: UploadLibraryAsset = {
 };
 
 beforeEach(() => {
-  useCanvasStore.setState({ canvas: null });
+  useCanvasStore.setState({ canvasMeta: null, imageOrder: [], imagesById: {} });
   useBoardSelectionStore.setState({ selectedImageId: null });
 });
 

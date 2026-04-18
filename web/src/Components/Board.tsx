@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import {
   BoardBackgroundPanel,
@@ -21,7 +21,11 @@ import { CanvasShortcuts } from "@/canvas/canvasShorcuts";
 import { useKeyboardShortcuts } from "@/canvas/useKeyBindings";
 import { useRouter } from "@/pages/routerStore";
 import { useBoardUiStore } from "@/stores/useBoardUiStore";
-import { useCanvasStore, useSelectedImageId } from "@/stores/useCanvasStore";
+import {
+  useCanvasShell,
+  useCanvasStore,
+  useSelectedImageId,
+} from "@/stores/useCanvasStore";
 import type { CanvasPresetId } from "@/types/canvas";
 
 const downloadTextFile = (filename: string, content: string) => {
@@ -38,7 +42,7 @@ export const Board = () => {
   const setRoute = useRouter((state) => state.setRoute);
 
   const selectedImageId = useSelectedImageId();
-  const canvas = useCanvasStore((state) => state.canvas);
+  const canvasShell = useCanvasShell();
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
   );
@@ -60,16 +64,16 @@ export const Board = () => {
   const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
 
   useEffect(() => {
-    if (canvas) return;
+    if (canvasShell) return;
     initializeDefaultCanvas();
-  }, [canvas, initializeDefaultCanvas]);
+  }, [canvasShell, initializeDefaultCanvas]);
 
-  const handleSelectPreset = (presetId: CanvasPresetId) => {
+  const handleSelectPreset = useCallback((presetId: CanvasPresetId) => {
     const preset = getCanvasPresetById(presetId);
     resizeCanvas(preset.size, preset.id);
-  };
+  }, [resizeCanvas]);
 
-  const handleSaveCanvas = () => {
+  const handleSaveCanvas = useCallback(() => {
     const nextCanvas = serializeCanvas();
     if (!nextCanvas) return;
 
@@ -84,9 +88,9 @@ export const Board = () => {
       `snap-canvas-${timestamp}.json`,
       JSON.stringify(canvasSession, null, 2),
     );
-  };
+  }, [serializeCanvas]);
 
-  const handleClearCanvas = () => {
+  const handleClearCanvas = useCallback(() => {
     const shouldClear = window.confirm("Clear the canvas and start over?");
     if (!shouldClear) return;
 
@@ -94,81 +98,91 @@ export const Board = () => {
     resetCanvas(preset.size);
     setFileMenuOpen(false);
     setPresetMenuOpen(false);
-  };
+  }, [resetCanvas, setFileMenuOpen, setPresetMenuOpen]);
 
-  const shortcuts = CanvasShortcuts({
-    delete: () => {
-      if (!selectedImageId) {
-        return;
-      }
+  const shortcuts = useMemo(
+    () =>
+      CanvasShortcuts({
+        delete: () => {
+          if (!selectedImageId) {
+            return;
+          }
 
-      removeSelectedImage();
-    },
-    save: handleSaveCanvas,
-    clear: handleClearCanvas,
-  });
+          removeSelectedImage();
+        },
+        save: handleSaveCanvas,
+        clear: handleClearCanvas,
+      }),
+    [handleClearCanvas, handleSaveCanvas, removeSelectedImage, selectedImageId],
+  );
 
   useKeyboardShortcuts(shortcuts);
 
-  const fileActions: BoardMenuAction[] = [
-    {
-      id: "home",
-      label: "Home",
-      icon: "solar:home-linear",
-      onSelect: () => setRoute("/"),
-    },
-    {
-      id: "save",
-      label: "Save canvas",
-      icon: "solar:diskette-linear",
-      onSelect: handleSaveCanvas,
-    },
-    {
-      id: "clear",
-      label: "Clear canvas",
-      icon: "solar:trash-bin-trash-linear",
-      tone: "danger",
-      onSelect: handleClearCanvas,
-    },
-  ];
+  const fileActions = useMemo<BoardMenuAction[]>(
+    () => [
+      {
+        id: "home",
+        label: "Home",
+        icon: "solar:home-linear",
+        onSelect: () => setRoute("/"),
+      },
+      {
+        id: "save",
+        label: "Save canvas",
+        icon: "solar:diskette-linear",
+        onSelect: handleSaveCanvas,
+      },
+      {
+        id: "clear",
+        label: "Clear canvas",
+        icon: "solar:trash-bin-trash-linear",
+        tone: "danger",
+        onSelect: handleClearCanvas,
+      },
+    ],
+    [handleClearCanvas, handleSaveCanvas, setRoute],
+  );
 
-  const sidebarSections: BoardSidebarSection[] = [
-    {
-      id: "overview",
-      label: "Overview",
-      description: "Canvas contents and details",
-      content: <BoardOverviewPanel />,
-    },
-    {
-      id: "background",
-      label: "Background",
-      description: "Canvas fill",
-      content: (
-        <BoardBackgroundPanel
-          backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-          onBackgroundSelect={applyBackgroundToCanvas}
-        />
-      ),
-    },
-    {
-      id: "elements",
-      label: "Elements",
-      description: "Coming soon",
-      isPlaceholder: true,
-    },
-    {
-      id: "text",
-      label: "Text",
-      description: "Coming soon",
-      isPlaceholder: true,
-    },
-    {
-      id: "uploads",
-      label: "Uploads",
-      description: "Images and links",
-      content: <BoardUploadsPanel />,
-    },
-  ];
+  const sidebarSections = useMemo<BoardSidebarSection[]>(
+    () => [
+      {
+        id: "overview",
+        label: "Overview",
+        description: "Canvas contents and details",
+        content: <BoardOverviewPanel />,
+      },
+      {
+        id: "background",
+        label: "Background",
+        description: "Canvas fill",
+        content: (
+          <BoardBackgroundPanel
+            backgroundPresets={CANVAS_BACKGROUND_PRESETS}
+            onBackgroundSelect={applyBackgroundToCanvas}
+          />
+        ),
+      },
+      {
+        id: "elements",
+        label: "Elements",
+        description: "Coming soon",
+        isPlaceholder: true,
+      },
+      {
+        id: "text",
+        label: "Text",
+        description: "Coming soon",
+        isPlaceholder: true,
+      },
+      {
+        id: "uploads",
+        label: "Uploads",
+        description: "Images and links",
+        content: <BoardUploadsPanel />,
+      },
+    ],
+    [applyBackgroundToCanvas],
+  );
 
   return (
     <main className="flex h-screen flex-col bg-bg">

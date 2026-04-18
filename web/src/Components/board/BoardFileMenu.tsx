@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
 import { ThemeButton } from "@/Components/ui/ThemeButton";
+import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 
 import type { BoardMenuAction } from "./types";
 
@@ -20,16 +21,11 @@ export const BoardFileMenu = ({
 }: BoardFileMenuProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        onOpenChange(false);
-      }
-    };
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [onOpenChange]);
+  useDismissibleLayer({
+    containerRef,
+    isOpen,
+    onDismiss: () => onOpenChange(false),
+  });
 
   return (
     <div ref={containerRef} className="relative">

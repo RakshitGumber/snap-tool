@@ -6,7 +6,7 @@ import {
   DEFAULT_DESIGN_PANEL_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from "@/board/config";
-import { useActiveCanvas } from "@/stores/useCanvasStore";
+import { useCanvasShell } from "@/stores/useCanvasStore";
 
 import type { BoardSidebarProps, BoardSidebarSectionId } from "./types";
 
@@ -25,7 +25,7 @@ export const BoardSidebar = ({
   onSectionToggle,
   onToggleSidebar,
 }: BoardSidebarProps) => {
-  const activeCanvas = useActiveCanvas();
+  const canvasShell = useCanvasShell();
   const activeSection = sections.find((section) => section.id === openSectionId) ?? sections[0];
   const shouldShowSectionMeta = activeSection?.id !== "overview";
 
@@ -81,7 +81,7 @@ export const BoardSidebar = ({
             <div className="min-w-0">
               {shouldShowSectionMeta ? (
                 <p className="text-xs uppercase tracking-[0.16em] text-secondary-text">
-                  {activeCanvas?.title ?? "Canvas"}
+                  {canvasShell?.title ?? "Canvas"}
                 </p>
               ) : null}
               <h2 className="mt-1 text-lg font-semibold text-title-color">

@@ -1,7 +1,0 @@
-{
-  "name": "single-filter",
-  "workspaces": [
-    "server",
-    "web"
-  ]
-}

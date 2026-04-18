@@ -15,7 +15,6 @@ type BoardFileMenuProps = {
 };
 
 export const BoardFileMenu = ({
-  
   actions,
   isOpen,
   onOpenChange,

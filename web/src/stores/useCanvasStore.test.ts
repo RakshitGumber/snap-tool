@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 
+import { DEFAULT_BOARD_TEXT_INPUT } from "@/board/text";
 import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import type { UploadLibraryAssetMeta } from "@/types/uploads";
 
@@ -18,8 +19,14 @@ const asset: UploadLibraryAssetMeta = {
 };
 
 beforeEach(() => {
-  useCanvasStore.setState({ canvasMeta: null, imageOrder: [], imagesById: {} });
-  useBoardSelectionStore.setState({ selectedImageId: null });
+  useCanvasStore.setState({
+    canvasMeta: null,
+    imageOrder: [],
+    imagesById: {},
+    textOrder: [],
+    textsById: {},
+  });
+  useBoardSelectionStore.setState({ selectedImageId: null, selectedTextId: null });
 });
 
 describe("useCanvasStore", () => {
@@ -30,6 +37,7 @@ describe("useCanvasStore", () => {
     expect(canvas.width).toBe(500);
     expect(canvas.height).toBe(500);
     expect(canvas.images).toEqual([]);
+    expect(canvas.texts).toEqual([]);
   });
 
   test("resizes and updates the canvas background", () => {
@@ -107,6 +115,66 @@ describe("useCanvasStore", () => {
 
     expect(canvas?.images).toEqual([]);
     expect(useBoardSelectionStore.getState().selectedImageId).toBeNull();
+  });
+
+  test("inserts and updates text on the canvas", () => {
+    const store = useCanvasStore.getState();
+
+    store.initializeDefaultCanvas();
+    const textId = store.insertTextOnActiveCanvas({
+      ...DEFAULT_BOARD_TEXT_INPUT,
+      text: "Board title",
+      fontFamily: "Open Sans",
+      maxWidth: 280,
+    });
+
+    expect(textId).toBeTruthy();
+    expect(useBoardSelectionStore.getState().selectedTextId).toBe(textId);
+
+    store.updateTextOnCanvas(textId!, {
+      text: "Board subtitle",
+      fontSize: 64,
+      align: "left",
+    });
+
+    const canvas = store.serializeCanvas();
+
+    expect(canvas?.texts).toHaveLength(1);
+    expect(canvas?.texts[0]).toMatchObject({
+      text: "Board subtitle",
+      fontFamily: "Open Sans",
+      fontSize: 64,
+      align: "left",
+      maxWidth: 280,
+    });
+  });
+
+  test("moves and removes selected text", () => {
+    const store = useCanvasStore.getState();
+
+    store.initializeDefaultCanvas();
+    const textId = store.insertTextOnActiveCanvas({
+      ...DEFAULT_BOARD_TEXT_INPUT,
+      text: "Move me",
+      fontSize: 48,
+    });
+
+    expect(textId).toBeTruthy();
+
+    store.moveTextOnCanvas(textId!, 999, 999, { width: 220, height: 80 });
+    let canvas = store.serializeCanvas();
+
+    expect(canvas?.texts[0]).toMatchObject({
+      x: 280,
+      y: 420,
+    });
+
+    useBoardSelectionStore.getState().setSelectedText(textId);
+    store.removeSelectedText();
+    canvas = store.serializeCanvas();
+
+    expect(canvas?.texts).toEqual([]);
+    expect(useBoardSelectionStore.getState().selectedTextId).toBeNull();
   });
 
   test("resets the canvas to a clean single-canvas document", () => {

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   BoardBackgroundPanel,
   BoardOverviewPanel,
   BoardSidebar,
+  BoardTextPanel,
   BoardTopRibbon,
   BoardUploadsPanel,
   type BoardMenuAction,
@@ -18,6 +19,7 @@ import {
 } from "@/board/config";
 import { BoardCanvas } from "@/canvas";
 import { CanvasShortcuts } from "@/canvas/canvasShorcuts";
+import { exportBoardImage, type BoardImageExportFormat } from "@/canvas/exportImage";
 import { useKeyboardShortcuts } from "@/canvas/useKeyBindings";
 import { useRouter } from "@/pages/routerStore";
 import { useBoardUiStore } from "@/stores/useBoardUiStore";
@@ -25,7 +27,9 @@ import {
   useCanvasShell,
   useCanvasStore,
   useSelectedImageId,
+  useSelectedTextId,
 } from "@/stores/useCanvasStore";
+import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import type { CanvasPresetId } from "@/types/canvas";
 
 const downloadTextFile = (filename: string, content: string) => {
@@ -38,10 +42,21 @@ const downloadTextFile = (filename: string, content: string) => {
   window.URL.revokeObjectURL(url);
 };
 
+const downloadBlobFile = (filename: string, blob: Blob) => {
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.URL.revokeObjectURL(url);
+};
+
 export const Board = () => {
   const setRoute = useRouter((state) => state.setRoute);
+  const [exportFormat, setExportFormat] = useState<BoardImageExportFormat | null>(null);
 
   const selectedImageId = useSelectedImageId();
+  const selectedTextId = useSelectedTextId();
   const canvasShell = useCanvasShell();
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
@@ -51,8 +66,10 @@ export const Board = () => {
     (state) => state.applyBackgroundToCanvas,
   );
   const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
+  const removeSelectedText = useCanvasStore((state) => state.removeSelectedText);
   const resetCanvas = useCanvasStore((state) => state.resetCanvas);
   const serializeCanvas = useCanvasStore((state) => state.serializeCanvas);
+  const resolveAssetMedia = useUploadLibraryStore((state) => state.resolveAssetMedia);
 
   const openSectionId = useBoardUiStore((state) => state.openSectionId);
   const isFileMenuOpen = useBoardUiStore((state) => state.isFileMenuOpen);
@@ -90,6 +107,46 @@ export const Board = () => {
     );
   }, [serializeCanvas]);
 
+  const handleDownloadImage = useCallback(
+    async (format: BoardImageExportFormat) => {
+      if (exportFormat) {
+        return;
+      }
+
+      const nextCanvas = serializeCanvas();
+      if (!nextCanvas) {
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replaceAll(":", "-");
+      setExportFormat(format);
+
+      try {
+        const blob = await exportBoardImage({
+          canvas: nextCanvas,
+          format,
+          resolveImageSrc: async (assetId) => {
+            const media = await resolveAssetMedia(assetId, "full");
+            if (!media?.src) {
+              throw new Error("One of the board images is missing its full-size source.");
+            }
+
+            return media.src;
+          },
+        });
+
+        downloadBlobFile(`snap-canvas-${timestamp}.${format === "png" ? "png" : "jpg"}`, blob);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to export the board image.";
+        window.alert(message);
+      } finally {
+        setExportFormat(null);
+      }
+    },
+    [exportFormat, resolveAssetMedia, serializeCanvas],
+  );
+
   const handleClearCanvas = useCallback(() => {
     const shouldClear = window.confirm("Clear the canvas and start over?");
     if (!shouldClear) return;
@@ -104,16 +161,28 @@ export const Board = () => {
     () =>
       CanvasShortcuts({
         delete: () => {
-          if (!selectedImageId) {
+          if (selectedImageId) {
+            removeSelectedImage();
             return;
           }
 
-          removeSelectedImage();
+          if (!selectedTextId) {
+            return;
+          }
+
+          removeSelectedText();
         },
         save: handleSaveCanvas,
         clear: handleClearCanvas,
       }),
-    [handleClearCanvas, handleSaveCanvas, removeSelectedImage, selectedImageId],
+    [
+      handleClearCanvas,
+      handleSaveCanvas,
+      removeSelectedImage,
+      removeSelectedText,
+      selectedImageId,
+      selectedTextId,
+    ],
   );
 
   useKeyboardShortcuts(shortcuts);
@@ -133,6 +202,22 @@ export const Board = () => {
         onSelect: handleSaveCanvas,
       },
       {
+        id: "download-png",
+        label: exportFormat === "png" ? "Exporting PNG..." : "Download PNG",
+        icon: "solar:gallery-export-linear",
+        onSelect: () => {
+          void handleDownloadImage("png");
+        },
+      },
+      {
+        id: "download-jpg",
+        label: exportFormat === "jpeg" ? "Exporting JPG..." : "Download JPG",
+        icon: "solar:gallery-send-linear",
+        onSelect: () => {
+          void handleDownloadImage("jpeg");
+        },
+      },
+      {
         id: "clear",
         label: "Clear canvas",
         icon: "solar:trash-bin-trash-linear",
@@ -140,7 +225,7 @@ export const Board = () => {
         onSelect: handleClearCanvas,
       },
     ],
-    [handleClearCanvas, handleSaveCanvas, setRoute],
+    [exportFormat, handleClearCanvas, handleDownloadImage, handleSaveCanvas, setRoute],
   );
 
   const sidebarSections = useMemo<BoardSidebarSection[]>(
@@ -171,8 +256,8 @@ export const Board = () => {
       {
         id: "text",
         label: "Text",
-        description: "Coming soon",
-        isPlaceholder: true,
+        description: "Headlines, captions, and styled copy",
+        content: <BoardTextPanel />,
       },
       {
         id: "uploads",

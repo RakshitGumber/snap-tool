@@ -46,6 +46,8 @@ export type CanvasBackgroundPreset = {
   preview: string;
 };
 
+export type BoardTextAlign = "left" | "center" | "right";
+
 export type CanvasFrame = {
   id: string;
   title: string;
@@ -55,6 +57,7 @@ export type CanvasFrame = {
   background: string;
   backgroundPresetId: string;
   images: BoardImageItem[];
+  texts: BoardTextItem[];
 };
 
 export type BoardImageItem = {
@@ -67,13 +70,34 @@ export type BoardImageItem = {
   alt: string;
 };
 
-export type CanvasRecord = Omit<CanvasFrame, "images"> & {
+export type BoardTextItem = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: number;
+  color: string;
+  align: BoardTextAlign;
+  maxWidth: number;
+};
+
+export type BoardTextInput = Omit<BoardTextItem, "id" | "x" | "y"> &
+  Partial<Pick<BoardTextItem, "x" | "y">>;
+
+export type CanvasRecord = Omit<CanvasFrame, "images" | "texts"> & {
   presetId: CanvasPresetId | null;
   imageOrder: string[];
   imagesById: Record<string, BoardImageItem>;
+  textOrder: string[];
+  textsById: Record<string, BoardTextItem>;
 };
 
-export type CanvasShell = Omit<CanvasRecord, "imageOrder" | "imagesById">;
+export type CanvasShell = Omit<
+  CanvasRecord,
+  "imageOrder" | "imagesById" | "textOrder" | "textsById"
+>;
 
 export type CanvasActions = {
   delete: () => void;

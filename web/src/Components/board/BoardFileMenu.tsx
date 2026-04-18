@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
+import { ThemeButton } from "@/Components/ui/ThemeButton";
+
 import type { BoardMenuAction } from "./types";
 
 type BoardFileMenuProps = {
@@ -65,6 +67,9 @@ export const BoardFileMenu = ({
               <span>{action.label}</span>
             </button>
           ))}
+          <div className="mt-1 border-t border-border-color/50 pt-2">
+            <ThemeButton variant="menu" onClick={() => onOpenChange(false)} />
+          </div>
         </div>
       ) : null}
     </div>

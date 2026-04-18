@@ -212,8 +212,10 @@ export const BoardCanvas = () => {
                 aria-label={canvas.title}
                 onPointerDown={handleCanvasPointerDown(canvas.id)}
                 className={clsx(
-                  "relative h-full w-full overflow-hidden border border-border-color/70 bg-white",
-                  (isActive || isSelected) && "border-2 border-accent",
+                  "relative h-full w-full overflow-hidden bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition-shadow dark:shadow-none",
+                  isActive || isSelected
+                    ? "border-2 border-accent"
+                    : "border border-border-color/70",
                 )}
                 style={{ background: canvas.background }}
               />

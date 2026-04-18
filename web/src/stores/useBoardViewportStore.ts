@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import { FIT_PADDING, MAX_ZOOM, MIN_ZOOM } from "@/board/config";
-import type { BoardSize, BoardViewport, CanvasFrame } from "@/types/canvas";
+import type { BoardSize, BoardViewport, CanvasFrame, CanvasRecord } from "@/types/canvas";
 
 type BoardViewportState = {
   boardSize: BoardSize;
@@ -15,7 +15,10 @@ type BoardViewportActions = {
   setCanPanBoard: (canPanBoard: boolean) => void;
   panBy: (deltaX: number, deltaY: number) => void;
   zoomAt: (pointerX: number, pointerY: number, deltaY: number) => void;
-  fitCanvas: (canvas: CanvasFrame, padding?: number) => void;
+  fitCanvas: (
+    canvas: Pick<CanvasFrame, "x" | "y" | "width" | "height"> | CanvasRecord,
+    padding?: number,
+  ) => void;
 };
 
 export const useBoardViewportStore = create<

@@ -1,14 +1,10 @@
-import type { CanvasFrame, SnapGuide, SnapMode, SnapPreview } from "@/types/canvas";
-
-type SnapCandidate = {
-  value: number;
-  guide: SnapGuide;
-};
-
-type SnapAxisResult = {
-  value: number;
-  guide: SnapGuide | null;
-};
+import type {
+  BoardDocument,
+  CanvasRecord,
+  SnapGuide,
+  SnapMode,
+  SnapPreview,
+} from "@/types/canvas";
 
 const rangesOverlap = (
   startA: number,
@@ -32,23 +28,32 @@ const buildGuide = (
   mode,
 });
 
-const getClosestCandidate = (
-  baseValue: number,
-  candidates: SnapCandidate[],
-  threshold: number,
-): SnapAxisResult => {
-  const closest = candidates
-    .map((candidate) => ({
-      ...candidate,
-      delta: Math.abs(candidate.value - baseValue),
-    }))
-    .filter((candidate) => candidate.delta <= threshold)
-    .sort((left, right) => left.delta - right.delta)[0];
+const createAxisMatcher = (baseValue: number, threshold: number) => {
+  let value = baseValue;
+  let guide: SnapGuide | null = null;
+  let delta = threshold + 1;
 
-  return closest
-    ? { value: closest.value, guide: closest.guide }
-    : { value: baseValue, guide: null };
+  return {
+    consider(candidateValue: number, candidateGuide: SnapGuide) {
+      const nextDelta = Math.abs(candidateValue - baseValue);
+      if (nextDelta > threshold || nextDelta >= delta) {
+        return;
+      }
+
+      value = candidateValue;
+      guide = candidateGuide;
+      delta = nextDelta;
+    },
+    getResult: () => ({ value, guide }),
+  };
 };
+
+const getCanvasList = (canvases: BoardDocument | CanvasRecord[]) =>
+  Array.isArray(canvases)
+    ? canvases
+    : canvases.canvasOrder
+        .map((canvasId) => canvases.canvasesById[canvasId])
+        .filter((canvas): canvas is CanvasRecord => canvas !== undefined);
 
 export const resolveCanvasSnap = ({
   activeCanvas,
@@ -58,126 +63,115 @@ export const resolveCanvasSnap = ({
   threshold,
   gap,
 }: {
-  activeCanvas: CanvasFrame;
-  canvases: CanvasFrame[];
+  activeCanvas: CanvasRecord;
+  canvases: BoardDocument | CanvasRecord[];
   nextX: number;
   nextY: number;
   threshold: number;
   gap: number;
 }): SnapPreview => {
-  const horizontalCandidates: SnapCandidate[] = [];
-  const verticalCandidates: SnapCandidate[] = [];
-
   const nextRight = nextX + activeCanvas.width;
   const nextBottom = nextY + activeCanvas.height;
+  const horizontalMatcher = createAxisMatcher(nextX, threshold);
+  const verticalMatcher = createAxisMatcher(nextY, threshold);
 
-  canvases
-    .filter((canvas) => canvas.id !== activeCanvas.id)
-    .forEach((canvas) => {
-      const canvasRight = canvas.x + canvas.width;
-      const canvasBottom = canvas.y + canvas.height;
-      const canvasCenterX = canvas.x + canvas.width / 2;
-      const canvasCenterY = canvas.y + canvas.height / 2;
+  for (const canvas of getCanvasList(canvases)) {
+    if (canvas.id === activeCanvas.id) {
+      continue;
+    }
 
-      const guideStartY = Math.min(nextY, canvas.y);
-      const guideEndY = Math.max(nextBottom, canvasBottom);
-      const guideStartX = Math.min(nextX, canvas.x);
-      const guideEndX = Math.max(nextRight, canvasRight);
+    const canvasRight = canvas.x + canvas.width;
+    const canvasBottom = canvas.y + canvas.height;
+    const canvasCenterX = canvas.x + canvas.width / 2;
+    const canvasCenterY = canvas.y + canvas.height / 2;
 
-      horizontalCandidates.push(
-        {
-          value: canvas.x,
-          guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
-        },
-        {
-          value: canvasCenterX - activeCanvas.width / 2,
-          guide: buildGuide("x", canvasCenterX, guideStartY, guideEndY, "flush"),
-        },
-        {
-          value: canvasRight - activeCanvas.width,
-          guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
-        },
+    const guideStartY = Math.min(nextY, canvas.y);
+    const guideEndY = Math.max(nextBottom, canvasBottom);
+    const guideStartX = Math.min(nextX, canvas.x);
+    const guideEndX = Math.max(nextRight, canvasRight);
+
+    horizontalMatcher.consider(
+      canvas.x,
+      buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
+    );
+    horizontalMatcher.consider(
+      canvasCenterX - activeCanvas.width / 2,
+      buildGuide("x", canvasCenterX, guideStartY, guideEndY, "flush"),
+    );
+    horizontalMatcher.consider(
+      canvasRight - activeCanvas.width,
+      buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
+    );
+
+    verticalMatcher.consider(
+      canvas.y,
+      buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
+    );
+    verticalMatcher.consider(
+      canvasCenterY - activeCanvas.height / 2,
+      buildGuide("y", canvasCenterY, guideStartX, guideEndX, "flush"),
+    );
+    verticalMatcher.consider(
+      canvasBottom - activeCanvas.height,
+      buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
+    );
+
+    const overlapsVertically = rangesOverlap(
+      nextY,
+      nextBottom,
+      canvas.y,
+      canvasBottom,
+      threshold,
+    );
+    const overlapsHorizontally = rangesOverlap(
+      nextX,
+      nextRight,
+      canvas.x,
+      canvasRight,
+      threshold,
+    );
+
+    if (overlapsVertically) {
+      horizontalMatcher.consider(
+        canvasRight + gap,
+        buildGuide("x", canvasRight, guideStartY, guideEndY, "gap"),
       );
-
-      verticalCandidates.push(
-        {
-          value: canvas.y,
-          guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
-        },
-        {
-          value: canvasCenterY - activeCanvas.height / 2,
-          guide: buildGuide("y", canvasCenterY, guideStartX, guideEndX, "flush"),
-        },
-        {
-          value: canvasBottom - activeCanvas.height,
-          guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
-        },
-      );
-
-      const overlapsVertically = rangesOverlap(
-        nextY,
-        nextBottom,
-        canvas.y,
-        canvasBottom,
-        threshold,
-      );
-      const overlapsHorizontally = rangesOverlap(
-        nextX,
-        nextRight,
-        canvas.x,
+      horizontalMatcher.consider(
         canvasRight,
-        threshold,
+        buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
       );
+      horizontalMatcher.consider(
+        canvas.x - activeCanvas.width - gap,
+        buildGuide("x", canvas.x, guideStartY, guideEndY, "gap"),
+      );
+      horizontalMatcher.consider(
+        canvas.x - activeCanvas.width,
+        buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
+      );
+    }
 
-      if (overlapsVertically) {
-        horizontalCandidates.push(
-          {
-            value: canvasRight + gap,
-            guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "gap"),
-          },
-          {
-            value: canvasRight,
-            guide: buildGuide("x", canvasRight, guideStartY, guideEndY, "flush"),
-          },
-          {
-            value: canvas.x - activeCanvas.width - gap,
-            guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "gap"),
-          },
-          {
-            value: canvas.x - activeCanvas.width,
-            guide: buildGuide("x", canvas.x, guideStartY, guideEndY, "flush"),
-          },
-        );
-      }
+    if (overlapsHorizontally) {
+      verticalMatcher.consider(
+        canvasBottom + gap,
+        buildGuide("y", canvasBottom, guideStartX, guideEndX, "gap"),
+      );
+      verticalMatcher.consider(
+        canvasBottom,
+        buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
+      );
+      verticalMatcher.consider(
+        canvas.y - activeCanvas.height - gap,
+        buildGuide("y", canvas.y, guideStartX, guideEndX, "gap"),
+      );
+      verticalMatcher.consider(
+        canvas.y - activeCanvas.height,
+        buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
+      );
+    }
+  }
 
-      if (overlapsHorizontally) {
-        verticalCandidates.push(
-          {
-            value: canvasBottom + gap,
-            guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "gap"),
-          },
-          {
-            value: canvasBottom,
-            guide: buildGuide("y", canvasBottom, guideStartX, guideEndX, "flush"),
-          },
-          {
-            value: canvas.y - activeCanvas.height - gap,
-            guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "gap"),
-          },
-          {
-            value: canvas.y - activeCanvas.height,
-            guide: buildGuide("y", canvas.y, guideStartX, guideEndX, "flush"),
-          },
-        );
-      }
-    });
-
-  const horizontalResult = getClosestCandidate(
-    nextX,
-    horizontalCandidates,
-    threshold,
-  );
-  const verticalResult = getClosestCandidate(nextY, verticalCandidates, threshold);
+  const horizontalResult = horizontalMatcher.getResult();
+  const verticalResult = verticalMatcher.getResult();
 
   return {
     x: horizontalResult.value,

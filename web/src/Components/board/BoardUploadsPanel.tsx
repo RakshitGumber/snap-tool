@@ -8,7 +8,11 @@ import {
 
 import clsx from "clsx";
 
-import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
+import {
+  useAssetById,
+  useAssetIds,
+  useUploadLibraryStore,
+} from "@/stores/useUploadLibraryStore";
 import { setDraggedAssetId } from "@/uploads/drag";
 
 const SOURCE_LABELS = {
@@ -19,12 +23,53 @@ const SOURCE_LABELS = {
   youtube: "YouTube",
 } as const;
 
+const UploadAssetCard = ({ assetId }: { assetId: string }) => {
+  const asset = useAssetById(assetId);
+  const clearError = useUploadLibraryStore((state) => state.clearError);
+  const insertAssetOnActiveCanvas = useUploadLibraryStore(
+    (state) => state.insertAssetOnActiveCanvas,
+  );
+
+  if (!asset) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      draggable
+      onClick={() => {
+        clearError();
+        insertAssetOnActiveCanvas(asset.id);
+      }}
+      onDragStart={(event) => {
+        clearError();
+        setDraggedAssetId(event.dataTransfer, asset.id);
+      }}
+      className="overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
+    >
+      <div className="aspect-square overflow-hidden bg-transparent p-2">
+        <img
+          src={asset.thumbnailSrc}
+          alt={asset.name}
+          className="h-full w-full object-contain"
+          loading="lazy"
+        />
+      </div>
+      <div className="space-y-1 px-3 py-3">
+        <p className="truncate text-sm font-semibold text-title-color">{asset.name}</p>
+        <p className="text-xs text-secondary-text">{SOURCE_LABELS[asset.source]}</p>
+      </div>
+    </button>
+  );
+};
+
 export const BoardUploadsPanel = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [isDropActive, setIsDropActive] = useState(false);
 
-  const assets = useUploadLibraryStore((state) => state.assets);
+  const assetIds = useAssetIds();
   const isHydrated = useUploadLibraryStore((state) => state.isHydrated);
   const isImporting = useUploadLibraryStore((state) => state.isImporting);
   const error = useUploadLibraryStore((state) => state.error);
@@ -187,43 +232,17 @@ export const BoardUploadsPanel = () => {
             </p>
           </div>
           <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
-            {assets.length}
+            {assetIds.length}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {assets.map((asset) => (
-            <button
-              key={asset.id}
-              type="button"
-              draggable
-              onClick={() => {
-                clearError();
-                insertAssetOnActiveCanvas(asset.id);
-              }}
-              onDragStart={(event) => {
-                clearError();
-                setDraggedAssetId(event.dataTransfer, asset.id);
-              }}
-              className="overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
-            >
-              <div className="aspect-square overflow-hidden bg-transparent p-2">
-                <img
-                  src={asset.thumbnailSrc}
-                  alt={asset.name}
-                  className="h-full w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-              <div className="space-y-1 px-3 py-3">
-                <p className="truncate text-sm font-semibold text-title-color">{asset.name}</p>
-                <p className="text-xs text-secondary-text">{SOURCE_LABELS[asset.source]}</p>
-              </div>
-            </button>
+          {assetIds.map((assetId) => (
+            <UploadAssetCard key={assetId} assetId={assetId} />
           ))}
         </div>
 
-        {!assets.length ? (
+        {!assetIds.length ? (
           <div className="rounded-xl px-4 py-4 text-sm text-secondary-text">
             Your upload library will appear here.
           </div>

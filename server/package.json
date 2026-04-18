@@ -23,5 +23,10 @@
     "bun-types": "latest",
     "drizzle-kit": "^0.31.10"
   },
-  "module": "src/index.js"
+  "module": "src/index.ts",
+  "types": "src/app.ts",
+  "exports": {
+    ".": "./src/app.ts",
+    "./src/index": "./src/index.ts"
+  }
 }

@@ -1,39 +1,56 @@
 import {
+  Suspense,
+  lazy,
+  startTransition,
   useEffect,
   useMemo,
-  type ReactNode,
   type AnchorHTMLAttributes,
+  type LazyExoticComponent,
+  type MouseEvent,
+  type ReactElement,
 } from "react";
 
-import { CreateRoute } from "./create";
-import { RootRoute } from "./root";
-import { PageNotFound } from "./not-found";
 import { useRouter } from "./routerStore";
+
+type RouteComponent = LazyExoticComponent<() => ReactElement>;
 
 interface RouteConfig {
   path: string;
-  element: ReactNode;
+  element: RouteComponent;
 }
 
 interface LinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   to: string;
 }
 
+const RootRoute = lazy(async () => {
+  const mod = await import("./root");
+  return { default: mod.RootRoute };
+});
+
+const CreateRoute = lazy(async () => {
+  const mod = await import("./create");
+  return { default: mod.CreateRoute };
+});
+
+const PageNotFound = lazy(async () => {
+  const mod = await import("./not-found");
+  return { default: mod.PageNotFound };
+});
+
 const ROUTES: RouteConfig[] = [
-  { path: "/", element: <RootRoute /> },
-  { path: "/create", element: <CreateRoute /> },
+  { path: "/", element: RootRoute },
+  { path: "/create", element: CreateRoute },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {
   if (currentPath === routeDef) return true;
 
-  // Handle wildcards (e.g., "/settings/*")
   if (routeDef.endsWith("/*")) {
     const base = routeDef.slice(0, -2);
     return currentPath.startsWith(base);
   }
 
-  // Handle params (e.g., "/user/:id")
   const currentSegments = currentPath.split("/").filter(Boolean);
   const routeSegments = routeDef.split("/").filter(Boolean);
 
@@ -44,12 +61,19 @@ const matchRoute = (currentPath: string, routeDef: string): boolean => {
   );
 };
 
+const isLocalRoute = (to: string) => {
+  const targetUrl = new URL(to, window.location.href);
+  return targetUrl.origin === window.location.origin;
+};
+
 export const Router = () => {
   const route = useRouter((state) => state.route);
 
   useEffect(() => {
     const handlePopState = () => {
-      useRouter.setState({ route: window.location.pathname });
+      startTransition(() => {
+        useRouter.setState({ route: window.location.pathname });
+      });
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -57,15 +81,17 @@ export const Router = () => {
   }, []);
 
   const activeRoute = useMemo(
-    () => ROUTES.find((r) => matchRoute(route, r.path)),
+    () => ROUTES.find((currentRoute) => matchRoute(route, currentRoute.path)),
     [route],
   );
 
-  if (!activeRoute) {
-    return <PageNotFound />;
-  }
+  const ActiveRoute = activeRoute?.element ?? PageNotFound;
 
-  return <>{activeRoute.element}</>;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+      <ActiveRoute />
+    </Suspense>
+  );
 };
 
 export const Link = ({
@@ -73,21 +99,37 @@ export const Link = ({
   children,
   className,
   onClick,
+  target,
+  download,
+  rel,
   ...props
 }: LinkProps) => {
   const setRoute = useRouter((state) => state.setRoute);
 
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (onClick) onClick(event);
+  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    onClick?.(event);
 
-    if (event.ctrlKey || event.metaKey || event.button !== 0) return;
+    if (event.defaultPrevented) return;
+    if (event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (target && target !== "_self") return;
+    if (download) return;
+    if (!isLocalRoute(to)) return;
 
     event.preventDefault();
-    setRoute(to);
+    setRoute(new URL(to, window.location.href).pathname);
   };
 
   return (
-    <a href={to} onClick={handleClick} className={className} {...props}>
+    <a
+      href={to}
+      onClick={handleClick}
+      className={className}
+      target={target}
+      download={download}
+      rel={rel}
+      {...props}
+    >
       {children}
     </a>
   );

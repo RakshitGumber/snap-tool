@@ -2,15 +2,12 @@ import { create } from "zustand";
 
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import type { StoredUploadLibraryAsset, UploadLibraryAsset } from "@/types/uploads";
-import {
-  createLocalUploadAsset,
-  loadImageDimensions,
-  resolveAssetFromUrl,
-} from "@/uploads/imports";
+import { createLocalUploadAsset, resolveAssetFromUrl } from "@/uploads/imports";
 import { readStoredUploadAssets, saveStoredUploadAsset } from "@/uploads/storage";
 
 type UploadLibraryState = {
-  assets: UploadLibraryAsset[];
+  assetOrder: string[];
+  assetsById: Record<string, UploadLibraryAsset>;
   isHydrated: boolean;
   isImporting: boolean;
   error: string | null;
@@ -24,16 +21,22 @@ type UploadLibraryActions = {
   clearError: () => void;
 };
 
-const BUILT_IN_ASSET_DEFINITIONS = [
+const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAsset[] = [
   {
     id: "built-in-ferret",
     name: "Ferret",
-    source: "built-in" as const,
+    source: "built-in",
     src: "/images/ferret.png",
     thumbnailSrc: "/images/ferret.png",
-    storageKind: "bundled" as const,
+    storageKind: "bundled",
+    width: 2000,
+    height: 1480,
+    addedAt: "1970-01-01T00:00:00.000Z",
   },
 ];
+
+const MAX_FILE_IMPORT_CONCURRENCY = 4;
+const runtimeAssetUrls = new Map<string, string>();
 
 const sortAssets = (assets: UploadLibraryAsset[]) =>
   [...assets].sort((left, right) => {
@@ -43,34 +46,34 @@ const sortAssets = (assets: UploadLibraryAsset[]) =>
     return right.addedAt.localeCompare(left.addedAt);
   });
 
-const hydrateBuiltInAssets = async (): Promise<UploadLibraryAsset[]> =>
-  Promise.all(
-    BUILT_IN_ASSET_DEFINITIONS.map(async (asset) => {
-      try {
-        const { width, height } = await loadImageDimensions(asset.src);
+const toNormalizedAssets = (assets: UploadLibraryAsset[]) => ({
+  assetOrder: assets.map((asset) => asset.id),
+  assetsById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
+});
 
-        return {
-          ...asset,
-          width,
-          height,
-          addedAt: "1970-01-01T00:00:00.000Z",
-        };
-      } catch {
-        return {
-          ...asset,
-          width: 1024,
-          height: 1024,
-          addedAt: "1970-01-01T00:00:00.000Z",
-        };
-      }
-    }),
-  );
+const trackRuntimeAssetUrl = (assetId: string, url: string) => {
+  const previousUrl = runtimeAssetUrls.get(assetId);
+  if (previousUrl && previousUrl !== url) {
+    URL.revokeObjectURL(previousUrl);
+  }
+
+  runtimeAssetUrls.set(assetId, url);
+};
+
+const clearRuntimeAssetUrls = () => {
+  for (const url of runtimeAssetUrls.values()) {
+    URL.revokeObjectURL(url);
+  }
+
+  runtimeAssetUrls.clear();
+};
 
 const toRuntimeAsset = (asset: StoredUploadLibraryAsset): UploadLibraryAsset | null => {
   if (asset.storageKind === "indexeddb-blob") {
     if (!asset.blob) return null;
 
     const localUrl = URL.createObjectURL(asset.blob);
+    trackRuntimeAssetUrl(asset.id, localUrl);
 
     return {
       ...asset,
@@ -122,9 +125,37 @@ const persistRemoteAsset = async (asset: UploadLibraryAsset) => {
 const isSupportedImageFile = (file: File) =>
   file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
 
+const mapWithConcurrency = async <TInput, TOutput>(
+  items: TInput[],
+  concurrency: number,
+  mapper: (item: TInput) => Promise<TOutput>,
+) => {
+  const results: TOutput[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex]);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
+  );
+
+  return results;
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", clearRuntimeAssetUrls);
+}
+
 export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryActions>(
   (set, get) => ({
-    assets: [],
+    assetOrder: [],
+    assetsById: {},
     isHydrated: false,
     isImporting: false,
     error: null,
@@ -135,23 +166,22 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
       }
 
       try {
-        const [builtInAssets, storedAssets] = await Promise.all([
-          hydrateBuiltInAssets(),
-          readStoredUploadAssets(),
-        ]);
+        const storedAssets = await readStoredUploadAssets();
+        clearRuntimeAssetUrls();
 
         const runtimeAssets = storedAssets
           .map(toRuntimeAsset)
           .filter((asset): asset is UploadLibraryAsset => asset !== null);
+        const nextAssets = sortAssets([...BUILT_IN_ASSET_DEFINITIONS, ...runtimeAssets]);
 
         set({
-          assets: sortAssets([...builtInAssets, ...runtimeAssets]),
+          ...toNormalizedAssets(nextAssets),
           isHydrated: true,
           error: null,
         });
       } catch (error) {
         set({
-          assets: await hydrateBuiltInAssets(),
+          ...toNormalizedAssets(BUILT_IN_ASSET_DEFINITIONS),
           isHydrated: true,
           error:
             error instanceof Error
@@ -170,30 +200,40 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
         throw new Error(error);
       }
 
-      const nextAssets: UploadLibraryAsset[] = [];
+      const nextAssets = await mapWithConcurrency(
+        imageFiles,
+        MAX_FILE_IMPORT_CONCURRENCY,
+        async (file) => {
+          const createdAsset = await createLocalUploadAsset(file);
+          await persistLocalAsset(createdAsset);
+          trackRuntimeAssetUrl(createdAsset.id, createdAsset.src);
 
-      for (const file of imageFiles) {
-        const createdAsset = await createLocalUploadAsset(file);
-        await persistLocalAsset(createdAsset);
+          return {
+            id: createdAsset.id,
+            name: createdAsset.name,
+            source: createdAsset.source,
+            src: createdAsset.src,
+            thumbnailSrc: createdAsset.thumbnailSrc,
+            mimeType: createdAsset.mimeType,
+            width: createdAsset.width,
+            height: createdAsset.height,
+            addedAt: createdAsset.addedAt,
+            storageKind: createdAsset.storageKind,
+          } satisfies UploadLibraryAsset;
+        },
+      );
 
-        nextAssets.push({
-          id: createdAsset.id,
-          name: createdAsset.name,
-          source: createdAsset.source,
-          src: createdAsset.src,
-          thumbnailSrc: createdAsset.thumbnailSrc,
-          mimeType: createdAsset.mimeType,
-          width: createdAsset.width,
-          height: createdAsset.height,
-          addedAt: createdAsset.addedAt,
-          storageKind: createdAsset.storageKind,
-        });
-      }
+      set((state) => {
+        const currentAssets = state.assetOrder
+          .map((assetId) => state.assetsById[assetId])
+          .filter((asset): asset is UploadLibraryAsset => asset !== undefined);
+        const mergedAssets = sortAssets([...currentAssets, ...nextAssets]);
 
-      set((state) => ({
-        assets: sortAssets([...state.assets, ...nextAssets]),
-        error: null,
-      }));
+        return {
+          ...toNormalizedAssets(mergedAssets),
+          error: null,
+        };
+      });
 
       return nextAssets;
     },
@@ -205,11 +245,18 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
         const asset = await resolveAssetFromUrl(input);
         await persistRemoteAsset(asset);
 
-        set((state) => ({
-          assets: sortAssets([...state.assets, asset]),
-          isImporting: false,
-          error: null,
-        }));
+        set((state) => {
+          const currentAssets = state.assetOrder
+            .map((assetId) => state.assetsById[assetId])
+            .filter((currentAsset): currentAsset is UploadLibraryAsset => currentAsset !== undefined);
+          const mergedAssets = sortAssets([...currentAssets, asset]);
+
+          return {
+            ...toNormalizedAssets(mergedAssets),
+            isImporting: false,
+            error: null,
+          };
+        });
 
         return asset;
       } catch (error) {
@@ -226,7 +273,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
     },
 
     insertAssetOnActiveCanvas: (assetId) => {
-      const asset = get().assets.find((libraryAsset) => libraryAsset.id === assetId);
+      const asset = get().assetsById[assetId];
       if (!asset) return null;
 
       return useCanvasStore.getState().insertImageOnActiveCanvas(asset);
@@ -235,3 +282,9 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
     clearError: () => set({ error: null }),
   }),
 );
+
+export const useAssetIds = () =>
+  useUploadLibraryStore((state) => state.assetOrder);
+
+export const useAssetById = (assetId: string) =>
+  useUploadLibraryStore((state) => state.assetsById[assetId] ?? null);

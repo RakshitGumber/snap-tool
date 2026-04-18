@@ -1,28 +1,31 @@
 import { create } from "zustand";
 
+import { createBoardDocument, serializeBoardDocument } from "@/board/document";
 import {
-  DEFAULT_CANVAS_PRESET_ID,
   DEFAULT_BACKGROUND_PRESET_ID,
+  DEFAULT_CANVAS_PRESET_ID,
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
   getCanvasPresetIdFromSize,
 } from "@/board/config";
-import type { BoardImageItem, CanvasFrame, CanvasSize } from "@/types/canvas";
+import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
+import type {
+  BoardDocument,
+  BoardImageItem,
+  CanvasFrame,
+  CanvasRecord,
+  CanvasSize,
+} from "@/types/canvas";
 import type { UploadLibraryAsset } from "@/types/uploads";
 
 type CanvasState = {
-  canvases: CanvasFrame[];
-  activeCanvasId: string | null;
-  selectedCanvasId: string | null;
-  selectedImageId: string | null;
+  board: BoardDocument;
 };
 
 type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   addCanvas: (size: CanvasSize, position: { x: number; y: number }) => CanvasFrame;
-  setActiveCanvas: (canvasId: string | null) => void;
-  setSelectedCanvas: (canvasId: string | null) => void;
   moveCanvas: (canvasId: string, x: number, y: number) => void;
   resizeActiveCanvas: (size: CanvasSize) => void;
   applyBackgroundToActiveCanvas: (backgroundPresetId: string) => void;
@@ -32,11 +35,11 @@ type CanvasActions = {
     canvasId: string,
     point: { x: number; y: number },
   ) => string | null;
-  setSelectedImage: (imageId: string | null) => void;
   moveImageOnCanvas: (canvasId: string, imageId: string, x: number, y: number) => void;
   removeSelectedImage: () => void;
   removeActiveCanvas: () => void;
   resetBoard: (size: CanvasSize, position?: { x: number; y: number }) => CanvasFrame;
+  serializeBoard: () => CanvasFrame[];
 };
 
 const MAX_INITIAL_IMAGE_SCALE = 0.8;
@@ -65,9 +68,19 @@ const getContainedImageSize = ({
   };
 };
 
+const getCanvasFrames = (board: BoardDocument) => serializeBoardDocument(board);
+
+const getFirstCanvas = (board: BoardDocument) => {
+  const firstCanvasId = board.canvasOrder[0];
+  return firstCanvasId ? board.canvasesById[firstCanvasId] ?? null : null;
+};
+
+const getCanvasById = (board: BoardDocument, canvasId: string | null) =>
+  canvasId ? board.canvasesById[canvasId] ?? null : null;
+
 const createBoardImageItem = (
   asset: UploadLibraryAsset,
-  canvas: CanvasFrame,
+  canvas: CanvasRecord,
   point?: { x: number; y: number },
 ): BoardImageItem => {
   const { width, height } = getContainedImageSize({
@@ -78,19 +91,15 @@ const createBoardImageItem = (
   });
   const maxX = Math.max(canvas.width - width, 0);
   const maxY = Math.max(canvas.height - height, 0);
-  const offset = Math.min(canvas.images.length * IMAGE_INSERT_OFFSET_STEP, 72);
+  const offset = Math.min(canvas.imageOrder.length * IMAGE_INSERT_OFFSET_STEP, 72);
   const defaultX = Math.min(Math.max((canvas.width - width) / 2 + offset, 0), maxX);
   const defaultY = Math.min(Math.max((canvas.height - height) / 2 + offset, 0), maxY);
-  const nextX =
-    point ? clamp(point.x - width / 2, 0, maxX) : defaultX;
-  const nextY =
-    point ? clamp(point.y - height / 2, 0, maxY) : defaultY;
 
   return {
     id: crypto.randomUUID(),
     assetId: asset.id,
-    x: nextX,
-    y: nextY,
+    x: point ? clamp(point.x - width / 2, 0, maxX) : defaultX,
+    y: point ? clamp(point.y - height / 2, 0, maxY) : defaultY,
     width,
     height,
     alt: asset.name,
@@ -105,102 +114,148 @@ const createDefaultCanvas = (position: { x: number; y: number }, index: number) 
 };
 
 export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => ({
-  canvases: [],
-  activeCanvasId: null,
-  selectedCanvasId: null,
-  selectedImageId: null,
+  board: createBoardDocument([]),
 
   initializeDefaultCanvas: () => {
-    const existingCanvas = get().canvases[0];
-    if (existingCanvas) return existingCanvas;
+    const existingCanvas = getFirstCanvas(get().board);
+    if (existingCanvas) {
+      return serializeCanvas(existingCanvas);
+    }
 
     const canvas = createDefaultCanvas({ x: 0, y: 0 }, 0);
-    set({
-      canvases: [canvas],
-      activeCanvasId: canvas.id,
-      selectedCanvasId: canvas.id,
-      selectedImageId: null,
-    });
+    set({ board: createBoardDocument([canvas]) });
+    useBoardSelectionStore.getState().resetSelection(canvas.id);
 
     return canvas;
   },
 
   addCanvas: (size, position) => {
-    const { canvases } = get();
+    const canvases = getCanvasFrames(get().board);
     const canvas = createCanvasFrame(size, position, canvases.length);
 
-    set({
-      canvases: [...canvases, canvas],
-      activeCanvasId: canvas.id,
-      selectedCanvasId: canvas.id,
-      selectedImageId: null,
-    });
+    set((state) => ({
+      board: {
+        canvasOrder: [...state.board.canvasOrder, canvas.id],
+        canvasesById: {
+          ...state.board.canvasesById,
+          [canvas.id]: {
+            ...canvas,
+            imageOrder: [],
+            imagesById: {},
+          },
+        },
+      },
+    }));
+    useBoardSelectionStore.getState().resetSelection(canvas.id);
 
     return canvas;
   },
 
-  setActiveCanvas: (canvasId) => set({ activeCanvasId: canvasId, selectedImageId: null }),
-
-  setSelectedCanvas: (canvasId) => set({ selectedCanvasId: canvasId, selectedImageId: null }),
-
   moveCanvas: (canvasId, x, y) =>
-    set((state) => ({
-      canvases: state.canvases.map((canvas) =>
-        canvas.id === canvasId ? { ...canvas, x, y } : canvas,
-      ),
-    })),
+    set((state) => {
+      const canvas = state.board.canvasesById[canvasId];
+      if (!canvas || (canvas.x === x && canvas.y === y)) {
+        return state;
+      }
+
+      return {
+        board: {
+          ...state.board,
+          canvasesById: {
+            ...state.board.canvasesById,
+            [canvasId]: {
+              ...canvas,
+              x,
+              y,
+            },
+          },
+        },
+      };
+    }),
 
   resizeActiveCanvas: (size) =>
-    set((state) => ({
-      canvases: state.canvases.map((canvas) =>
-        canvas.id === state.activeCanvasId
-          ? { ...canvas, width: size.width, height: size.height }
-          : canvas,
-      ),
-    })),
+    set((state) => {
+      const activeCanvasId = useBoardSelectionStore.getState().activeCanvasId;
+      const canvas = getCanvasById(state.board, activeCanvasId);
+      if (!canvas) {
+        return state;
+      }
+
+      return {
+        board: {
+          ...state.board,
+          canvasesById: {
+            ...state.board.canvasesById,
+            [canvas.id]: {
+              ...canvas,
+              width: size.width,
+              height: size.height,
+            },
+          },
+        },
+      };
+    }),
 
   applyBackgroundToActiveCanvas: (backgroundPresetId) => {
     const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
 
-    set((state) => ({
-      canvases: state.canvases.map((canvas) =>
-        canvas.id === state.activeCanvasId
-          ? {
+    set((state) => {
+      const activeCanvasId = useBoardSelectionStore.getState().activeCanvasId;
+      const canvas = getCanvasById(state.board, activeCanvasId);
+      if (!canvas) {
+        return state;
+      }
+
+      return {
+        board: {
+          ...state.board,
+          canvasesById: {
+            ...state.board.canvasesById,
+            [canvas.id]: {
               ...canvas,
               backgroundPresetId: backgroundPreset.id,
               background: backgroundPreset.value,
-            }
-          : canvas,
-      ),
-    }));
+            },
+          },
+        },
+      };
+    });
   },
 
   insertImageOnActiveCanvas: (asset) => {
-    const activeCanvas =
-      get().canvases.find((canvas) => canvas.id === get().activeCanvasId) ??
-      get().canvases[0];
-    if (!activeCanvas) {
+    const { board } = get();
+    const activeCanvasId = useBoardSelectionStore.getState().activeCanvasId;
+    const canvas = getCanvasById(board, activeCanvasId) ?? getFirstCanvas(board);
+    if (!canvas) {
       return null;
     }
 
-    const image = createBoardImageItem(asset, activeCanvas);
+    const image = createBoardImageItem(asset, canvas);
 
     set((state) => ({
-      canvases: state.canvases.map((canvas) =>
-        canvas.id === activeCanvas.id
-          ? { ...canvas, images: [...canvas.images, image] }
-          : canvas,
-      ),
-      activeCanvasId: activeCanvas.id,
-      selectedCanvasId: activeCanvas.id,
-      selectedImageId: image.id,
+      board: {
+        ...state.board,
+        canvasesById: {
+          ...state.board.canvasesById,
+          [canvas.id]: {
+            ...canvas,
+            imageOrder: [...canvas.imageOrder, image.id],
+            imagesById: {
+              ...canvas.imagesById,
+              [image.id]: image,
+            },
+          },
+        },
+      },
     }));
+    useBoardSelectionStore.getState().resetSelection(canvas.id);
+    useBoardSelectionStore.getState().setSelectedImage(image.id);
 
     return image.id;
   },
 
   insertImageOnCanvasAtPoint: (asset, canvasId, point) => {
-    const canvas = get().canvases.find((currentCanvas) => currentCanvas.id === canvasId);
+    const canvas = getCanvasById(get().board, canvasId);
     if (!canvas) {
       return null;
     }
@@ -208,126 +263,178 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     const image = createBoardImageItem(asset, canvas, point);
 
     set((state) => ({
-      canvases: state.canvases.map((currentCanvas) =>
-        currentCanvas.id === canvas.id
-          ? { ...currentCanvas, images: [...currentCanvas.images, image] }
-          : currentCanvas,
-      ),
-      activeCanvasId: canvas.id,
-      selectedCanvasId: canvas.id,
-      selectedImageId: image.id,
+      board: {
+        ...state.board,
+        canvasesById: {
+          ...state.board.canvasesById,
+          [canvas.id]: {
+            ...canvas,
+            imageOrder: [...canvas.imageOrder, image.id],
+            imagesById: {
+              ...canvas.imagesById,
+              [image.id]: image,
+            },
+          },
+        },
+      },
     }));
+    useBoardSelectionStore.getState().resetSelection(canvas.id);
+    useBoardSelectionStore.getState().setSelectedImage(image.id);
 
     return image.id;
   },
 
-  setSelectedImage: (imageId) => set({ selectedImageId: imageId }),
-
   moveImageOnCanvas: (canvasId, imageId, x, y) =>
-    set((state) => ({
-      canvases: state.canvases.map((canvas) =>
-        canvas.id === canvasId
-          ? {
-              ...canvas,
-              images: canvas.images.map((image) =>
-                image.id === imageId ? { ...image, x, y } : image,
-              ),
-            }
-          : canvas,
-      ),
-    })),
-
-  removeSelectedImage: () =>
     set((state) => {
-      if (!state.activeCanvasId || !state.selectedImageId) {
+      const canvas = state.board.canvasesById[canvasId];
+      const image = canvas?.imagesById[imageId];
+
+      if (!canvas || !image || (image.x === x && image.y === y)) {
         return state;
       }
 
       return {
-        canvases: state.canvases.map((canvas) =>
-          canvas.id === state.activeCanvasId
-            ? {
-                ...canvas,
-                images: canvas.images.filter((image) => image.id !== state.selectedImageId),
-              }
-            : canvas,
-        ),
-        selectedImageId: null,
+        board: {
+          ...state.board,
+          canvasesById: {
+            ...state.board.canvasesById,
+            [canvasId]: {
+              ...canvas,
+              imagesById: {
+                ...canvas.imagesById,
+                [imageId]: {
+                  ...image,
+                  x,
+                  y,
+                },
+              },
+            },
+          },
+        },
+      };
+    }),
+
+  removeSelectedImage: () =>
+    set((state) => {
+      const { activeCanvasId, selectedImageId } = useBoardSelectionStore.getState();
+      const canvas = getCanvasById(state.board, activeCanvasId);
+      if (!canvas || !selectedImageId || !canvas.imagesById[selectedImageId]) {
+        return state;
+      }
+
+      const remainingImages = { ...canvas.imagesById };
+      delete remainingImages[selectedImageId];
+      useBoardSelectionStore.getState().setSelectedImage(null);
+
+      return {
+        board: {
+          ...state.board,
+          canvasesById: {
+            ...state.board.canvasesById,
+            [canvas.id]: {
+              ...canvas,
+              imageOrder: canvas.imageOrder.filter((imageId) => imageId !== selectedImageId),
+              imagesById: remainingImages,
+            },
+          },
+        },
       };
     }),
 
   removeActiveCanvas: () =>
     set((state) => {
-      if (!state.activeCanvasId || state.canvases.length <= 1) {
+      const activeCanvasId = useBoardSelectionStore.getState().activeCanvasId;
+      if (!activeCanvasId || state.board.canvasOrder.length <= 1) {
         return state;
       }
 
-      const remainingCanvases = state.canvases.filter(
-        (canvas) => canvas.id !== state.activeCanvasId,
+      const nextCanvasOrder = state.board.canvasOrder.filter(
+        (canvasId) => canvasId !== activeCanvasId,
       );
-      const nextActiveCanvas = remainingCanvases.at(-1) ?? null;
+      const remainingCanvases = { ...state.board.canvasesById };
+      delete remainingCanvases[activeCanvasId];
+      const nextActiveCanvasId = nextCanvasOrder.at(-1) ?? null;
+
+      useBoardSelectionStore.getState().resetSelection(nextActiveCanvasId);
 
       return {
-        canvases: remainingCanvases,
-        activeCanvasId: nextActiveCanvas?.id ?? null,
-        selectedCanvasId: nextActiveCanvas?.id ?? null,
-        selectedImageId: null,
+        board: {
+          canvasOrder: nextCanvasOrder,
+          canvasesById: remainingCanvases,
+        },
       };
     }),
 
   resetBoard: (size, position = { x: 0, y: 0 }) => {
-    const canvas = createCanvasFrame(
-      size,
-      position,
-      0,
-      DEFAULT_BACKGROUND_PRESET_ID,
-    );
-
-    set({
-      canvases: [canvas],
-      activeCanvasId: canvas.id,
-      selectedCanvasId: canvas.id,
-      selectedImageId: null,
-    });
+    const canvas = createCanvasFrame(size, position, 0, DEFAULT_BACKGROUND_PRESET_ID);
+    set({ board: createBoardDocument([canvas]) });
+    useBoardSelectionStore.getState().resetSelection(canvas.id);
 
     return canvas;
   },
+
+  serializeBoard: () => serializeBoardDocument(get().board),
 }));
 
-export const useActiveCanvas = () =>
+const serializeCanvas = (canvas: CanvasRecord): CanvasFrame => ({
+  id: canvas.id,
+  title: canvas.title,
+  x: canvas.x,
+  y: canvas.y,
+  width: canvas.width,
+  height: canvas.height,
+  background: canvas.background,
+  backgroundPresetId: canvas.backgroundPresetId,
+  images: canvas.imageOrder
+    .map((imageId) => canvas.imagesById[imageId])
+    .filter((image): image is BoardImageItem => image !== undefined),
+});
+
+export const useCanvasIds = () =>
+  useCanvasStore((state) => state.board.canvasOrder);
+
+export const useCanvasById = (canvasId: string | null) =>
   useCanvasStore((state) =>
-    state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
-    state.canvases[0] ??
-    null,
+    canvasId ? state.board.canvasesById[canvasId] ?? null : null,
   );
 
-export const useActiveCanvasPreset = () =>
-  useCanvasStore((state) => {
-    const activeCanvas =
-      state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
-      state.canvases[0] ??
-      null;
+export const useCanvasImageById = (canvasId: string, imageId: string) =>
+  useCanvasStore((state) => state.board.canvasesById[canvasId]?.imagesById[imageId] ?? null);
 
-    if (!activeCanvas) {
-      return getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-    }
+export const useSelectedCanvasId = () =>
+  useBoardSelectionStore((state) => state.selectedCanvasId);
 
-    return getCanvasPresetById(
-      getCanvasPresetIdFromSize({
-        width: activeCanvas.width,
-        height: activeCanvas.height,
-      }),
-    );
-  });
+export const useActiveCanvasId = () =>
+  useBoardSelectionStore((state) => state.activeCanvasId);
 
-export const useActiveCanvasBackground = () =>
-  useCanvasStore((state) => {
-    const activeCanvas =
-      state.canvases.find((canvas) => canvas.id === state.activeCanvasId) ??
-      state.canvases[0] ??
-      null;
+export const useSelectedImageId = () =>
+  useBoardSelectionStore((state) => state.selectedImageId);
 
-    return activeCanvas
-      ? getCanvasBackgroundById(activeCanvas.backgroundPresetId)
-      : null;
-  });
+export const useActiveCanvas = () => {
+  const activeCanvasId = useActiveCanvasId();
+  const canvasIds = useCanvasIds();
+  const resolvedCanvasId = activeCanvasId ?? canvasIds[0] ?? null;
+
+  return useCanvasById(resolvedCanvasId);
+};
+
+export const useActiveCanvasPreset = () => {
+  const activeCanvas = useActiveCanvas();
+
+  if (!activeCanvas) {
+    return getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+  }
+
+  return getCanvasPresetById(
+    getCanvasPresetIdFromSize({
+      width: activeCanvas.width,
+      height: activeCanvas.height,
+    }),
+  );
+};
+
+export const useActiveCanvasBackground = () => {
+  const activeCanvas = useActiveCanvas();
+
+  return activeCanvas ? getCanvasBackgroundById(activeCanvas.backgroundPresetId) : null;
+};

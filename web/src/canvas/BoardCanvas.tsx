@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -11,9 +12,18 @@ import clsx from "clsx";
 
 import { SNAP_GAP, SNAP_THRESHOLD } from "@/board/config";
 import { resolveCanvasSnap } from "@/board/snap";
+import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
-import { useCanvasStore } from "@/stores/useCanvasStore";
-import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
+import {
+  useActiveCanvasId,
+  useCanvasById,
+  useCanvasIds,
+  useCanvasImageById,
+  useCanvasStore,
+  useSelectedCanvasId,
+  useSelectedImageId,
+} from "@/stores/useCanvasStore";
+import { useAssetById, useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { getDraggedAssetId } from "@/uploads/drag";
 
 type CanvasDragState = {
@@ -38,28 +48,166 @@ type PanState = {
   y: number;
 };
 
-export const BoardCanvas = () => {
+type PointerSnapshot = {
+  clientX: number;
+  clientY: number;
+};
+
+type CanvasImageItemProps = {
+  canvasId: string;
+  imageId: string;
+  isSelected: boolean;
+  onPointerDown: (
+    canvasId: string,
+    imageId: string,
+  ) => (event: ReactPointerEvent<HTMLButtonElement>) => void;
+};
+
+type CanvasItemProps = {
+  canvasId: string;
+  isActive: boolean;
+  isSelected: boolean;
+  dropTargetCanvasId: string | null;
+  onPointerDown: (canvasId: string) => (event: ReactPointerEvent<HTMLDivElement>) => void;
+  onDragOver: (canvasId: string) => (event: ReactDragEvent<HTMLDivElement>) => void;
+  onDragLeave: (canvasId: string) => (event: ReactDragEvent<HTMLDivElement>) => void;
+  onDrop: (canvasId: string) => (event: ReactDragEvent<HTMLDivElement>) => void;
+  onImagePointerDown: (
+    canvasId: string,
+    imageId: string,
+  ) => (event: ReactPointerEvent<HTMLButtonElement>) => void;
+};
+
+const CanvasImageItem = memo(
+  ({ canvasId, imageId, isSelected, onPointerDown }: CanvasImageItemProps) => {
+    const image = useCanvasImageById(canvasId, imageId);
+    const asset = useAssetById(image?.assetId ?? "");
+
+    if (!image || !asset) {
+      return null;
+    }
+
+    return (
+      <button
+        type="button"
+        onPointerDown={onPointerDown(canvasId, imageId)}
+        className={clsx(
+          "absolute left-0 top-0 overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent transition",
+          isSelected && "outline-accent",
+        )}
+        style={{
+          width: image.width,
+          height: image.height,
+          zIndex: isSelected ? 2 : 1,
+          transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
+        }}
+      >
+        <img
+          src={asset.src}
+          alt={image.alt}
+          draggable={false}
+          className="pointer-events-none h-full w-full select-none object-contain"
+        />
+      </button>
+    );
+  },
+);
+
+CanvasImageItem.displayName = "CanvasImageItem";
+
+const CanvasItem = memo(
+  ({
+    canvasId,
+    isActive,
+    isSelected,
+    dropTargetCanvasId,
+    onPointerDown,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onImagePointerDown,
+  }: CanvasItemProps) => {
+    const canvas = useCanvasById(canvasId);
+    const selectedImageId = useSelectedImageId();
+
+    if (!canvas) {
+      return null;
+    }
+
+    return (
+      <div
+        className="absolute left-0 top-0"
+        style={{
+          width: canvas.width,
+          height: canvas.height,
+          transform: `translate3d(${canvas.x}px, ${canvas.y}px, 0)`,
+        }}
+      >
+        <div
+          className={clsx(
+            "pointer-events-none absolute -top-6 left-0 text-xs font-semibold text-secondary-text",
+            isActive && "text-title-color",
+          )}
+        >
+          {canvas.title}
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={canvas.title}
+          onPointerDown={onPointerDown(canvas.id)}
+          onDragOver={onDragOver(canvas.id)}
+          onDragLeave={onDragLeave(canvas.id)}
+          onDrop={onDrop(canvas.id)}
+          className={clsx(
+            "relative h-full w-full overflow-hidden bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition-shadow dark:shadow-none",
+            dropTargetCanvasId === canvas.id && "outline outline-2 outline-accent outline-offset-[-4px]",
+            isActive || isSelected
+              ? "border-2 border-accent"
+              : "border border-border-color/70",
+          )}
+          style={{ background: canvas.background }}
+        >
+          {canvas.imageOrder.map((imageId) => (
+            <CanvasImageItem
+              key={imageId}
+              canvasId={canvas.id}
+              imageId={imageId}
+              isSelected={selectedImageId === imageId}
+              onPointerDown={onImagePointerDown}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  },
+);
+
+CanvasItem.displayName = "CanvasItem";
+
+export const BoardCanvas = memo(function BoardCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
   const panStateRef = useRef<PanState | null>(null);
-  const canvasesRef = useRef(useCanvasStore.getState().canvases);
   const viewportRef = useRef(useBoardViewportStore.getState().viewport);
+  const frameRequestRef = useRef<number | null>(null);
+  const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetCanvasId, setDropTargetCanvasId] = useState<string | null>(null);
 
-  const canvases = useCanvasStore((state) => state.canvases);
-  const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
-  const selectedCanvasId = useCanvasStore((state) => state.selectedCanvasId);
-  const selectedImageId = useCanvasStore((state) => state.selectedImageId);
+  const canvasIds = useCanvasIds();
+  const activeCanvasId = useActiveCanvasId();
+  const selectedCanvasId = useSelectedCanvasId();
+
   const moveCanvas = useCanvasStore((state) => state.moveCanvas);
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
   );
-  const setActiveCanvas = useCanvasStore((state) => state.setActiveCanvas);
-  const setSelectedCanvas = useCanvasStore((state) => state.setSelectedCanvas);
-  const setSelectedImage = useCanvasStore((state) => state.setSelectedImage);
 
-  const assets = useUploadLibraryStore((state) => state.assets);
+  const setActiveCanvas = useBoardSelectionStore((state) => state.setActiveCanvas);
+  const setSelectedCanvas = useBoardSelectionStore((state) => state.setSelectedCanvas);
+  const setSelectedImage = useBoardSelectionStore((state) => state.setSelectedImage);
 
   const boardSize = useBoardViewportStore((state) => state.boardSize);
   const viewport = useBoardViewportStore((state) => state.viewport);
@@ -67,10 +215,6 @@ export const BoardCanvas = () => {
   const setBoardSize = useBoardViewportStore((state) => state.setBoardSize);
   const panBy = useBoardViewportStore((state) => state.panBy);
   const zoomAt = useBoardViewportStore((state) => state.zoomAt);
-
-  useEffect(() => {
-    canvasesRef.current = canvases;
-  }, [canvases]);
 
   useEffect(() => {
     viewportRef.current = viewport;
@@ -105,22 +249,30 @@ export const BoardCanvas = () => {
       };
     };
 
-    const handlePointerMove = (event: PointerEvent) => {
+    const flushPointerMove = () => {
+      frameRequestRef.current = null;
+
+      const pointer = pointerSnapshotRef.current;
       const dragState = dragStateRef.current;
       const panState = panStateRef.current;
 
-      if (dragState?.kind === "canvas") {
-        const activeCanvas = canvasesRef.current.find(
-          (canvas) => canvas.id === dragState.canvasId,
-        );
-        if (!activeCanvas) return;
+      if (!pointer) {
+        return;
+      }
 
-        const worldPoint = getWorldPoint(event.clientX, event.clientY);
+      if (dragState?.kind === "canvas") {
+        const board = useCanvasStore.getState().board;
+        const activeCanvas = board.canvasesById[dragState.canvasId];
+        if (!activeCanvas) {
+          return;
+        }
+
+        const worldPoint = getWorldPoint(pointer.clientX, pointer.clientY);
         const nextX = worldPoint.x - dragState.offsetX;
         const nextY = worldPoint.y - dragState.offsetY;
         const snapPreview = resolveCanvasSnap({
           activeCanvas,
-          canvases: canvasesRef.current,
+          canvases: board,
           nextX,
           nextY,
           threshold: SNAP_THRESHOLD,
@@ -132,16 +284,14 @@ export const BoardCanvas = () => {
       }
 
       if (dragState?.kind === "image") {
-        const canvas = canvasesRef.current.find(
-          (currentCanvas) => currentCanvas.id === dragState.canvasId,
-        );
-        const image = canvas?.images.find(
-          (currentImage) => currentImage.id === dragState.imageId,
-        );
+        const board = useCanvasStore.getState().board;
+        const canvas = board.canvasesById[dragState.canvasId];
+        const image = canvas?.imagesById[dragState.imageId];
+        if (!canvas || !image) {
+          return;
+        }
 
-        if (!canvas || !image) return;
-
-        const worldPoint = getWorldPoint(event.clientX, event.clientY);
+        const worldPoint = getWorldPoint(pointer.clientX, pointer.clientY);
 
         moveImageOnCanvas(
           dragState.canvasId,
@@ -152,15 +302,37 @@ export const BoardCanvas = () => {
         return;
       }
 
-      if (!panState) return;
+      if (!panState) {
+        return;
+      }
 
-      panBy(event.clientX - panState.x, event.clientY - panState.y);
-      panStateRef.current = { x: event.clientX, y: event.clientY };
+      panBy(pointer.clientX - panState.x, pointer.clientY - panState.y);
+      panStateRef.current = { x: pointer.clientX, y: pointer.clientY };
+    };
+
+    const schedulePointerMove = (clientX: number, clientY: number) => {
+      pointerSnapshotRef.current = { clientX, clientY };
+
+      if (frameRequestRef.current !== null) {
+        return;
+      }
+
+      frameRequestRef.current = window.requestAnimationFrame(flushPointerMove);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      schedulePointerMove(event.clientX, event.clientY);
     };
 
     const handlePointerUp = () => {
       dragStateRef.current = null;
       panStateRef.current = null;
+      pointerSnapshotRef.current = null;
+
+      if (frameRequestRef.current !== null) {
+        window.cancelAnimationFrame(frameRequestRef.current);
+        frameRequestRef.current = null;
+      }
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -169,6 +341,10 @@ export const BoardCanvas = () => {
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+
+      if (frameRequestRef.current !== null) {
+        window.cancelAnimationFrame(frameRequestRef.current);
+      }
     };
   }, [moveCanvas, moveImageOnCanvas, panBy]);
 
@@ -194,16 +370,11 @@ export const BoardCanvas = () => {
 
       const rect = event.currentTarget.getBoundingClientRect();
       const currentViewport = viewportRef.current;
-      const offsetX =
-        (event.clientX - rect.left) / Math.max(currentViewport.scale, 0.0001);
-      const offsetY =
-        (event.clientY - rect.top) / Math.max(currentViewport.scale, 0.0001);
-
       dragStateRef.current = {
         kind: "canvas",
         canvasId,
-        offsetX,
-        offsetY,
+        offsetX: (event.clientX - rect.left) / Math.max(currentViewport.scale, 0.0001),
+        offsetY: (event.clientY - rect.top) / Math.max(currentViewport.scale, 0.0001),
       };
     };
 
@@ -219,17 +390,12 @@ export const BoardCanvas = () => {
 
       const rect = event.currentTarget.getBoundingClientRect();
       const currentViewport = viewportRef.current;
-      const offsetX =
-        (event.clientX - rect.left) / Math.max(currentViewport.scale, 0.0001);
-      const offsetY =
-        (event.clientY - rect.top) / Math.max(currentViewport.scale, 0.0001);
-
       dragStateRef.current = {
         kind: "image",
         canvasId,
         imageId,
-        offsetX,
-        offsetY,
+        offsetX: (event.clientX - rect.left) / Math.max(currentViewport.scale, 0.0001),
+        offsetY: (event.clientY - rect.top) / Math.max(currentViewport.scale, 0.0001),
       };
     };
 
@@ -258,10 +424,7 @@ export const BoardCanvas = () => {
   const handleCanvasDragLeave =
     (canvasId: string) => (event: ReactDragEvent<HTMLDivElement>) => {
       const nextTarget = event.relatedTarget;
-      if (
-        nextTarget instanceof Node &&
-        event.currentTarget.contains(nextTarget)
-      ) {
+      if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
         return;
       }
 
@@ -280,13 +443,9 @@ export const BoardCanvas = () => {
       event.preventDefault();
       setDropTargetCanvasId(null);
 
-      const asset = assets.find((libraryAsset) => libraryAsset.id === assetId);
-      if (!asset) {
-        return;
-      }
-
-      const canvas = canvases.find((currentCanvas) => currentCanvas.id === canvasId);
-      if (!canvas) {
+      const asset = useUploadLibraryStore.getState().assetsById[assetId];
+      const canvas = useCanvasStore.getState().board.canvasesById[canvasId];
+      if (!asset || !canvas) {
         return;
       }
 
@@ -312,86 +471,23 @@ export const BoardCanvas = () => {
       <div
         className="absolute left-0 top-0 h-full w-full origin-top-left"
         style={{
-          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,
+          transform: `translate3d(${viewport.x}px, ${viewport.y}px, 0) scale(${viewport.scale})`,
         }}
       >
-        {canvases.map((canvas) => {
-          const isActive = canvas.id === activeCanvasId;
-          const isSelected = canvas.id === selectedCanvasId;
-
-          return (
-            <div
-              key={canvas.id}
-              className="absolute"
-              style={{
-                left: canvas.x,
-                top: canvas.y,
-                width: canvas.width,
-                height: canvas.height,
-              }}
-            >
-              <div
-                className={clsx(
-                  "pointer-events-none absolute -top-6 left-0 text-xs font-semibold text-secondary-text",
-                  isActive && "text-title-color",
-                )}
-              >
-                {canvas.title}
-              </div>
-
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label={canvas.title}
-                onPointerDown={handleCanvasPointerDown(canvas.id)}
-                onDragOver={handleCanvasDragOver(canvas.id)}
-                onDragLeave={handleCanvasDragLeave(canvas.id)}
-                onDrop={handleCanvasDrop(canvas.id)}
-                className={clsx(
-                  "relative h-full w-full overflow-hidden bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition-shadow dark:shadow-none",
-                  dropTargetCanvasId === canvas.id && "outline outline-2 outline-accent outline-offset-[-4px]",
-                  isActive || isSelected
-                    ? "border-2 border-accent"
-                    : "border border-border-color/70",
-                )}
-                style={{ background: canvas.background }}
-              >
-                {canvas.images.map((image) => {
-                  const asset = assets.find((libraryAsset) => libraryAsset.id === image.assetId);
-                  if (!asset) return null;
-
-                  const isImageSelected = image.id === selectedImageId;
-
-                  return (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onPointerDown={handleImagePointerDown(canvas.id, image.id)}
-                      className={clsx(
-                        "absolute overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent transition",
-                        isImageSelected && "outline-accent",
-                      )}
-                      style={{
-                        left: image.x,
-                        top: image.y,
-                        width: image.width,
-                        height: image.height,
-                        zIndex: isImageSelected ? 2 : 1,
-                      }}
-                    >
-                      <img
-                        src={asset.src}
-                        alt={image.alt}
-                        draggable={false}
-                        className="pointer-events-none h-full w-full select-none object-contain"
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        {canvasIds.map((canvasId) => (
+          <CanvasItem
+            key={canvasId}
+            canvasId={canvasId}
+            isActive={canvasId === activeCanvasId}
+            isSelected={canvasId === selectedCanvasId}
+            dropTargetCanvasId={dropTargetCanvasId}
+            onPointerDown={handleCanvasPointerDown}
+            onDragOver={handleCanvasDragOver}
+            onDragLeave={handleCanvasDragLeave}
+            onDrop={handleCanvasDrop}
+            onImagePointerDown={handleImagePointerDown}
+          />
+        ))}
       </div>
 
       {!boardSize.width ? null : (
@@ -401,4 +497,4 @@ export const BoardCanvas = () => {
       )}
     </div>
   );
-};
+});

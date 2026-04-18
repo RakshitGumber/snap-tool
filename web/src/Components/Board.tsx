@@ -26,13 +26,21 @@ import { BoardCanvas } from "@/canvas";
 import { CanvasShortcuts } from "@/canvas/canvasShorcuts";
 import { useKeyboardShortcuts } from "@/canvas/useKeyBindings";
 import { useRouter } from "@/pages/routerStore";
+import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import { useBoardUiStore } from "@/stores/useBoardUiStore";
 import { useBoardViewportStore } from "@/stores/useBoardViewportStore";
-import { useActiveCanvas, useCanvasStore } from "@/stores/useCanvasStore";
+import {
+  useActiveCanvas,
+  useActiveCanvasId,
+  useCanvasIds,
+  useCanvasStore,
+  useSelectedCanvasId,
+  useSelectedImageId,
+} from "@/stores/useCanvasStore";
 import type {
-  CanvasFrame,
   CanvasNavigationDirection,
   CanvasPresetId,
+  CanvasRecord,
 } from "@/types/canvas";
 
 const downloadTextFile = (filename: string, content: string) => {
@@ -47,15 +55,17 @@ const downloadTextFile = (filename: string, content: string) => {
 
 const MAX_CANVASES_PER_ROW = 4;
 
-const getLeftMostCanvas = (canvases: CanvasFrame[]) =>
+type PositionedCanvas = Pick<CanvasRecord, "x" | "y" | "width" | "height">;
+
+const getLeftMostCanvas = (canvases: PositionedCanvas[]) =>
   canvases.reduce((leftMost, canvas) => (canvas.x < leftMost.x ? canvas : leftMost));
 
-const getRightMostCanvas = (canvases: CanvasFrame[]) =>
+const getRightMostCanvas = (canvases: PositionedCanvas[]) =>
   canvases.reduce((rightMost, canvas) =>
     canvas.x + canvas.width > rightMost.x + rightMost.width ? canvas : rightMost,
   );
 
-const getNextCanvasPosition = (canvases: CanvasFrame[]) => {
+const getNextCanvasPosition = (canvases: PositionedCanvas[]) => {
   if (!canvases.length) {
     return { x: 0, y: 0 };
   }
@@ -93,7 +103,7 @@ const isCanvasOutsideViewport = ({
   boardSize,
   padding = 0,
 }: {
-  canvas: CanvasFrame;
+  canvas: Pick<CanvasRecord, "x" | "y" | "width" | "height">;
   viewport: { x: number; y: number; scale: number };
   boardSize: { width: number; height: number };
   padding?: number;
@@ -118,16 +128,16 @@ const isCanvasOutsideViewport = ({
 export const Board = () => {
   const setRoute = useRouter((state) => state.setRoute);
 
-  const canvases = useCanvasStore((state) => state.canvases);
-  const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
-  const selectedCanvasId = useCanvasStore((state) => state.selectedCanvasId);
-  const selectedImageId = useCanvasStore((state) => state.selectedImageId);
+  const canvasIds = useCanvasIds();
+  const activeCanvasId = useActiveCanvasId();
+  const selectedCanvasId = useSelectedCanvasId();
+  const selectedImageId = useSelectedImageId();
+  const activeCanvas = useActiveCanvas();
+
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
   );
   const addCanvas = useCanvasStore((state) => state.addCanvas);
-  const setActiveCanvas = useCanvasStore((state) => state.setActiveCanvas);
-  const setSelectedCanvas = useCanvasStore((state) => state.setSelectedCanvas);
   const resizeActiveCanvas = useCanvasStore((state) => state.resizeActiveCanvas);
   const applyBackgroundToActiveCanvas = useCanvasStore(
     (state) => state.applyBackgroundToActiveCanvas,
@@ -135,6 +145,10 @@ export const Board = () => {
   const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
   const removeActiveCanvas = useCanvasStore((state) => state.removeActiveCanvas);
   const resetBoard = useCanvasStore((state) => state.resetBoard);
+  const serializeBoard = useCanvasStore((state) => state.serializeBoard);
+
+  const setActiveCanvas = useBoardSelectionStore((state) => state.setActiveCanvas);
+  const setSelectedCanvas = useBoardSelectionStore((state) => state.setSelectedCanvas);
 
   const boardSize = useBoardViewportStore((state) => state.boardSize);
   const viewport = useBoardViewportStore((state) => state.viewport);
@@ -152,8 +166,6 @@ export const Board = () => {
   const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
 
   const hasFittedInitialCanvasRef = useRef(false);
-
-  const activeCanvas = useActiveCanvas();
   const shouldShowCenterCanvasButton = activeCanvas
     ? isCanvasOutsideViewport({
         canvas: activeCanvas,
@@ -164,9 +176,9 @@ export const Board = () => {
     : false;
 
   useEffect(() => {
-    if (canvases.length) return;
+    if (canvasIds.length) return;
     initializeDefaultCanvas();
-  }, [canvases.length, initializeDefaultCanvas]);
+  }, [canvasIds.length, initializeDefaultCanvas]);
 
   useEffect(() => {
     setCanPanBoard(true);
@@ -182,7 +194,7 @@ export const Board = () => {
   }, [activeCanvas, boardSize.width, fitCanvas]);
 
   const focusCanvas = (canvasId: string | null) => {
-    const nextCanvas = canvases.find((canvas) => canvas.id === canvasId);
+    const nextCanvas = serializeBoard().find((canvas) => canvas.id === canvasId);
     if (!nextCanvas) return;
 
     setActiveCanvas(nextCanvas.id);
@@ -193,14 +205,13 @@ export const Board = () => {
   const handleCenterActiveCanvas = () => {
     if (!activeCanvas || !boardSize.width || !boardSize.height) return;
 
-    const scale = viewport.scale;
     const centerX = activeCanvas.x + activeCanvas.width / 2;
     const centerY = activeCanvas.y + activeCanvas.height / 2;
 
     setViewport({
-      scale,
-      x: boardSize.width / 2 - centerX * scale,
-      y: boardSize.height / 2 - centerY * scale,
+      scale: viewport.scale,
+      x: boardSize.width / 2 - centerX * viewport.scale,
+      y: boardSize.height / 2 - centerY * viewport.scale,
     });
   };
 
@@ -208,13 +219,10 @@ export const Board = () => {
     const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
     if (!preset.size) return;
 
-    const position = getNextCanvasPosition(canvases);
-
-    const nextCanvas = addCanvas(preset.size, position);
+    const position = getNextCanvasPosition(serializeBoard());
+    addCanvas(preset.size, position);
     setPresetMenuOpen(false);
     setFileMenuOpen(false);
-    setActiveCanvas(nextCanvas.id);
-    setSelectedCanvas(nextCanvas.id);
   };
 
   const handleSelectPreset = (presetId: CanvasPresetId) => {
@@ -226,7 +234,7 @@ export const Board = () => {
 
   const handleFocusDirection = (direction: CanvasNavigationDirection) => {
     const nextCanvasId = getNearestCanvasInDirection(
-      canvases,
+      serializeBoard(),
       activeCanvasId,
       direction,
     );
@@ -242,7 +250,7 @@ export const Board = () => {
       isSidebarOpen,
       activeCanvasId,
       selectedCanvasId,
-      canvases,
+      canvases: serializeBoard(),
     };
 
     const timestamp = new Date().toISOString().replaceAll(":", "-");

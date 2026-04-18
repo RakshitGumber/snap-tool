@@ -43,6 +43,16 @@ export type BoardImageItem = {
   alt: string;
 };
 
+export type CanvasRecord = Omit<CanvasFrame, "images"> & {
+  imageOrder: string[];
+  imagesById: Record<string, BoardImageItem>;
+};
+
+export type BoardDocument = {
+  canvasOrder: string[];
+  canvasesById: Record<string, CanvasRecord>;
+};
+
 export type BoardSize = {
   width: number;
   height: number;

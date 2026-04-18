@@ -1,12 +1,20 @@
-import type { CanvasFrame, CanvasNavigationDirection } from "@/types/canvas";
+import type { CanvasNavigationDirection } from "@/types/canvas";
 
-const getCanvasCenter = (canvas: CanvasFrame) => ({
+type NavigableCanvas = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+const getCanvasCenter = (canvas: NavigableCanvas) => ({
   x: canvas.x + canvas.width / 2,
   y: canvas.y + canvas.height / 2,
 });
 
 export const getNearestCanvasInDirection = (
-  canvases: CanvasFrame[],
+  canvases: NavigableCanvas[],
   activeCanvasId: string | null,
   direction: CanvasNavigationDirection,
 ): string | null => {
@@ -16,42 +24,43 @@ export const getNearestCanvasInDirection = (
   if (!activeCanvas) return canvases[0]?.id ?? null;
 
   const activeCenter = getCanvasCenter(activeCanvas);
+  let bestId: string | null = null;
+  let bestPrimaryDistance = Number.POSITIVE_INFINITY;
+  let bestSecondaryDistance = Number.POSITIVE_INFINITY;
 
-  const rankedCandidates = canvases
-    .filter((canvas) => canvas.id !== activeCanvas.id)
-    .map((canvas) => {
-      const center = getCanvasCenter(canvas);
-      const deltaX = center.x - activeCenter.x;
-      const deltaY = center.y - activeCenter.y;
+  for (const canvas of canvases) {
+    if (canvas.id === activeCanvas.id) {
+      continue;
+    }
 
-      if (direction === "next" && deltaX <= 0) return null;
-      if (direction === "prev" && deltaX >= 0) return null;
-      if (direction === "down" && deltaY <= 0) return null;
-      if (direction === "up" && deltaY >= 0) return null;
+    const center = getCanvasCenter(canvas);
+    const deltaX = center.x - activeCenter.x;
+    const deltaY = center.y - activeCenter.y;
 
-      const primaryDistance =
-        direction === "next" || direction === "prev"
-          ? Math.abs(deltaX)
-          : Math.abs(deltaY);
-      const secondaryDistance =
-        direction === "next" || direction === "prev"
-          ? Math.abs(deltaY)
-          : Math.abs(deltaX);
+    if (direction === "next" && deltaX <= 0) continue;
+    if (direction === "prev" && deltaX >= 0) continue;
+    if (direction === "down" && deltaY <= 0) continue;
+    if (direction === "up" && deltaY >= 0) continue;
 
-      return {
-        id: canvas.id,
-        primaryDistance,
-        secondaryDistance,
-      };
-    })
-    .filter((candidate) => candidate !== null)
-    .sort((left, right) => {
-      if (left.primaryDistance !== right.primaryDistance) {
-        return left.primaryDistance - right.primaryDistance;
-      }
+    const primaryDistance =
+      direction === "next" || direction === "prev"
+        ? Math.abs(deltaX)
+        : Math.abs(deltaY);
+    const secondaryDistance =
+      direction === "next" || direction === "prev"
+        ? Math.abs(deltaY)
+        : Math.abs(deltaX);
 
-      return left.secondaryDistance - right.secondaryDistance;
-    });
+    if (
+      primaryDistance < bestPrimaryDistance ||
+      (primaryDistance === bestPrimaryDistance &&
+        secondaryDistance < bestSecondaryDistance)
+    ) {
+      bestId = canvas.id;
+      bestPrimaryDistance = primaryDistance;
+      bestSecondaryDistance = secondaryDistance;
+    }
+  }
 
-  return rankedCandidates[0]?.id ?? activeCanvas.id;
+  return bestId ?? activeCanvas.id;
 };

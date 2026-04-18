@@ -1,3 +1,4 @@
+import { startTransition } from "react";
 import { create } from "zustand";
 
 interface RouterState {
@@ -9,6 +10,8 @@ export const useRouter = create<RouterState>((set) => ({
   route: window.location.pathname,
   setRoute: (path) => {
     window.history.pushState({}, "", path);
-    set({ route: path });
+    startTransition(() => {
+      set({ route: path });
+    });
   },
 }));

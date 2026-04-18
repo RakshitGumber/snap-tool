@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
+    "test": "bun test",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,10 +19,7 @@
     "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",
     "clsx": "^2.1.1",
-    "embla-carousel-auto-scroll": "^8.6.0",
-    "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.38.0",
-    "pixi.js": "8.17.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.2.2",

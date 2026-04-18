@@ -4,7 +4,7 @@ import { getCanvasPresetIdFromSize } from "@/board/config";
 import {
   useActiveCanvas,
   useActiveCanvasBackground,
-  useCanvasStore,
+  useSelectedImageId,
 } from "@/stores/useCanvasStore";
 import type { CanvasBackgroundPreset, CanvasPreset } from "@/types/canvas";
 
@@ -26,7 +26,7 @@ export const BoardOverviewPanel = ({
   onOpenUploads,
 }: BoardOverviewPanelProps) => {
   const activeBackground = useActiveCanvasBackground();
-  const selectedImageId = useCanvasStore((state) => state.selectedImageId);
+  const selectedImageId = useSelectedImageId();
   const activeCanvas = useActiveCanvas();
 
   const quickBackgrounds = backgroundPresets.slice(0, QUICK_BACKGROUND_PRESET_COUNT);
@@ -37,7 +37,7 @@ export const BoardOverviewPanel = ({
         height: activeCanvas.height,
       })
     : sizePresets[0]?.id;
-  const imageCount = activeCanvas?.images.length ?? 0;
+  const imageCount = activeCanvas?.imageOrder.length ?? 0;
 
   return (
     <div className="space-y-6">

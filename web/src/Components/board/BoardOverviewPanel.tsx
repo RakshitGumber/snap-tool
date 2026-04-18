@@ -19,7 +19,7 @@ type BoardOverviewPanelProps = {
 const QUICK_BACKGROUND_PRESET_COUNT = 4;
 
 const cardClassName =
-  "rounded-2xl bg-bg/70 p-4 outline outline-1 outline-border-color/60";
+  "rounded-2xl p-4 outline outline-1 outline-border-color/60";
 
 export const BoardOverviewPanel = ({
   backgroundPresets,
@@ -57,13 +57,13 @@ export const BoardOverviewPanel = ({
               Active board surface and summary details.
             </p>
           </div>
-          <span className="rounded-full bg-card-bg/80 px-2.5 py-1 text-xs font-semibold text-title-color">
+          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
             {imageCount} {imageCount === 1 ? "image" : "images"}
           </span>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-card-bg/70 px-3 py-3">
+          <div className="rounded-xl px-3 py-3 outline outline-1 outline-border-color/60">
             <p className="text-[11px] uppercase tracking-[0.12em] text-secondary-text">
               Position X
             </p>
@@ -71,7 +71,7 @@ export const BoardOverviewPanel = ({
               {activeCanvas ? Math.round(activeCanvas.x) : "—"}
             </p>
           </div>
-          <div className="rounded-xl bg-card-bg/70 px-3 py-3">
+          <div className="rounded-xl px-3 py-3 outline outline-1 outline-border-color/60">
             <p className="text-[11px] uppercase tracking-[0.12em] text-secondary-text">
               Position Y
             </p>
@@ -95,7 +95,7 @@ export const BoardOverviewPanel = ({
                 : "Select a canvas to inspect its size."}
             </p>
           </div>
-          <div className="rounded-full bg-card-bg/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-title-color">
+          <div className="rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-title-color outline outline-1 outline-border-color/60">
             Preset
           </div>
         </div>
@@ -112,8 +112,8 @@ export const BoardOverviewPanel = ({
                 className={clsx(
                   "rounded-xl px-3 py-3 text-left outline outline-1 outline-border-color/60 transition",
                   isActive
-                    ? "bg-accent-light text-title-color"
-                    : "bg-card-bg/70 text-title-color hover:bg-card-bg/90",
+                    ? "text-title-color outline-accent"
+                    : "text-title-color hover:outline-accent/70",
                 )}
               >
                 <span className="block text-sm font-semibold capitalize">
@@ -161,8 +161,8 @@ export const BoardOverviewPanel = ({
                 className={clsx(
                   "rounded-xl p-2 text-left outline outline-1 outline-border-color/60 transition",
                   isActive
-                    ? "bg-accent-light"
-                    : "bg-card-bg/70 hover:bg-card-bg/90",
+                    ? "outline-accent"
+                    : "hover:outline-accent/70",
                 )}
               >
                 <div
@@ -193,7 +193,7 @@ export const BoardOverviewPanel = ({
                 : "No image is selected on the active canvas."}
             </p>
           </div>
-          <span className="rounded-full bg-card-bg/80 px-2.5 py-1 text-xs font-semibold text-title-color">
+          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
             {selectedImageId ? "Selected" : "Idle"}
           </span>
         </div>

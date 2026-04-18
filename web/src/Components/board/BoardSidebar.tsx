@@ -27,10 +27,14 @@ export const BoardSidebar = ({
 }: BoardSidebarProps) => {
   const activeCanvas = useActiveCanvas();
   const activeSection = sections.find((section) => section.id === openSectionId) ?? sections[0];
+  const shouldShowSectionMeta = activeSection?.id !== "overview";
 
   return (
     <aside
-      className="relative z-10 flex h-full shrink-0 border-r-2 border-accent bg-card-bg/95 backdrop-blur-3xl"
+      className={clsx(
+        "relative z-10 flex h-full shrink-0 bg-card-bg/95 backdrop-blur-3xl",
+        isOpen ? "border-r border-border-color/60" : "border-r-2 border-accent",
+      )}
       style={{ width: isOpen ? DEFAULT_SIDEBAR_WIDTH : DEFAULT_ACCESS_PANEL_WIDTH }}
     >
       <div
@@ -41,10 +45,6 @@ export const BoardSidebar = ({
         style={{ width: DEFAULT_ACCESS_PANEL_WIDTH }}
       >
         <div className="flex flex-1 flex-col items-center gap-2 overflow-y-auto px-2 py-3">
-          <div className="pointer-events-none mb-1 flex h-10 w-10 items-center justify-center text-secondary-text">
-            <Icon icon="solar:sidebar-minimalistic-linear" className="text-lg" />
-          </div>
-
           <nav className="flex flex-col items-center gap-1">
             {sections.map((section) => {
               const isActive = section.id === openSectionId;
@@ -74,20 +74,24 @@ export const BoardSidebar = ({
 
       {isOpen ? (
         <div
-          className="flex min-w-0 flex-1 flex-col"
+          className="flex min-w-0 flex-1 flex-col border-r-2 border-accent"
           style={{ width: DEFAULT_DESIGN_PANEL_WIDTH }}
         >
           <div className="flex items-start justify-between gap-3 border-b border-border-color/50 px-5 py-4">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.16em] text-secondary-text">
-                {activeCanvas?.title ?? "Canvas"}
-              </p>
+              {shouldShowSectionMeta ? (
+                <p className="text-xs uppercase tracking-[0.16em] text-secondary-text">
+                  {activeCanvas?.title ?? "Canvas"}
+                </p>
+              ) : null}
               <h2 className="mt-1 text-lg font-semibold text-title-color">
                 {activeSection?.label ?? "Design"}
               </h2>
-              <p className="mt-1 text-sm text-secondary-text">
-                {activeSection?.description ?? "Select a panel option"}
-              </p>
+              {shouldShowSectionMeta ? (
+                <p className="mt-1 text-sm text-secondary-text">
+                  {activeSection?.description ?? "Select a panel option"}
+                </p>
+              ) : null}
             </div>
 
             <button
@@ -102,7 +106,7 @@ export const BoardSidebar = ({
 
           <div className="flex-1 overflow-y-auto px-5 py-4">
             {activeSection?.isPlaceholder ? (
-              <div className="rounded-xl bg-bg/70 px-4 py-4 text-sm text-secondary-text">
+              <div className="rounded-xl px-4 py-4 text-sm text-secondary-text outline outline-1 outline-border-color/60">
                 Coming soon
               </div>
             ) : (

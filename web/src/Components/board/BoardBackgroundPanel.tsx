@@ -14,7 +14,7 @@ export const BoardBackgroundPanel = ({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-bg/70 p-4 outline outline-1 outline-border-color/60">
+      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
         <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
           Current background
         </p>
@@ -38,7 +38,7 @@ export const BoardBackgroundPanel = ({
             key={backgroundPreset.id}
             type="button"
             onClick={() => onBackgroundSelect(backgroundPreset.id)}
-            className="rounded-xl bg-card-bg/80 p-2 text-left outline outline-1 outline-border-color/60 transition hover:bg-accent-light"
+            className="rounded-xl p-2 text-left outline outline-1 outline-border-color/60 transition hover:outline-accent/70"
           >
             <div
               className="h-12 rounded-md outline outline-1 outline-border-color/60"

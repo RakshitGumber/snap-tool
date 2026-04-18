@@ -15,7 +15,7 @@ export const BoardAccordionSection = ({
   onToggle,
 }: BoardAccordionSectionProps) => {
   return (
-    <section className="rounded-xl bg-bg/70">
+    <section className="rounded-xl outline outline-1 outline-border-color/60">
       <button
         type="button"
         onClick={onToggle}
@@ -41,7 +41,7 @@ export const BoardAccordionSection = ({
       {isOpen ? (
         <div className="px-4 pb-4">
           {section.isPlaceholder ? (
-            <div className="rounded-lg bg-card-bg/70 px-3 py-4 text-sm text-secondary-text">
+            <div className="rounded-lg px-3 py-4 text-sm text-secondary-text outline outline-1 outline-border-color/60">
               Coming soon
             </div>
           ) : (

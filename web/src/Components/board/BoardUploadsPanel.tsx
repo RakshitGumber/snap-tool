@@ -94,7 +94,7 @@ export const BoardUploadsPanel = () => {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-bg/70 p-4 outline outline-1 outline-border-color/60">
+      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
         <div className="space-y-3">
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
@@ -127,8 +127,8 @@ export const BoardUploadsPanel = () => {
             className={clsx(
               "flex w-full flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-8 text-center transition",
               isDropActive
-                ? "border-accent bg-accent-light text-title-color"
-                : "border-border-color/70 bg-card-bg/70 text-secondary-text hover:bg-card-bg/90",
+                ? "border-accent text-title-color"
+                : "border-border-color/70 text-secondary-text hover:border-accent/70 hover:text-title-color",
             )}
           >
             <span className="text-sm font-semibold text-title-color">Drag and drop images</span>
@@ -137,7 +137,7 @@ export const BoardUploadsPanel = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-bg/70 p-4 outline outline-1 outline-border-color/60">
+      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
         <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
           Import from URL
         </p>
@@ -186,7 +186,7 @@ export const BoardUploadsPanel = () => {
               Click to insert, or drag an image onto a canvas.
             </p>
           </div>
-          <span className="rounded-full bg-card-bg/80 px-2.5 py-1 text-xs font-semibold text-title-color">
+          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
             {assets.length}
           </span>
         </div>
@@ -205,7 +205,7 @@ export const BoardUploadsPanel = () => {
                 clearError();
                 setDraggedAssetId(event.dataTransfer, asset.id);
               }}
-              className="overflow-hidden rounded-2xl bg-card-bg/80 text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:bg-card-bg"
+              className="overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
             >
               <div className="aspect-square overflow-hidden bg-transparent p-2">
                 <img
@@ -224,7 +224,7 @@ export const BoardUploadsPanel = () => {
         </div>
 
         {!assets.length ? (
-          <div className="rounded-xl bg-bg/70 px-4 py-4 text-sm text-secondary-text">
+          <div className="rounded-xl px-4 py-4 text-sm text-secondary-text outline outline-1 outline-border-color/60">
             Your upload library will appear here.
           </div>
         ) : null}

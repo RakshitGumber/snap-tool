@@ -18,7 +18,7 @@ export const ThemeButton = () => {
     <button
       type="button"
       onClick={() => setTheme(nextTheme)}
-      className="rounded-lg px-2 py-2 text-title-color transition hover:border-accent hover:bg-accent-light"
+      className="rounded-lg px-2 py-2 text-title-color transition hover:border-accent hover:bg-secondary-text/20"
     >
       <Icon
         icon={!darkMode ? "solar:sun-2-bold" : "solar:moon-stars-bold"}

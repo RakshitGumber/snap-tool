@@ -43,7 +43,7 @@ export const BoardPresetControl = ({
         title="Resize canvas"
         aria-expanded={isPresetMenuOpen}
         onClick={() => onPresetMenuOpenChange(!isPresetMenuOpen)}
-        className="inline-flex h-10 items-center gap-2 rounded-lg px-2 text-title-color transition hover:bg-accent-light"
+        className="inline-flex h-10 items-center gap-2 rounded-lg px-2 text-title-color transition hover:bg-secondary-text/20"
       >
         <Icon icon="solar:ruler-angular-linear" className="text-lg" />
         <span className="text-xs font-semibold uppercase tracking-[0.12em]">

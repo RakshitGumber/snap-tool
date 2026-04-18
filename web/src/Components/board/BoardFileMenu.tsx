@@ -35,13 +35,15 @@ export const BoardFileMenu = ({
         type="button"
         onClick={() => onOpenChange(!isOpen)}
         aria-expanded={isOpen}
-        className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-title-color transition hover:bg-accent-light"
+        className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition hover:bg-secondary-text/20"
       >
-        <span>File</span>
         <Icon
-          icon="solar:alt-arrow-down-linear"
-          className={clsx("text-base transition", isOpen && "rotate-180")}
+          icon="solar:hamburger-menu-linear"
+          className="text-lg text-white"
         />
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-secondary-text">
+          File
+        </span>
       </button>
 
       {isOpen ? (

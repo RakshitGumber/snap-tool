@@ -13,7 +13,7 @@ export const BoardAddCanvasButton = ({
       title="Canvas"
       aria-label="Add canvas"
       onClick={onClick}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-title-color transition hover:bg-accent-light"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-title-color transition hover:bg-secondary-text/20"
     >
       <Icon icon="solar:add-square-linear" className="text-xl" />
     </button>

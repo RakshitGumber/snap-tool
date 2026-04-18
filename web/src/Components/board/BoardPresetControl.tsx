@@ -30,10 +30,8 @@ export const BoardPresetControl = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [activeGroupId, setActiveGroupId] =
     useState<CanvasPresetGroupId | null>(null);
-  const [menuOffsetX, setMenuOffsetX] = useState(0);
-  const [menuMaxHeight, setMenuMaxHeight] = useState<number | undefined>(
-    undefined,
-  );
+  const menuOffsetX = 0;
+  const menuMaxHeight = undefined;
 
   const activeLabel =
     activePreset.kind === "preset" ? activePreset.preset.label : "Custom";

@@ -153,7 +153,6 @@ export const Board = () => {
   const boardSize = useBoardViewportStore((state) => state.boardSize);
   const viewport = useBoardViewportStore((state) => state.viewport);
   const fitCanvas = useBoardViewportStore((state) => state.fitCanvas);
-  const setViewport = useBoardViewportStore((state) => state.setViewport);
   const setCanPanBoard = useBoardViewportStore((state) => state.setCanPanBoard);
 
   const openSectionId = useBoardUiStore((state) => state.openSectionId);
@@ -166,6 +165,12 @@ export const Board = () => {
   const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
 
   const hasFittedInitialCanvasRef = useRef(false);
+  const previousActiveCanvasSizeRef = useRef<{
+    canvasId: string | null;
+    width: number;
+    height: number;
+  } | null>(null);
+  const previousBoardSizeRef = useRef(boardSize);
   const shouldShowCenterCanvasButton = activeCanvas
     ? isCanvasOutsideViewport({
         canvas: activeCanvas,
@@ -185,13 +190,49 @@ export const Board = () => {
   }, [setCanPanBoard]);
 
   useEffect(() => {
-    if (!activeCanvas || !boardSize.width || hasFittedInitialCanvasRef.current) {
+    if (!activeCanvas || !boardSize.width || !boardSize.height) {
       return;
     }
 
-    fitCanvas(activeCanvas, FIT_PADDING);
-    hasFittedInitialCanvasRef.current = true;
-  }, [activeCanvas, boardSize.width, fitCanvas]);
+    const previousCanvasSize = previousActiveCanvasSizeRef.current;
+    const previousBoardSize = previousBoardSizeRef.current;
+    const hasCanvasResized =
+      previousCanvasSize?.canvasId === activeCanvas.id &&
+      (previousCanvasSize.width !== activeCanvas.width ||
+        previousCanvasSize.height !== activeCanvas.height);
+    const hasBoardResized =
+      previousBoardSize.width !== boardSize.width ||
+      previousBoardSize.height !== boardSize.height;
+    const shouldRefitForBoardResize =
+      hasBoardResized &&
+      isCanvasOutsideViewport({
+        canvas: activeCanvas,
+        viewport,
+        boardSize,
+        padding: FIT_PADDING,
+      });
+
+    previousActiveCanvasSizeRef.current = {
+      canvasId: activeCanvas.id,
+      width: activeCanvas.width,
+      height: activeCanvas.height,
+    };
+    previousBoardSizeRef.current = boardSize;
+
+    if (
+      !hasFittedInitialCanvasRef.current ||
+      hasCanvasResized ||
+      shouldRefitForBoardResize
+    ) {
+      fitCanvas(activeCanvas, FIT_PADDING);
+      hasFittedInitialCanvasRef.current = true;
+    }
+  }, [
+    activeCanvas,
+    boardSize,
+    fitCanvas,
+    viewport,
+  ]);
 
   const focusCanvas = (canvasId: string | null) => {
     const nextCanvas = serializeBoard().find((canvas) => canvas.id === canvasId);
@@ -204,15 +245,7 @@ export const Board = () => {
 
   const handleCenterActiveCanvas = () => {
     if (!activeCanvas || !boardSize.width || !boardSize.height) return;
-
-    const centerX = activeCanvas.x + activeCanvas.width / 2;
-    const centerY = activeCanvas.y + activeCanvas.height / 2;
-
-    setViewport({
-      scale: viewport.scale,
-      x: boardSize.width / 2 - centerX * viewport.scale,
-      y: boardSize.height / 2 - centerY * viewport.scale,
-    });
+    fitCanvas(activeCanvas, FIT_PADDING);
   };
 
   const handleAddCanvas = () => {
@@ -400,7 +433,7 @@ export const Board = () => {
                 className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-card-bg/95 px-4 py-2 text-sm font-semibold text-title-color shadow-lg outline outline-1 outline-border-color/60 backdrop-blur"
               >
                 <Icon icon="solar:target-linear" className="text-base" />
-                <span>Center canvas</span>
+                <span>Fit canvas</span>
               </button>
             </div>
           ) : null}

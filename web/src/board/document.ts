@@ -12,6 +12,7 @@ export const normalizeCanvasFrame = (canvas: CanvasFrame): CanvasRecord => ({
   y: canvas.y,
   width: canvas.width,
   height: canvas.height,
+  presetId: canvas.presetId ?? null,
   background: canvas.background,
   backgroundPresetId: canvas.backgroundPresetId,
   imageOrder: canvas.images.map((image) => image.id),
@@ -32,6 +33,7 @@ export const serializeCanvasRecord = (canvas: CanvasRecord): CanvasFrame => ({
   y: canvas.y,
   width: canvas.width,
   height: canvas.height,
+  presetId: canvas.presetId,
   background: canvas.background,
   backgroundPresetId: canvas.backgroundPresetId,
   images: canvas.imageOrder

@@ -3,13 +3,38 @@ export type CanvasSize = {
   height: number;
 };
 
-export type CanvasPresetId = "square" | "landscape" | "portrait" | "custom";
+export type CanvasPresetGroupId =
+  | "twitter"
+  | "linkedin"
+  | "instagram"
+  | "pinterest"
+  | "general";
+
+export type CanvasPresetId = `${CanvasPresetGroupId}-${string}`;
 
 export type CanvasPreset = {
   id: CanvasPresetId;
+  groupId: CanvasPresetGroupId;
   label: string;
-  size?: CanvasSize;
+  size: CanvasSize;
 };
+
+export type CanvasPresetGroup = {
+  id: CanvasPresetGroupId;
+  label: string;
+  presets: CanvasPreset[];
+};
+
+export type ResolvedCanvasPreset =
+  | {
+      kind: "preset";
+      preset: CanvasPreset;
+      group: CanvasPresetGroup;
+    }
+  | {
+      kind: "custom";
+      size: CanvasSize;
+    };
 
 export type CanvasBackgroundKind = "solid" | "gradient";
 
@@ -28,6 +53,7 @@ export type CanvasFrame = {
   y: number;
   width: number;
   height: number;
+  presetId?: CanvasPresetId | null;
   background: string;
   backgroundPresetId: string;
   images: BoardImageItem[];
@@ -44,6 +70,7 @@ export type BoardImageItem = {
 };
 
 export type CanvasRecord = Omit<CanvasFrame, "images"> & {
+  presetId: CanvasPresetId | null;
   imageOrder: string[];
   imagesById: Record<string, BoardImageItem>;
 };

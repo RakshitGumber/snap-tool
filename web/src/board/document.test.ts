@@ -12,6 +12,7 @@ describe("board document helpers", () => {
         y: 0,
         width: 500,
         height: 500,
+        presetId: "general-square",
         background: "#fff",
         backgroundPresetId: "solid-white",
         images: [
@@ -42,6 +43,7 @@ describe("board document helpers", () => {
         y: 0,
         width: 640,
         height: 360,
+        presetId: "general-landscape",
         background: "#f4f6ff",
         backgroundPresetId: "solid-slate",
         images: [],

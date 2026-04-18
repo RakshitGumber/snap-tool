@@ -7,7 +7,7 @@ import type { BoardTopRibbonProps } from "./types";
 
 export const BoardTopRibbon = ({
   fileActions,
-  presets,
+  presetGroups,
   isFileMenuOpen,
   isPresetMenuOpen,
   onFileMenuOpenChange,
@@ -28,7 +28,7 @@ export const BoardTopRibbon = ({
         <BoardAddCanvasButton onClick={onAddCanvas} />
         <BoardPresetControl
           activePreset={activePreset}
-          presets={presets}
+          presetGroups={presetGroups}
           isPresetMenuOpen={isPresetMenuOpen}
           onPresetMenuOpenChange={onPresetMenuOpenChange}
           onSelectPreset={onSelectPreset}

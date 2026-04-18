@@ -1,16 +1,28 @@
+import { useEffect, useState } from "react";
+
+import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
-import { getCanvasPresetIdFromSize } from "@/board/config";
+import {
+  getCanvasPresetById,
+  getCanvasPresetGroupIcon,
+  resolveCanvasPreset,
+} from "@/board/config";
 import {
   useActiveCanvas,
   useActiveCanvasBackground,
   useSelectedImageId,
 } from "@/stores/useCanvasStore";
-import type { CanvasBackgroundPreset, CanvasPreset } from "@/types/canvas";
+import type {
+  CanvasBackgroundPreset,
+  CanvasPreset,
+  CanvasPresetGroup,
+  CanvasPresetGroupId,
+} from "@/types/canvas";
 
 type BoardOverviewPanelProps = {
   backgroundPresets: CanvasBackgroundPreset[];
-  sizePresets: CanvasPreset[];
+  presetGroups: CanvasPresetGroup[];
   onBackgroundSelect: (backgroundPresetId: string) => void;
   onSelectPreset: (presetId: CanvasPreset["id"]) => void;
   onOpenUploads: () => void;
@@ -20,7 +32,7 @@ const QUICK_BACKGROUND_PRESET_COUNT = 4;
 
 export const BoardOverviewPanel = ({
   backgroundPresets,
-  sizePresets,
+  presetGroups,
   onBackgroundSelect,
   onSelectPreset,
   onOpenUploads,
@@ -28,23 +40,34 @@ export const BoardOverviewPanel = ({
   const activeBackground = useActiveCanvasBackground();
   const selectedImageId = useSelectedImageId();
   const activeCanvas = useActiveCanvas();
+  const [selectedGroupId, setSelectedGroupId] = useState<CanvasPresetGroupId>("general");
+  const defaultPreset = getCanvasPresetById("general-square");
 
   const quickBackgrounds = backgroundPresets.slice(0, QUICK_BACKGROUND_PRESET_COUNT);
-  const selectableSizePresets = sizePresets.filter((preset) => preset.size);
-  const activePresetId = activeCanvas
-    ? getCanvasPresetIdFromSize({
+  const activePreset = activeCanvas
+    ? resolveCanvasPreset({
         width: activeCanvas.width,
         height: activeCanvas.height,
+        presetId: activeCanvas.presetId,
       })
-    : sizePresets[0]?.id;
+    : resolveCanvasPreset(defaultPreset.size);
+  const visibleGroup =
+    presetGroups.find((group) => group.id === selectedGroupId) ?? presetGroups[0];
   const imageCount = activeCanvas?.imageOrder.length ?? 0;
+  const activePresetGroupId = activePreset.kind === "preset" ? activePreset.group.id : "general";
+  const activePresetIcon = getCanvasPresetGroupIcon(activePresetGroupId);
+
+  useEffect(() => {
+    setSelectedGroupId(activePresetGroupId);
+  }, [activePresetGroupId]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold capitalize text-title-color">
-            {activePresetId === "custom" ? "Custom" : activePresetId}
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-title-color">
+            <Icon icon={activePresetIcon} className="text-base" />
+            <span>{activePreset.kind === "preset" ? activePreset.preset.label : "Custom"}</span>
           </p>
           <p className="mt-1 text-sm text-secondary-text">
             {activeCanvas
@@ -57,9 +80,35 @@ export const BoardOverviewPanel = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {selectableSizePresets.map((preset) => {
-          const isActive = preset.id === activePresetId;
+      <div className="flex flex-wrap gap-2">
+        {presetGroups.map((group) => {
+          const isActive = group.id === visibleGroup?.id;
+
+          return (
+            <button
+              key={group.id}
+              type="button"
+              onClick={() => setSelectedGroupId(group.id)}
+              className={clsx(
+                "rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] outline outline-1 outline-border-color/60 transition",
+                isActive
+                  ? "bg-accent-light text-title-color outline-accent"
+                  : "text-title-color hover:outline-accent/70",
+              )}
+            >
+              <span className="inline-flex items-center gap-2">
+                <Icon icon={getCanvasPresetGroupIcon(group.id)} className="text-sm" />
+                <span>{group.label}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        {visibleGroup?.presets.map((preset) => {
+          const isActive =
+            activePreset.kind === "preset" && preset.id === activePreset.preset.id;
 
           return (
             <button
@@ -73,13 +122,9 @@ export const BoardOverviewPanel = ({
                   : "text-title-color hover:outline-accent/70",
               )}
             >
-              <span className="block text-sm font-semibold capitalize">
-                {preset.label}
-              </span>
+              <span className="block text-sm font-semibold">{preset.label}</span>
               <span className="mt-1 block text-xs text-secondary-text">
-                {preset.size
-                  ? `${preset.size.width} x ${preset.size.height}`
-                  : "Manual size"}
+                {preset.size.width} x {preset.size.height}
               </span>
             </button>
           );

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { CanvasPreset } from "@/types/canvas";
+import type { CanvasPreset, CanvasPresetGroup } from "@/types/canvas";
 
 export type BoardMenuAction = {
   id: string;
@@ -27,7 +27,7 @@ export type BoardSidebarSection = {
 
 export type BoardTopRibbonProps = {
   fileActions: BoardMenuAction[];
-  presets: CanvasPreset[];
+  presetGroups: CanvasPresetGroup[];
   isFileMenuOpen: boolean;
   isPresetMenuOpen: boolean;
   onFileMenuOpenChange: (isOpen: boolean) => void;

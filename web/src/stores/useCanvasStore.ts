@@ -7,13 +7,15 @@ import {
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
-  getCanvasPresetIdFromSize,
+  getCanvasPresetGroupById,
+  resolveCanvasPreset,
 } from "@/board/config";
 import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import type {
   BoardDocument,
   BoardImageItem,
   CanvasFrame,
+  CanvasPresetId,
   CanvasRecord,
   CanvasSize,
 } from "@/types/canvas";
@@ -27,7 +29,7 @@ type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   addCanvas: (size: CanvasSize, position: { x: number; y: number }) => CanvasFrame;
   moveCanvas: (canvasId: string, x: number, y: number) => void;
-  resizeActiveCanvas: (size: CanvasSize) => void;
+  resizeActiveCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToActiveCanvas: (backgroundPresetId: string) => void;
   insertImageOnActiveCanvas: (asset: UploadLibraryAsset) => string | null;
   insertImageOnCanvasAtPoint: (
@@ -108,9 +110,9 @@ const createBoardImageItem = (
 
 const createDefaultCanvas = (position: { x: number; y: number }, index: number) => {
   const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-  const size = preset.size ?? { width: 500, height: 500 };
+  const size = preset.size;
 
-  return createCanvasFrame(size, position, index);
+  return createCanvasFrame(size, position, index, DEFAULT_BACKGROUND_PRESET_ID, preset.id);
 };
 
 export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => ({
@@ -132,17 +134,26 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
   addCanvas: (size, position) => {
     const canvases = getCanvasFrames(get().board);
     const canvas = createCanvasFrame(size, position, canvases.length);
+    const normalizedCanvas: CanvasRecord = {
+      id: canvas.id,
+      title: canvas.title,
+      x: canvas.x,
+      y: canvas.y,
+      width: canvas.width,
+      height: canvas.height,
+      presetId: canvas.presetId ?? null,
+      background: canvas.background,
+      backgroundPresetId: canvas.backgroundPresetId,
+      imageOrder: [],
+      imagesById: {},
+    };
 
     set((state) => ({
       board: {
         canvasOrder: [...state.board.canvasOrder, canvas.id],
         canvasesById: {
           ...state.board.canvasesById,
-          [canvas.id]: {
-            ...canvas,
-            imageOrder: [],
-            imagesById: {},
-          },
+          [canvas.id]: normalizedCanvas,
         },
       },
     }));
@@ -173,7 +184,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       };
     }),
 
-  resizeActiveCanvas: (size) =>
+  resizeActiveCanvas: (size, presetId = null) =>
     set((state) => {
       const activeCanvasId = useBoardSelectionStore.getState().activeCanvasId;
       const canvas = getCanvasById(state.board, activeCanvasId);
@@ -190,6 +201,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
               ...canvas,
               width: size.width,
               height: size.height,
+              presetId,
             },
           },
         },
@@ -366,7 +378,13 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   resetBoard: (size, position = { x: 0, y: 0 }) => {
-    const canvas = createCanvasFrame(size, position, 0, DEFAULT_BACKGROUND_PRESET_ID);
+    const canvas = createCanvasFrame(
+      size,
+      position,
+      0,
+      DEFAULT_BACKGROUND_PRESET_ID,
+      DEFAULT_CANVAS_PRESET_ID,
+    );
     set({ board: createBoardDocument([canvas]) });
     useBoardSelectionStore.getState().resetSelection(canvas.id);
 
@@ -383,6 +401,7 @@ const serializeCanvas = (canvas: CanvasRecord): CanvasFrame => ({
   y: canvas.y,
   width: canvas.width,
   height: canvas.height,
+  presetId: canvas.presetId,
   background: canvas.background,
   backgroundPresetId: canvas.backgroundPresetId,
   images: canvas.imageOrder
@@ -422,15 +441,20 @@ export const useActiveCanvasPreset = () => {
   const activeCanvas = useActiveCanvas();
 
   if (!activeCanvas) {
-    return getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+    const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+
+    return {
+      kind: "preset" as const,
+      preset,
+      group: getCanvasPresetGroupById(preset.groupId),
+    };
   }
 
-  return getCanvasPresetById(
-    getCanvasPresetIdFromSize({
-      width: activeCanvas.width,
-      height: activeCanvas.height,
-    }),
-  );
+  return resolveCanvasPreset({
+    width: activeCanvas.width,
+    height: activeCanvas.height,
+    presetId: activeCanvas.presetId,
+  });
 };
 
 export const useActiveCanvasBackground = () => {

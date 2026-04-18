@@ -14,7 +14,7 @@ import {
 } from "@/Components/board/index";
 import {
   CANVAS_BACKGROUND_PRESETS,
-  CANVAS_PRESETS,
+  CANVAS_PRESET_GROUPS,
   DEFAULT_CANVAS_PRESET_ID,
   DEFAULT_SIDEBAR_WIDTH,
   FIT_PADDING,
@@ -227,9 +227,7 @@ export const Board = () => {
 
   const handleSelectPreset = (presetId: CanvasPresetId) => {
     const preset = getCanvasPresetById(presetId);
-    if (!preset.size) return;
-
-    resizeActiveCanvas(preset.size);
+    resizeActiveCanvas(preset.size, preset.id);
   };
 
   const handleFocusDirection = (direction: CanvasNavigationDirection) => {
@@ -325,7 +323,7 @@ export const Board = () => {
       content: (
         <BoardOverviewPanel
           backgroundPresets={CANVAS_BACKGROUND_PRESETS}
-          sizePresets={CANVAS_PRESETS}
+          presetGroups={CANVAS_PRESET_GROUPS}
           onBackgroundSelect={applyBackgroundToActiveCanvas}
           onSelectPreset={handleSelectPreset}
           onOpenUploads={() => {
@@ -370,7 +368,7 @@ export const Board = () => {
     <main className="flex h-screen flex-col bg-bg">
       <BoardTopRibbon
         fileActions={fileActions}
-        presets={CANVAS_PRESETS}
+        presetGroups={CANVAS_PRESET_GROUPS}
         isFileMenuOpen={isFileMenuOpen}
         isPresetMenuOpen={isPresetMenuOpen}
         onFileMenuOpenChange={setFileMenuOpen}

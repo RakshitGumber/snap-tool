@@ -1,9 +1,12 @@
 import type {
   CanvasBackgroundPreset,
   CanvasFrame,
+  CanvasPresetGroup,
+  CanvasPresetGroupId,
   CanvasPreset,
   CanvasPresetId,
   CanvasSize,
+  ResolvedCanvasPreset,
 } from "@/types/canvas";
 
 export const MIN_ZOOM = 0.35;
@@ -19,29 +22,128 @@ export const DEFAULT_SIDEBAR_WIDTH =
 export const MIN_SIDEBAR_WIDTH = 352;
 export const MAX_SIDEBAR_WIDTH = 448;
 
-export const CANVAS_PRESETS: CanvasPreset[] = [
+export const CANVAS_PRESET_GROUPS: CanvasPresetGroup[] = [
   {
-    id: "square",
-    label: "square",
-    size: { width: 500, height: 500 },
+    id: "twitter",
+    label: "Twitter",
+    presets: [
+      {
+        id: "twitter-square-post",
+        groupId: "twitter",
+        label: "Square",
+        size: { width: 1200, height: 1200 },
+      },
+      {
+        id: "twitter-landscape-post",
+        groupId: "twitter",
+        label: "Landscape",
+        size: { width: 1200, height: 628 },
+      },
+    ],
   },
   {
-    id: "landscape",
-    label: "landscape",
-    size: { width: 640, height: 360 },
+    id: "linkedin",
+    label: "LinkedIn",
+    presets: [
+      {
+        id: "linkedin-landscape-post",
+        groupId: "linkedin",
+        label: "Landscape",
+        size: { width: 1200, height: 628 },
+      },
+      {
+        id: "linkedin-square-post",
+        groupId: "linkedin",
+        label: "Square",
+        size: { width: 1200, height: 1200 },
+      },
+      {
+        id: "linkedin-portrait-post",
+        groupId: "linkedin",
+        label: "Portrait",
+        size: { width: 720, height: 900 },
+      },
+    ],
   },
   {
-    id: "portrait",
-    label: "portrait",
-    size: { width: 360, height: 640 },
+    id: "instagram",
+    label: "Instagram",
+    presets: [
+      {
+        id: "instagram-landscape-post",
+        groupId: "instagram",
+        label: "Landscape",
+        size: { width: 1080, height: 566 },
+      },
+      {
+        id: "instagram-square-post",
+        groupId: "instagram",
+        label: "Square",
+        size: { width: 1080, height: 1080 },
+      },
+      {
+        id: "instagram-portrait-post",
+        groupId: "instagram",
+        label: "Portrait",
+        size: { width: 1080, height: 1350 },
+      },
+      {
+        id: "instagram-full-portrait-post",
+        groupId: "instagram",
+        label: "Full Portrait",
+        size: { width: 1080, height: 1440 },
+      },
+    ],
   },
   {
-    id: "custom",
-    label: "custom",
+    id: "pinterest",
+    label: "Pinterest",
+    presets: [
+      {
+        id: "pinterest-standard-pin",
+        groupId: "pinterest",
+        label: "Standard",
+        size: { width: 1000, height: 1500 },
+      },
+      {
+        id: "pinterest-square-pin",
+        groupId: "pinterest",
+        label: "Square",
+        size: { width: 1000, height: 1000 },
+      },
+    ],
+  },
+  {
+    id: "general",
+    label: "General",
+    presets: [
+      {
+        id: "general-square",
+        groupId: "general",
+        label: "Square",
+        size: { width: 500, height: 500 },
+      },
+      {
+        id: "general-landscape",
+        groupId: "general",
+        label: "Landscape",
+        size: { width: 640, height: 360 },
+      },
+      {
+        id: "general-portrait",
+        groupId: "general",
+        label: "Portrait",
+        size: { width: 360, height: 640 },
+      },
+    ],
   },
 ];
 
-export const DEFAULT_CANVAS_PRESET_ID: CanvasPresetId = "square";
+export const CANVAS_PRESETS: CanvasPreset[] = CANVAS_PRESET_GROUPS.flatMap(
+  (group) => group.presets,
+);
+
+export const DEFAULT_CANVAS_PRESET_ID: CanvasPresetId = "general-square";
 export const DEFAULT_BACKGROUND_PRESET_ID = "solid-white";
 
 export const CANVAS_BACKGROUND_PRESETS: CanvasBackgroundPreset[] = [
@@ -103,18 +205,53 @@ export const CANVAS_BACKGROUND_PRESETS: CanvasBackgroundPreset[] = [
   },
 ];
 
-export const getCanvasPresetById = (presetId: CanvasPresetId) =>
-  CANVAS_PRESETS.find((preset) => preset.id === presetId) ?? CANVAS_PRESETS[0];
+export const findCanvasPresetById = (presetId: CanvasPresetId | null | undefined) =>
+  presetId ? CANVAS_PRESETS.find((preset) => preset.id === presetId) ?? null : null;
 
-export const getCanvasPresetIdFromSize = ({
+export const getCanvasPresetById = (presetId: CanvasPresetId) =>
+  findCanvasPresetById(presetId) ?? CANVAS_PRESETS[0];
+
+export const getCanvasPresetGroupById = (groupId: CanvasPresetGroupId) =>
+  CANVAS_PRESET_GROUPS.find((group) => group.id === groupId) ?? CANVAS_PRESET_GROUPS[0];
+
+export const getCanvasPresetGroupIcon = (groupId: CanvasPresetGroupId) =>
+  (
+    {
+      twitter: "ri:twitter-x-fill",
+      linkedin: "mdi:linkedin",
+      instagram: "mdi:instagram",
+      pinterest: "mdi:pinterest",
+      general: "solar:ruler-angular-linear",
+    } satisfies Record<CanvasPresetGroupId, string>
+  )[groupId];
+
+export const getCanvasPresetBySize = ({ width, height }: CanvasSize) =>
+  CANVAS_PRESETS.find((preset) => preset.size.width === width && preset.size.height === height);
+
+export const resolveCanvasPreset = ({
   width,
   height,
-}: CanvasSize): CanvasPresetId => {
-  const match = CANVAS_PRESETS.find(
-    (preset) => preset.size?.width === width && preset.size?.height === height,
-  );
+  presetId = null,
+}: CanvasSize & { presetId?: CanvasPresetId | null }): ResolvedCanvasPreset => {
+  const presetFromId = findCanvasPresetById(presetId);
+  const preset =
+    presetFromId &&
+    presetFromId.size.width === width &&
+    presetFromId.size.height === height
+      ? presetFromId
+      : getCanvasPresetBySize({ width, height });
+  if (!preset) {
+    return {
+      kind: "custom",
+      size: { width, height },
+    };
+  }
 
-  return match?.id ?? "custom";
+  return {
+    kind: "preset",
+    preset,
+    group: getCanvasPresetGroupById(preset.groupId),
+  };
 };
 
 export const getCanvasBackgroundById = (presetId: string) =>
@@ -126,6 +263,7 @@ export const createCanvasFrame = (
   position: { x: number; y: number },
   index: number,
   backgroundPresetId: string = DEFAULT_BACKGROUND_PRESET_ID,
+  presetId: CanvasPresetId | null = DEFAULT_CANVAS_PRESET_ID,
 ): CanvasFrame => {
   const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
 
@@ -136,6 +274,7 @@ export const createCanvasFrame = (
     y: position.y,
     width: size.width,
     height: size.height,
+    presetId,
     background: backgroundPreset.value,
     backgroundPresetId: backgroundPreset.id,
     images: [],

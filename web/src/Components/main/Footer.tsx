@@ -3,12 +3,12 @@ import { Icon } from "@iconify/react";
 export const Footer = () => {
   return (
     <footer className="py-12 w-full px-7 bg-card-bg flex justify-center border-t-2 border-accent/80">
-      <section className="mb-24 max-w-7xl flex flex-col items-start flex-1">
-        <div className="w-full flex items-center justify-between">
-          <p className="text-lg font-bold tracking-widest">
+      <section className="max-w-7xl flex gap-2 flex-col items-start flex-1">
+        <div className="w-full flex sm:items-center sm:justify-between flex-col-reverse sm:flex-row">
+          <p className="text-lg font-bold tracking-wider font-sans text-title-color">
             Crafted with Caffine and Serotonin.
           </p>
-          <div className="flex flex-col gap-8 pb-4 transition-colors duration-200 sm:flex-row sm:flex-nowrap sm:items-center">
+          <div className="flex flex-col gap-8 pb-4 sm:flex-row sm:items-center text-title-color">
             <div className="flex flex-row gap-4">
               <a href="https://gumberrakshit.com">
                 <Icon

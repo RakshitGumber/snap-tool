@@ -28,11 +28,15 @@ export const BoardPresetControl = ({
 }: BoardPresetControlProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [activeGroupId, setActiveGroupId] = useState<CanvasPresetGroupId | null>(null);
+  const [activeGroupId, setActiveGroupId] =
+    useState<CanvasPresetGroupId | null>(null);
   const [menuOffsetX, setMenuOffsetX] = useState(0);
-  const [menuMaxHeight, setMenuMaxHeight] = useState<number | undefined>(undefined);
+  const [menuMaxHeight, setMenuMaxHeight] = useState<number | undefined>(
+    undefined,
+  );
 
-  const activeLabel = activePreset.kind === "preset" ? activePreset.preset.label : "Custom";
+  const activeLabel =
+    activePreset.kind === "preset" ? activePreset.preset.label : "Custom";
   const activeDetail =
     activePreset.kind === "preset"
       ? `${activePreset.preset.size.width} x ${activePreset.preset.size.height}`
@@ -41,10 +45,12 @@ export const BoardPresetControl = ({
     activePreset.kind === "preset"
       ? getCanvasPresetGroupIcon(activePreset.group.id)
       : getCanvasPresetGroupIcon("general");
-  const activeGroup = presetGroups.find((group) => group.id === activeGroupId) ?? null;
+  const activeGroup =
+    presetGroups.find((group) => group.id === activeGroupId) ?? null;
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
+      // If the click is outside the parent container, close the menu
       if (!containerRef.current?.contains(event.target as Node)) {
         onPresetMenuOpenChange(false);
       }
@@ -57,51 +63,8 @@ export const BoardPresetControl = ({
   useEffect(() => {
     if (!isPresetMenuOpen) {
       setActiveGroupId(null);
-      setMenuOffsetX(0);
-      setMenuMaxHeight(undefined);
     }
   }, [isPresetMenuOpen]);
-
-  useEffect(() => {
-    if (!isPresetMenuOpen) {
-      return;
-    }
-
-    const updateMenuBounds = () => {
-      const menu = menuRef.current;
-      if (!menu) {
-        return;
-      }
-
-      const viewportPadding = 8;
-      const rect = menu.getBoundingClientRect();
-      let nextOffsetX = 0;
-
-      if (rect.left < viewportPadding) {
-        nextOffsetX += viewportPadding - rect.left;
-      }
-
-      if (rect.right > window.innerWidth - viewportPadding) {
-        nextOffsetX -= rect.right - (window.innerWidth - viewportPadding);
-      }
-
-      const availableHeight = Math.max(
-        160,
-        Math.floor(window.innerHeight - rect.top - viewportPadding),
-      );
-
-      setMenuOffsetX(nextOffsetX);
-      setMenuMaxHeight(availableHeight);
-    };
-
-    const frameId = window.requestAnimationFrame(updateMenuBounds);
-    window.addEventListener("resize", updateMenuBounds);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener("resize", updateMenuBounds);
-    };
-  }, [activeGroupId, isPresetMenuOpen]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -114,20 +77,20 @@ export const BoardPresetControl = ({
       >
         <Icon icon={activeIcon} className="text-lg" />
         <div className="min-w-0 text-left">
-          <span className="block truncate text-xs font-semibold uppercase tracking-[0.12em]">
-            {activeLabel}
+          <span className="ui-meta block truncate">{activeLabel}</span>
+          <span className="block text-xs text-secondary-text">
+            {activeDetail}
           </span>
-          <span className="block text-[11px] text-secondary-text">{activeDetail}</span>
         </div>
       </button>
 
-      {isPresetMenuOpen ? (
+      {isPresetMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-1rem)] overflow-y-auto rounded-xl bg-card-bg p-2 outline outline-1 outline-border-color/60"
+          className="bg-card-bg absolute left-0 top-full mt-2 z-50 w-72 overflow-y-auto p-2"
           style={{
             maxHeight: menuMaxHeight,
-            transform: menuOffsetX === 0 ? undefined : `translateX(${menuOffsetX}px)`,
+            transform: menuOffsetX ? `translateX(${menuOffsetX}px)` : undefined,
           }}
         >
           {activeGroup ? (
@@ -135,15 +98,19 @@ export const BoardPresetControl = ({
               <button
                 type="button"
                 onClick={() => setActiveGroupId(null)}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-accent-light"
+                className="ui-button w-full justify-start rounded-xl px-3 text-left text-sm font-semibold"
               >
-                <Icon icon="solar:alt-arrow-left-linear" className="text-base" />
+                <Icon
+                  icon="solar:alt-arrow-left-linear"
+                  className="text-base"
+                />
                 <span>{activeGroup.label}</span>
               </button>
 
               {activeGroup.presets.map((preset) => {
                 const isActive =
-                  activePreset.kind === "preset" && preset.id === activePreset.preset.id;
+                  activePreset.kind === "preset" &&
+                  preset.id === activePreset.preset.id;
 
                 return (
                   <button
@@ -154,11 +121,15 @@ export const BoardPresetControl = ({
                       onSelectPreset(preset.id);
                     }}
                     className={clsx(
-                      "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-accent-light",
-                      isActive ? "bg-accent-light text-title-color" : "text-title-color",
+                      "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
+                      isActive
+                        ? "bg-accent-light/70 text-title-color"
+                        : "text-title-color hover:bg-surface-3/90",
                     )}
                   >
-                    <span className="text-sm font-semibold">{preset.label}</span>
+                    <span className="text-sm font-semibold">
+                      {preset.label}
+                    </span>
                     <span className="text-xs text-secondary-text">
                       {preset.size.width} x {preset.size.height}
                     </span>
@@ -170,7 +141,8 @@ export const BoardPresetControl = ({
             <div className="space-y-1">
               {presetGroups.map((group) => {
                 const isActive =
-                  activePreset.kind === "preset" && group.id === activePreset.group.id;
+                  activePreset.kind === "preset" &&
+                  group.id === activePreset.group.id;
 
                 return (
                   <button
@@ -178,12 +150,17 @@ export const BoardPresetControl = ({
                     type="button"
                     onClick={() => setActiveGroupId(group.id)}
                     className={clsx(
-                      "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-accent-light",
-                      isActive ? "bg-accent-light text-title-color" : "text-title-color",
+                      "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
+                      isActive
+                        ? "bg-accent-light/70 text-title-color"
+                        : "text-title-color hover:bg-surface-3/90",
                     )}
                   >
                     <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                      <Icon icon={getCanvasPresetGroupIcon(group.id)} className="text-base" />
+                      <Icon
+                        icon={getCanvasPresetGroupIcon(group.id)}
+                        className="text-base"
+                      />
                       <span>{group.label}</span>
                     </span>
                     <span className="text-xs text-secondary-text">
@@ -195,7 +172,7 @@ export const BoardPresetControl = ({
             </div>
           )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 };

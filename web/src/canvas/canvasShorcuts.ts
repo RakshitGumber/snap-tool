@@ -5,9 +5,4 @@ export const CanvasShortcuts = (actions: CanvasActions): ShortcutMap => ({
   backspace: actions.delete,
   "ctrl+s": actions.save,
   "ctrl+x": actions.clear,
-  "ctrl+.": actions.focus.this,
-  "ctrl+arrowright": actions.focus.next,
-  "ctrl+arrowleft": actions.focus.prev,
-  "ctrl+arrowdown": actions.focus.down,
-  "ctrl+arrowup": actions.focus.up,
 });

@@ -228,7 +228,7 @@ export const BoardUploadsPanel = () => {
               Library
             </p>
             <p className="mt-1 text-sm text-secondary-text">
-              Click to insert, or drag an image onto a canvas.
+              Click to insert, or drag an image onto the canvas.
             </p>
           </div>
           <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">

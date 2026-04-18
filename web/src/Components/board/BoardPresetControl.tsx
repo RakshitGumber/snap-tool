@@ -50,6 +50,7 @@ export const BoardPresetControl = ({
     const handlePointerDown = (event: PointerEvent) => {
       // If the click is outside the parent container, close the menu
       if (!containerRef.current?.contains(event.target as Node)) {
+        setActiveGroupId(null);
         onPresetMenuOpenChange(false);
       }
     };
@@ -58,19 +59,19 @@ export const BoardPresetControl = ({
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [onPresetMenuOpenChange]);
 
-  useEffect(() => {
-    if (!isPresetMenuOpen) {
-      setActiveGroupId(null);
-    }
-  }, [isPresetMenuOpen]);
-
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         title="Resize canvas"
         aria-expanded={isPresetMenuOpen}
-        onClick={() => onPresetMenuOpenChange(!isPresetMenuOpen)}
+        onClick={() => {
+          if (isPresetMenuOpen) {
+            setActiveGroupId(null);
+          }
+
+          onPresetMenuOpenChange(!isPresetMenuOpen);
+        }}
         className="inline-flex h-10 items-center gap-2 rounded-lg px-2 text-title-color transition hover:bg-secondary-text/20"
       >
         <Icon icon={activeIcon} className="text-lg" />
@@ -115,6 +116,7 @@ export const BoardPresetControl = ({
                     key={preset.id}
                     type="button"
                     onClick={() => {
+                      setActiveGroupId(null);
                       onPresetMenuOpenChange(false);
                       onSelectPreset(preset.id);
                     }}

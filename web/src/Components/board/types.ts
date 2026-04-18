@@ -32,7 +32,6 @@ export type BoardTopRibbonProps = {
   isPresetMenuOpen: boolean;
   onFileMenuOpenChange: (isOpen: boolean) => void;
   onPresetMenuOpenChange: (isOpen: boolean) => void;
-  onAddCanvas: () => void;
   onSelectPreset: (presetId: CanvasPreset["id"]) => void;
 };
 

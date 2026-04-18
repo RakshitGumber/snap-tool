@@ -9,12 +9,6 @@ import type {
   ResolvedCanvasPreset,
 } from "@/types/canvas";
 
-export const MIN_ZOOM = 0.35;
-export const MAX_ZOOM = 2.25;
-export const SNAP_THRESHOLD = 16;
-export const SNAP_GAP = 40;
-export const FIT_PADDING = 48;
-
 export const DEFAULT_ACCESS_PANEL_WIDTH = 80;
 export const DEFAULT_DESIGN_PANEL_WIDTH = 352;
 export const DEFAULT_SIDEBAR_WIDTH =
@@ -260,18 +254,15 @@ export const getCanvasBackgroundById = (presetId: string) =>
 
 export const createCanvasFrame = (
   size: CanvasSize,
-  position: { x: number; y: number },
-  index: number,
   backgroundPresetId: string = DEFAULT_BACKGROUND_PRESET_ID,
   presetId: CanvasPresetId | null = DEFAULT_CANVAS_PRESET_ID,
+  title: string = "Canvas",
 ): CanvasFrame => {
   const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
 
   return {
     id: crypto.randomUUID(),
-    title: `Canvas ${index + 1}`,
-    x: position.x,
-    y: position.y,
+    title,
     width: size.width,
     height: size.height,
     presetId,

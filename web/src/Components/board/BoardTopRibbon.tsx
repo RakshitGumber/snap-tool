@@ -1,6 +1,5 @@
 import { useActiveCanvasPreset } from "@/stores/useCanvasStore";
 
-import { BoardAddCanvasButton } from "./BoardAddCanvasButton";
 import { BoardFileMenu } from "./BoardFileMenu";
 import { BoardPresetControl } from "./BoardPresetControl";
 import type { BoardTopRibbonProps } from "./types";
@@ -12,7 +11,6 @@ export const BoardTopRibbon = ({
   isPresetMenuOpen,
   onFileMenuOpenChange,
   onPresetMenuOpenChange,
-  onAddCanvas,
   onSelectPreset,
 }: BoardTopRibbonProps) => {
   const activePreset = useActiveCanvasPreset();
@@ -25,7 +23,6 @@ export const BoardTopRibbon = ({
           isOpen={isFileMenuOpen}
           onOpenChange={onFileMenuOpenChange}
         />
-        <BoardAddCanvasButton onClick={onAddCanvas} />
         <BoardPresetControl
           activePreset={activePreset}
           presetGroups={presetGroups}

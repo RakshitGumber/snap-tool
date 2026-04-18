@@ -14,21 +14,16 @@ export const BoardBackgroundPanel = ({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
-        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-          Current background
-        </p>
-        <div className="mt-3 flex items-center gap-3">
-          <div
-            className="h-10 w-10 rounded-lg outline outline-1 outline-border-color/60"
-            style={{ background: activeBackground?.preview }}
-          />
-          <div>
-            <p className="text-sm font-semibold text-title-color">
-              {activeBackground?.label ?? "White"}
-            </p>
-            <p className="text-xs text-secondary-text">Canvas fill</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div
+          className="h-10 w-10 rounded-lg outline outline-1 outline-border-color/60"
+          style={{ background: activeBackground?.preview }}
+        />
+        <div>
+          <p className="text-sm font-semibold text-title-color">
+            {activeBackground?.label ?? "White"}
+          </p>
+          <p className="text-xs text-secondary-text">Canvas fill</p>
         </div>
       </div>
 

@@ -94,7 +94,7 @@ export const BoardUploadsPanel = () => {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
+      <div className="rounded-2xl p-4">
         <div className="space-y-3">
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
@@ -137,7 +137,7 @@ export const BoardUploadsPanel = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl p-4 outline outline-1 outline-border-color/60">
+      <div className="rounded-2xl p-4">
         <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
           Import from URL
         </p>
@@ -224,7 +224,7 @@ export const BoardUploadsPanel = () => {
         </div>
 
         {!assets.length ? (
-          <div className="rounded-xl px-4 py-4 text-sm text-secondary-text outline outline-1 outline-border-color/60">
+          <div className="rounded-xl px-4 py-4 text-sm text-secondary-text">
             Your upload library will appear here.
           </div>
         ) : null}

@@ -106,7 +106,7 @@ export const BoardSidebar = ({
 
           <div className="flex-1 overflow-y-auto px-5 py-4">
             {activeSection?.isPlaceholder ? (
-              <div className="rounded-xl px-4 py-4 text-sm text-secondary-text outline outline-1 outline-border-color/60">
+              <div className="rounded-xl px-4 py-4 text-sm text-secondary-text">
                 Coming soon
               </div>
             ) : (

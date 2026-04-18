@@ -12,9 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/mulish": "^5.2.8",
-    "@fontsource/carter-one": "^5.2.8",
-    "@fontsource/kaushan-script": "^5.2.8",
+    "@fontsource-variable/lora": "^5.2.8",
+    "@fontsource-variable/nunito": "^5.2.7",
     "@iconify/react": "^6.0.2",
     "@tailwindcss/vite": "^4.2.2",
     "clsx": "^2.1.1",

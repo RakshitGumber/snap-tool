@@ -5,7 +5,7 @@ export const Footer = () => {
     <footer className="py-12 w-full px-7 bg-card-bg flex justify-center border-t-2 border-accent/80">
       <section className="mb-24 max-w-7xl flex flex-col items-start flex-1">
         <div className="w-full flex items-center justify-between">
-          <p className="text-lg font-semibold font-heading text-title-color tracking-widest">
+          <p className="text-lg font-bold tracking-widest">
             Crafted with Caffine and Serotonin.
           </p>
           <div className="flex flex-col gap-8 pb-4 transition-colors duration-200 sm:flex-row sm:flex-nowrap sm:items-center">

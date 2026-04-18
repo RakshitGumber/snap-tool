@@ -5,9 +5,8 @@
     "": {
       "name": "snap-tool",
       "dependencies": {
-        "@fontsource-variable/mulish": "^5.2.8",
-        "@fontsource/carter-one": "^5.2.8",
-        "@fontsource/kaushan-script": "^5.2.8",
+        "@fontsource-variable/lora": "^5.2.8",
+        "@fontsource-variable/nunito": "^5.2.7",
         "@iconify/react": "^6.0.2",
         "@tailwindcss/vite": "^4.2.2",
         "clsx": "^2.1.1",
@@ -90,11 +89,9 @@
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
 
-    "@fontsource-variable/mulish": ["@fontsource-variable/mulish@5.2.8", "", {}, "sha512-WK2SG2nQhQD+9dPOEw6V6tFgs8b5SodnUB5fuPOLj+2HIR2uPlwj+sUHMfMDGkz57us6xhEiJDaxRy8omad/DA=="],
+    "@fontsource-variable/lora": ["@fontsource-variable/lora@5.2.8", "", {}, "sha512-cxjTJ9BbOWIzusewR4UMBLVePvTSWV6dtNaNsCkF/oKoyA68fJGWfaYCILOOP1BObE4dmjfZ3xo6m9hdHhtYhg=="],
 
-    "@fontsource/carter-one": ["@fontsource/carter-one@5.2.8", "", {}, "sha512-7ZfDV7oXwaisG+BPhWDYqsKMPNHsF9y7k9XU8Obdv0DXr2ob05yTR9vNXHJ9QiF/4hnGp3ejVnPvfGpr9TQnNA=="],
-
-    "@fontsource/kaushan-script": ["@fontsource/kaushan-script@5.2.8", "", {}, "sha512-iZ5n3EvASrFjJFdqIxW3snotnbIznnWiwy3UlIwgZmsOOfAckWJ0QPLKp5sj3jBHwsQ3NawvrIgKTQQrfbep4g=="],
+    "@fontsource-variable/nunito": ["@fontsource-variable/nunito@5.2.7", "", {}, "sha512-2N8QhatkyKgSUbAGZO2FYLioxA32+RyI1EplVLawbpkGjUeui9Qg9VMrpkCaik1ydjFjfLV+kzQ0cGEsMrMenQ=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.1", "", {}, "sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA=="],
 

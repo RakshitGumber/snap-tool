@@ -18,7 +18,7 @@ const heroContentReveal: Variants = {
 
 export const Hero = () => {
   return (
-    <main className="min-h-screen max-w-7xl w-full flex flex-col lg:flex-row items-center lg:items-stretch py-12 lg:py-0">
+    <main className="min-h-screen max-w-7xl w-full flex flex-col lg:flex-row items-center py-12 lg:py-0">
       <motion.div
         variants={heroContentReveal}
         initial="hidden"

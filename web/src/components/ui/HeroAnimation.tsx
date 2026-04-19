@@ -82,7 +82,7 @@ export const HeroAnimation = () => {
       variants={heroAnimationReveal}
       initial="hidden"
       animate="visible"
-      className="relative flex w-full flex-1 items-center justify-center lg:items-end mb-8 lg:mb-12 py-8 md:py-12 lg:py-24"
+      className="relative flex w-full flex-1 items-center justify-center lg:items-end py-8 md:py-12 lg:py-24"
     >
       <motion.div
         animate={cardControls}
@@ -115,7 +115,7 @@ export const HeroAnimation = () => {
             </div>
           </div>
         </div>
-        <motion.h1 className="text-white absolute top-0 p-4 text-3xl md:text-4xl lg:text-5xl font-heading drop-shadow-lg">
+        <motion.h1 className="text-white absolute top-0 p-4 text-3xl md:text-4xl lg:text-5xl font-sans drop-shadow-lg font-black">
           {typedTitle}
         </motion.h1>
       </motion.div>

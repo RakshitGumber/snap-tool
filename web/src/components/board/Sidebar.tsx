@@ -1,19 +1,16 @@
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
-import {
-  DEFAULT_ACCESS_PANEL_WIDTH,
-  DEFAULT_DESIGN_PANEL_WIDTH,
-  DEFAULT_SIDEBAR_WIDTH,
-} from "@/config";
-import { useBoardUiStore } from "@/stores/useBoardUiStore";
+import { useLayoutConfig } from "@/stores/useConfigStore";
 import { useCanvasShell } from "@/stores/useCanvasStore";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 
 import { BoardBackgroundPanel } from "./BackgroundPanel";
 import { BoardOverviewPanel } from "./OverviewPanel";
 import { BoardTextPanel } from "./TextPanel";
-import type { BoardSidebarSection, BoardSidebarSectionId } from "./types";
+import type { BoardSidebarSection } from "./types";
 import { BoardUploadsPanel } from "./UploadsPanel";
+import type { BoardSidebarSectionId } from "@/types/board";
 
 const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   overview: "solar:document-text-linear",
@@ -25,10 +22,11 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
 
 export const BoardSidebar = () => {
   const canvasShell = useCanvasShell();
-  const openSectionId = useBoardUiStore((state) => state.openSectionId);
-  const isOpen = useBoardUiStore((state) => state.isSidebarOpen);
-  const toggleSection = useBoardUiStore((state) => state.toggleSection);
-  const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
+  const layout = useLayoutConfig();
+  const openSectionId = useEditorUiStore((state) => state.openSectionId);
+  const isOpen = useEditorUiStore((state) => state.isSidebarOpen);
+  const toggleSection = useEditorUiStore((state) => state.toggleSection);
+  const setSidebarOpen = useEditorUiStore((state) => state.setSidebarOpen);
   const sections: BoardSidebarSection[] = [
     {
       id: "overview",
@@ -72,7 +70,7 @@ export const BoardSidebar = () => {
         isOpen ? "border-r border-border-color/60" : "border-r-2 border-accent",
       )}
       style={{
-        width: isOpen ? DEFAULT_SIDEBAR_WIDTH : DEFAULT_ACCESS_PANEL_WIDTH,
+        width: isOpen ? layout.sidebarWidth : layout.accessPanelWidth,
       }}
     >
       <div
@@ -80,7 +78,7 @@ export const BoardSidebar = () => {
           "flex h-full shrink-0 flex-col",
           isOpen && "border-r border-border-color/50",
         )}
-        style={{ width: DEFAULT_ACCESS_PANEL_WIDTH }}
+        style={{ width: layout.accessPanelWidth }}
       >
         <div className="flex flex-1 flex-col items-center gap-2 overflow-y-auto px-2 py-3">
           <nav className="flex flex-col items-center gap-1">
@@ -111,7 +109,7 @@ export const BoardSidebar = () => {
       {isOpen ? (
         <div
           className="flex min-w-0 flex-1 flex-col border-r-2 border-accent"
-          style={{ width: DEFAULT_DESIGN_PANEL_WIDTH }}
+          style={{ width: layout.designPanelWidth }}
         >
           <div className="flex items-start justify-between gap-3 border-b border-border-color/50 px-5 py-4">
             <div className="min-w-0">

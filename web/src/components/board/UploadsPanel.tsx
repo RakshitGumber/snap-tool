@@ -1,25 +1,15 @@
 import {
-  memo,
-  useDeferredValue,
   useEffect,
   useRef,
   useState,
   type ChangeEvent,
   type DragEvent,
-  type UIEvent,
 } from "react";
 
 import clsx from "clsx";
 
-import { useElementSize } from "@/libs/useElementSize";
-import { useVirtualGrid } from "@/libs/useVirtualGrid";
-import {
-  useAssetById,
-  useAssetIds,
-  useUploadLibraryStore,
-} from "@/stores/useUploadLibraryStore";
-import { setDraggedAssetId } from "@/uploads/drag";
-import { useResolvedAssetMedia } from "@/uploads/media";
+import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
+import { clearDraggedAssetId, setDraggedAssetId } from "@/uploads/drag";
 
 const SOURCE_LABELS = {
   "built-in": "Library",
@@ -29,70 +19,16 @@ const SOURCE_LABELS = {
   youtube: "YouTube",
 } as const;
 
-const GRID_GAP = 12;
-const CARD_MIN_WIDTH = 144;
-const CARD_ROW_HEIGHT = 212;
-const LIBRARY_HEIGHT = 420;
-
-const UploadAssetCard = memo(({ assetId }: { assetId: string }) => {
-  const asset = useAssetById(assetId);
-  const media = useResolvedAssetMedia(assetId, "preview");
-  const clearError = useUploadLibraryStore((state) => state.clearError);
-  const insertAssetOnActiveCanvas = useUploadLibraryStore(
-    (state) => state.insertAssetOnActiveCanvas,
-  );
-
-  if (!asset) {
-    return null;
-  }
-
-  return (
-    <button
-      type="button"
-      draggable
-      onClick={() => {
-        clearError();
-        insertAssetOnActiveCanvas(asset.id);
-      }}
-      onDragStart={(event) => {
-        clearError();
-        setDraggedAssetId(event.dataTransfer, asset.id);
-      }}
-      className="h-full overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
-    >
-      <div className="aspect-square overflow-hidden bg-transparent p-2">
-        {media ? (
-          <img
-            src={media.src}
-            alt={asset.name}
-            className="h-full w-full object-contain"
-            loading="lazy"
-          />
-        ) : (
-          <div className="h-full w-full rounded-xl bg-surface-3/70" />
-        )}
-      </div>
-      <div className="space-y-1 px-3 py-3">
-        <p className="truncate text-sm font-semibold text-title-color">{asset.name}</p>
-        <p className="text-xs text-secondary-text">{SOURCE_LABELS[asset.source]}</p>
-      </div>
-    </button>
-  );
-});
-
-UploadAssetCard.displayName = "UploadAssetCard";
-
 export const BoardUploadsPanel = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const libraryViewportRef = useRef<HTMLDivElement | null>(null);
-  const [urlInput, setUrlInput] = useState("");
   const [isDropActive, setIsDropActive] = useState(false);
-  const [scrollTop, setScrollTop] = useState(0);
 
-  const assetIds = useAssetIds();
-  const deferredAssetIds = useDeferredValue(assetIds);
-  const librarySize = useElementSize(libraryViewportRef);
-
+  const assetIds = useUploadLibraryStore((state) => state.assetOrder);
+  const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  const resolvedMediaByAssetId = useUploadLibraryStore(
+    (state) => state.resolvedMediaByAssetId,
+  );
+  const urlInput = useUploadLibraryStore((state) => state.urlInput);
   const status = useUploadLibraryStore((state) => state.status);
   const importStatus = useUploadLibraryStore((state) => state.importStatus);
   const lastError = useUploadLibraryStore((state) => state.lastError);
@@ -102,12 +38,28 @@ export const BoardUploadsPanel = () => {
   const insertAssetOnActiveCanvas = useUploadLibraryStore(
     (state) => state.insertAssetOnActiveCanvas,
   );
+  const setUrlInput = useUploadLibraryStore((state) => state.setUrlInput);
+  const resetUrlInput = useUploadLibraryStore((state) => state.resetUrlInput);
   const clearError = useUploadLibraryStore((state) => state.clearError);
+  const resolveAssetMedia = useUploadLibraryStore(
+    (state) => state.resolveAssetMedia,
+  );
 
   useEffect(() => {
-    if (status !== "idle") return;
+    if (status !== "idle") {
+      return;
+    }
+
     void hydrateLibrary();
   }, [hydrateLibrary, status]);
+
+  useEffect(() => {
+    for (const assetId of assetIds) {
+      if (!resolvedMediaByAssetId[assetId]?.preview) {
+        void resolveAssetMedia(assetId, "preview");
+      }
+    }
+  }, [assetIds, resolveAssetMedia, resolvedMediaByAssetId]);
 
   const insertAssets = (nextAssetIds: string[]) => {
     nextAssetIds.forEach((assetId) => {
@@ -116,7 +68,9 @@ export const BoardUploadsPanel = () => {
   };
 
   const handleFiles = async (files: File[]) => {
-    if (!files.length) return;
+    if (!files.length) {
+      return;
+    }
 
     clearError();
 
@@ -128,7 +82,9 @@ export const BoardUploadsPanel = () => {
     }
   };
 
-  const handleFileInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     await handleFiles(Array.from(event.target.files ?? []));
     event.target.value = "";
   };
@@ -137,7 +93,7 @@ export const BoardUploadsPanel = () => {
     try {
       const asset = await importFromUrl(urlInput);
       insertAssetOnActiveCanvas(asset.id);
-      setUrlInput("");
+      resetUrlInput();
     } catch {
       return;
     }
@@ -160,24 +116,6 @@ export const BoardUploadsPanel = () => {
     await handleFiles(Array.from(event.dataTransfer.files));
   };
 
-  const columnCount = Math.max(
-    1,
-    Math.floor((Math.max(librarySize.width, CARD_MIN_WIDTH) + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)),
-  );
-  const visibleGrid = useVirtualGrid({
-    itemCount: deferredAssetIds.length,
-    containerHeight: librarySize.height || LIBRARY_HEIGHT,
-    scrollTop,
-    columnCount,
-    rowHeight: CARD_ROW_HEIGHT,
-  });
-  const itemWidth = Math.max(
-    CARD_MIN_WIDTH,
-    Math.floor(
-      (Math.max(librarySize.width, CARD_MIN_WIDTH) - GRID_GAP * (columnCount - 1)) / columnCount,
-    ),
-  );
-
   return (
     <div className="space-y-4">
       <div className="rounded-2xl p-4">
@@ -187,8 +125,8 @@ export const BoardUploadsPanel = () => {
               Local uploads
             </p>
             <p className="mt-1 text-sm text-secondary-text">
-              Drop image files here. They stay on this device and are restored in this
-              browser.
+              Drop image files here. They stay on this device and are restored
+              in this browser.
             </p>
           </div>
 
@@ -217,7 +155,9 @@ export const BoardUploadsPanel = () => {
                 : "border-border-color/70 text-secondary-text hover:border-accent/70 hover:text-title-color",
             )}
           >
-            <span className="text-sm font-semibold text-title-color">Drag and drop images</span>
+            <span className="text-sm font-semibold text-title-color">
+              Drag and drop images
+            </span>
             <span className="mt-1 text-xs">or click to browse local files</span>
           </button>
         </div>
@@ -277,38 +217,53 @@ export const BoardUploadsPanel = () => {
           </span>
         </div>
 
-        <div
-          ref={libraryViewportRef}
-          onScroll={(event: UIEvent<HTMLDivElement>) =>
-            setScrollTop(event.currentTarget.scrollTop)
-          }
-          className="relative h-[420px] overflow-auto rounded-2xl"
-        >
-          <div
-            className="relative"
-            style={{
-              height: visibleGrid.totalHeight || 0,
-            }}
-          >
-            {visibleGrid.items.map((item) => {
-              const assetId = deferredAssetIds[item.index];
-              if (!assetId) {
+        <div className="max-h-[420px] overflow-auto rounded-2xl">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {assetIds.map((assetId) => {
+              const asset = assetMetaById[assetId];
+              if (!asset) {
                 return null;
               }
 
+              const media = resolvedMediaByAssetId[assetId]?.preview;
+
               return (
-                <div
+                <button
                   key={assetId}
-                  className="absolute"
-                  style={{
-                    width: itemWidth,
-                    left: item.column * (itemWidth + GRID_GAP),
-                    top: item.row * CARD_ROW_HEIGHT,
-                    height: CARD_ROW_HEIGHT - GRID_GAP,
+                  type="button"
+                  draggable
+                  onClick={() => {
+                    clearError();
+                    insertAssetOnActiveCanvas(asset.id);
                   }}
+                  onDragStart={(event) => {
+                    clearError();
+                    setDraggedAssetId(event.dataTransfer, asset.id);
+                  }}
+                  onDragEnd={clearDraggedAssetId}
+                  className="overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
                 >
-                  <UploadAssetCard assetId={assetId} />
-                </div>
+                  <div className="aspect-square overflow-hidden bg-transparent p-2">
+                    {media ? (
+                      <img
+                        src={media.src}
+                        alt={asset.name}
+                        className="h-full w-full object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="h-full w-full rounded-xl bg-surface-3/70" />
+                    )}
+                  </div>
+                  <div className="space-y-1 px-3 py-3">
+                    <p className="truncate text-sm font-semibold text-title-color">
+                      {asset.name}
+                    </p>
+                    <p className="text-xs text-secondary-text">
+                      {SOURCE_LABELS[asset.source]}
+                    </p>
+                  </div>
+                </button>
               );
             })}
           </div>

@@ -1,8 +1,11 @@
 const DRAG_ASSET_PREFIX = "snap-upload-asset:";
 export const DRAG_ASSET_DATA_TYPE = "application/x-snap-upload-asset";
 
+let activeDraggedAssetId: string | null = null;
+
 export const setDraggedAssetId = (dataTransfer: DataTransfer, assetId: string) => {
   const payload = `${DRAG_ASSET_PREFIX}${assetId}`;
+  activeDraggedAssetId = assetId;
 
   dataTransfer.effectAllowed = "copy";
 
@@ -13,6 +16,10 @@ export const setDraggedAssetId = (dataTransfer: DataTransfer, assetId: string) =
   }
 
   dataTransfer.setData("text/plain", payload);
+};
+
+export const clearDraggedAssetId = () => {
+  activeDraggedAssetId = null;
 };
 
 export const getDraggedAssetId = (dataTransfer: DataTransfer) => {
@@ -27,8 +34,8 @@ export const getDraggedAssetId = (dataTransfer: DataTransfer) => {
 
   const textValue = dataTransfer.getData("text/plain");
   if (!textValue.startsWith(DRAG_ASSET_PREFIX)) {
-    return null;
+    return activeDraggedAssetId;
   }
 
-  return textValue.slice(DRAG_ASSET_PREFIX.length) || null;
+  return textValue.slice(DRAG_ASSET_PREFIX.length) || activeDraggedAssetId;
 };

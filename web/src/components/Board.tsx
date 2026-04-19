@@ -1,8 +1,19 @@
+import { useEffect } from "react";
+
 import { BoardSidebar } from "@/components/board/Sidebar";
 import { TopRibbon } from "@/components/board/TopRibbon";
 import { Canvas } from "@/canvas/Canvas";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 export const Board = () => {
+  const initializeDefaultCanvas = useCanvasStore(
+    (state) => state.initializeDefaultCanvas,
+  );
+
+  useEffect(() => {
+    initializeDefaultCanvas();
+  }, [initializeDefaultCanvas]);
+
   return (
     <main className="flex h-screen flex-col">
       <TopRibbon />

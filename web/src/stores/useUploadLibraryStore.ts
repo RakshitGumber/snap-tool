@@ -22,6 +22,7 @@ type UploadLibraryState = {
     string,
     Partial<Record<UploadAssetMediaVariant, UploadResolvedAssetMedia>>
   >;
+  urlInput: string;
   status: "idle" | "hydrating" | "ready" | "error";
   importStatus: "idle" | "running" | "error";
   lastError: string | null;
@@ -32,6 +33,8 @@ type UploadLibraryActions = {
   addLocalFiles: (files: File[]) => Promise<UploadLibraryAssetMeta[]>;
   importFromUrl: (input: string) => Promise<UploadLibraryAssetMeta>;
   insertAssetOnActiveCanvas: (assetId: string) => string | null;
+  setUrlInput: (value: string) => void;
+  resetUrlInput: () => void;
   resolveAssetMedia: (
     assetId: string,
     variant: UploadAssetMediaVariant,
@@ -170,6 +173,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
     assetOrder: [],
     assetMetaById: {},
     resolvedMediaByAssetId: {},
+    urlInput: "",
     status: "idle",
     importStatus: "idle",
     lastError: null,
@@ -307,6 +311,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
 
           return {
             ...toNormalizedAssets(mergedAssets),
+            urlInput: "",
             importStatus: "idle",
             lastError: null,
             status: state.status === "idle" ? "ready" : state.status,
@@ -333,6 +338,10 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
 
       return useCanvasStore.getState().insertImageOnActiveCanvas(asset);
     },
+
+    setUrlInput: (urlInput) => set({ urlInput }),
+
+    resetUrlInput: () => set({ urlInput: "" }),
 
     resolveAssetMedia: async (assetId, variant) => {
       const cached = get().resolvedMediaByAssetId[assetId]?.[variant];
@@ -416,9 +425,3 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
       }),
   }),
 );
-
-export const useAssetIds = () =>
-  useUploadLibraryStore((state) => state.assetOrder);
-
-export const useAssetById = (assetId: string) =>
-  useUploadLibraryStore((state) => state.assetMetaById[assetId] ?? null);

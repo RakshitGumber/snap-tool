@@ -1,23 +1,21 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId } from "react";
 
 import clsx from "clsx";
 
 import {
-  BOARD_TEXT_WEIGHT_OPTIONS,
-  DEFAULT_BOARD_TEXT_INPUT,
-  normalizeBoardTextFamily,
-} from "@/board/text";
-import {
   ensureGoogleFontLoaded,
   useGoogleFontsCatalog,
 } from "@/libs/googleFonts";
-import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import {
-  useCanvasShell,
-  useCanvasStore,
-  useCanvasText,
+  normalizeBoardTextFamily,
+  useTextConfig,
+} from "@/stores/useConfigStore";
+import { useCanvasShell, useCanvasStore, useCanvasText } from "@/stores/useCanvasStore";
+import {
+  useEditorUiStore,
   useSelectedTextId,
-} from "@/stores/useCanvasStore";
+  useTextDraft,
+} from "@/stores/useEditorUiStore";
 import type { BoardTextAlign, BoardTextInput } from "@/types/canvas";
 
 const ALIGN_OPTIONS: Array<{ value: BoardTextAlign; label: string }> = [
@@ -26,38 +24,20 @@ const ALIGN_OPTIONS: Array<{ value: BoardTextAlign; label: string }> = [
   { value: "right", label: "Right" },
 ];
 
-const createDraft = (overrides: Partial<BoardTextInput> = {}): BoardTextInput => ({
-  ...DEFAULT_BOARD_TEXT_INPUT,
-  ...overrides,
-});
-
 export const BoardTextPanel = () => {
-  const [draft, setDraft] = useState<BoardTextInput>(createDraft());
   const datalistId = useId();
 
   const canvasShell = useCanvasShell();
+  const textConfig = useTextConfig();
+  const draft = useTextDraft();
   const selectedTextId = useSelectedTextId();
   const selectedText = useCanvasText(selectedTextId ?? "");
   const insertTextOnActiveCanvas = useCanvasStore((state) => state.insertTextOnActiveCanvas);
   const updateTextOnCanvas = useCanvasStore((state) => state.updateTextOnCanvas);
-  const clearSelection = useBoardSelectionStore((state) => state.clearSelection);
+  const clearSelection = useEditorUiStore((state) => state.clearSelection);
+  const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
+  const resetTextDraft = useEditorUiStore((state) => state.resetTextDraft);
   const fontCatalog = useGoogleFontsCatalog();
-
-  useEffect(() => {
-    if (!selectedText) {
-      return;
-    }
-
-    setDraft({
-      text: selectedText.text,
-      fontFamily: selectedText.fontFamily,
-      fontSize: selectedText.fontSize,
-      fontWeight: selectedText.fontWeight,
-      color: selectedText.color,
-      align: selectedText.align,
-      maxWidth: selectedText.maxWidth,
-    });
-  }, [selectedText]);
 
   useEffect(() => {
     ensureGoogleFontLoaded(draft.fontFamily);
@@ -67,10 +47,9 @@ export const BoardTextPanel = () => {
     key: Key,
     value: BoardTextInput[Key],
   ) => {
-    setDraft((previousDraft) => ({
-      ...previousDraft,
+    updateTextDraft({
       [key]: value,
-    }));
+    } as Partial<BoardTextInput>);
 
     if (!selectedTextId) {
       return;
@@ -103,7 +82,7 @@ export const BoardTextPanel = () => {
 
   const handleResetDraft = () => {
     clearSelection();
-    setDraft(createDraft());
+    resetTextDraft();
   };
 
   return (
@@ -200,7 +179,7 @@ export const BoardTextPanel = () => {
           <input
             type="range"
             min="160"
-            max={Math.max(canvasShell?.width ?? DEFAULT_BOARD_TEXT_INPUT.maxWidth, 160)}
+            max={Math.max(canvasShell?.width ?? textConfig.defaultInput.maxWidth, 160)}
             step="10"
             value={Math.min(draft.maxWidth, canvasShell?.width ?? draft.maxWidth)}
             onChange={(event) => syncDraft("maxWidth", Number(event.target.value))}
@@ -220,7 +199,7 @@ export const BoardTextPanel = () => {
             onChange={(event) => syncDraft("fontWeight", Number(event.target.value))}
             className="w-full rounded-xl border border-border-color/70 bg-card-bg px-3 py-2 text-sm text-title-color outline-none transition focus:border-accent"
           >
-            {BOARD_TEXT_WEIGHT_OPTIONS.map((weight) => (
+            {textConfig.weightOptions.map((weight) => (
               <option key={weight} value={weight}>
                 {weight}
               </option>

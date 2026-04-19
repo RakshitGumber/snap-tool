@@ -2,6 +2,8 @@ import {
   memo,
   useEffect,
   useEffectEvent,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent as ReactDragEvent,
@@ -11,20 +13,14 @@ import {
 import clsx from "clsx";
 
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
-import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import {
-  useCanvasImage,
-  useCanvasImageIds,
   useCanvasShell,
   useCanvasStore,
-  useCanvasText,
-  useCanvasTextIds,
-  useSelectedImageId,
-  useSelectedTextId,
 } from "@/stores/useCanvasStore";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
-import { getDraggedAssetId } from "@/uploads/drag";
-import { useResolvedAssetMedia } from "@/uploads/media";
+import { clearDraggedAssetId, getDraggedAssetId } from "@/uploads/drag";
+import type { BoardImageItem, BoardTextItem } from "@/types/canvas";
 
 type CanvasDragState =
   | {
@@ -47,130 +43,146 @@ type PointerSnapshot = {
   clientY: number;
 };
 
-type CanvasImageItemProps = {
-  imageId: string;
-  isSelected: boolean;
-  onPointerDown: (
-    imageId: string,
-  ) => (event: ReactPointerEvent<HTMLButtonElement>) => void;
-};
-
-type CanvasTextItemProps = {
-  textId: string;
-  isSelected: boolean;
-  onPointerDown: (
-    textId: string,
-  ) => (event: ReactPointerEvent<HTMLButtonElement>) => void;
-};
-
-const CanvasImageItem = memo(
-  ({ imageId, isSelected, onPointerDown }: CanvasImageItemProps) => {
-    const image = useCanvasImage(imageId);
-    const media = useResolvedAssetMedia(image?.assetId, "full");
-
-    if (!image || !media) {
-      return null;
-    }
-
-    return (
-      <button
-        type="button"
-        onPointerDown={onPointerDown(imageId)}
-        className={clsx(
-          "absolute left-0 top-0 overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent transition",
-          isSelected && "outline-accent",
-        )}
-        style={{
-          width: image.width,
-          height: image.height,
-          zIndex: isSelected ? 2 : 1,
-          transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
-        }}
-      >
-        <img
-          src={media.src}
-          alt={image.alt}
-          draggable={false}
-          className="pointer-events-none h-full w-full select-none object-contain"
-        />
-      </button>
-    );
-  },
-);
-
-CanvasImageItem.displayName = "CanvasImageItem";
-
-const CanvasTextItem = memo(
-  ({ textId, isSelected, onPointerDown }: CanvasTextItemProps) => {
-    const text = useCanvasText(textId);
-
-    useEffect(() => {
-      if (!text) {
-        return;
-      }
-
-      ensureGoogleFontLoaded(text.fontFamily);
-    }, [text]);
-
-    if (!text) {
-      return null;
-    }
-
-    return (
-      <button
-        type="button"
-        onPointerDown={onPointerDown(textId)}
-        className={clsx(
-          "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline outline-1 outline-transparent transition",
-          isSelected && "outline-accent",
-        )}
-        style={{
-          zIndex: isSelected ? 4 : 3,
-          maxWidth: text.maxWidth,
-          transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
-          color: text.color,
-          fontFamily: `${text.fontFamily}, sans-serif`,
-          fontSize: text.fontSize,
-          fontWeight: text.fontWeight,
-          textAlign: text.align,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-        }}
-      >
-        {text.text}
-      </button>
-    );
-  },
-);
-
-CanvasTextItem.displayName = "CanvasTextItem";
-
 export const Canvas = memo(function BoardCanvas() {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const viewportInnerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<CanvasDragState | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
+  const [canvasScale, setCanvasScale] = useState(1);
 
   const canvasShell = useCanvasShell();
-  const imageIds = useCanvasImageIds();
-  const textIds = useCanvasTextIds();
-  const selectedImageId = useSelectedImageId();
-  const selectedTextId = useSelectedTextId();
+  const imageOrder = useCanvasStore((state) => state.imageOrder);
+  const imagesById = useCanvasStore((state) => state.imagesById);
+  const textOrder = useCanvasStore((state) => state.textOrder);
+  const textsById = useCanvasStore((state) => state.textsById);
+  const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
+  const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
   );
-  const clearSelection = useBoardSelectionStore(
-    (state) => state.clearSelection,
+  const clearSelection = useEditorUiStore((state) => state.clearSelection);
+  const selectImage = useEditorUiStore((state) => state.selectImage);
+  const selectText = useEditorUiStore((state) => state.selectText);
+  const resolvedMediaByAssetId = useUploadLibraryStore(
+    (state) => state.resolvedMediaByAssetId,
   );
-  const setSelectedImage = useBoardSelectionStore(
-    (state) => state.setSelectedImage,
+  const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  const resolveAssetMedia = useUploadLibraryStore((state) => state.resolveAssetMedia);
+  const images = useMemo(
+    () =>
+      imageOrder
+        .map((imageId) => imagesById[imageId])
+        .filter((image): image is BoardImageItem => image !== undefined),
+    [imageOrder, imagesById],
   );
-  const setSelectedText = useBoardSelectionStore(
-    (state) => state.setSelectedText,
+  const texts = useMemo(
+    () =>
+      textOrder
+        .map((textId) => textsById[textId])
+        .filter((text): text is BoardTextItem => text !== undefined),
+    [textOrder, textsById],
   );
+
+  useEffect(() => {
+    for (const image of images) {
+      if (!resolvedMediaByAssetId[image.assetId]?.full) {
+        void resolveAssetMedia(image.assetId, "full");
+      }
+    }
+  }, [images, resolveAssetMedia, resolvedMediaByAssetId]);
+
+  useEffect(() => {
+    for (const text of texts) {
+      ensureGoogleFontLoaded(text.fontFamily);
+    }
+  }, [texts]);
+
+  const updateCanvasScale = useEffectEvent(() => {
+    if (!canvasShell) {
+      return;
+    }
+
+    const viewport = viewportRef.current;
+    const viewportInner = viewportInnerRef.current;
+    if (!viewport || !viewportInner) {
+      return;
+    }
+
+    const computedStyle = window.getComputedStyle(viewportInner);
+    const horizontalPadding =
+      Number.parseFloat(computedStyle.paddingLeft) +
+      Number.parseFloat(computedStyle.paddingRight);
+    const verticalPadding =
+      Number.parseFloat(computedStyle.paddingTop) +
+      Number.parseFloat(computedStyle.paddingBottom);
+
+    const availableWidth = Math.max(viewport.clientWidth - horizontalPadding, 1);
+    const availableHeight = Math.max(viewport.clientHeight - verticalPadding, 1);
+    const nextScale = Math.min(
+      availableWidth / canvasShell.width,
+      availableHeight / canvasShell.height,
+      1,
+    );
+
+    setCanvasScale((currentScale) =>
+      Math.abs(currentScale - nextScale) < 0.001 ? currentScale : nextScale,
+    );
+  });
+
+  useLayoutEffect(() => {
+    updateCanvasScale();
+  }, [canvasShell?.width, canvasShell?.height, updateCanvasScale]);
+
+  useEffect(() => {
+    if (!canvasShell) {
+      return;
+    }
+
+    const viewport = viewportRef.current;
+    if (!viewport || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateCanvasScale();
+    });
+    observer.observe(viewport);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [canvasShell, updateCanvasScale]);
+
+  useLayoutEffect(() => {
+    if (!canvasShell) {
+      return;
+    }
+
+    const viewport = viewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const nextScrollLeft = Math.max((viewport.scrollWidth - viewport.clientWidth) / 2, 0);
+      const nextScrollTop = Math.max((viewport.scrollHeight - viewport.clientHeight) / 2, 0);
+
+      viewport.scrollTo({
+        left: nextScrollLeft,
+        top: nextScrollTop,
+        behavior: "smooth",
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [canvasShell?.width, canvasShell?.height, canvasScale]);
 
   const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -179,8 +191,8 @@ export const Canvas = memo(function BoardCanvas() {
     }
 
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
+      x: (clientX - rect.left) / canvasScale,
+      y: (clientY - rect.top) / canvasScale,
     };
   });
 
@@ -264,35 +276,44 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleImagePointerDown =
     (imageId: string) => (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0) {
+        return;
+      }
 
       event.stopPropagation();
-      setSelectedImage(imageId);
+      selectImage(imageId);
 
       const rect = event.currentTarget.getBoundingClientRect();
       dragStateRef.current = {
         kind: "image",
         itemId: imageId,
-        offsetX: event.clientX - rect.left,
-        offsetY: event.clientY - rect.top,
+        offsetX: (event.clientX - rect.left) / canvasScale,
+        offsetY: (event.clientY - rect.top) / canvasScale,
       };
     };
 
   const handleTextPointerDown =
     (textId: string) => (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0) {
+        return;
+      }
+
+      const text = texts.find((item) => item.id === textId);
+      if (!text) {
+        return;
+      }
 
       event.stopPropagation();
-      setSelectedText(textId);
+      selectText(text);
 
       const rect = event.currentTarget.getBoundingClientRect();
       dragStateRef.current = {
         kind: "text",
         itemId: textId,
-        offsetX: event.clientX - rect.left,
-        offsetY: event.clientY - rect.top,
-        width: rect.width,
-        height: rect.height,
+        offsetX: (event.clientX - rect.left) / canvasScale,
+        offsetY: (event.clientY - rect.top) / canvasScale,
+        width: rect.width / canvasScale,
+        height: rect.height / canvasScale,
       };
     };
 
@@ -312,10 +333,7 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleCanvasDragLeave = (event: ReactDragEvent<HTMLDivElement>) => {
     const nextTarget = event.relatedTarget;
-    if (
-      nextTarget instanceof Node &&
-      event.currentTarget.contains(nextTarget)
-    ) {
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
       return;
     }
 
@@ -332,16 +350,16 @@ export const Canvas = memo(function BoardCanvas() {
 
     event.preventDefault();
     setDropTargetActive(false);
+    clearDraggedAssetId();
 
-    const asset = useUploadLibraryStore.getState().assetMetaById[assetId];
-    if (!asset) {
+    const asset = assetMetaById[assetId];
+    if (!asset || !canvasShell) {
       return;
     }
 
-    const rect = event.currentTarget.getBoundingClientRect();
     insertImageOnCanvasAtPoint(asset, {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
+      x: canvasShell.width / 2,
+      y: canvasShell.height / 2,
     });
   };
 
@@ -349,54 +367,107 @@ export const Canvas = memo(function BoardCanvas() {
     return null;
   }
 
-  return (
+    return (
     <div
+      ref={viewportRef}
       onPointerDown={handleSurfacePointerDown}
       onDragEnd={() => setDropTargetActive(false)}
       className="h-full w-full overflow-auto bg-bg"
       aria-label="Canvas workspace"
     >
-      <div className="flex min-h-full min-w-full items-center justify-center p-6 sm:p-10">
+      <div
+        ref={viewportInnerRef}
+        className="flex min-h-full min-w-full items-center justify-center p-6 sm:p-10"
+      >
         <div
-          ref={canvasRef}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-
-            if (event.target === event.currentTarget) {
-              clearSelection();
-            }
-          }}
-          onDragOver={handleCanvasDragOver}
-          onDragLeave={handleCanvasDragLeave}
-          onDrop={handleCanvasDrop}
-          className={clsx(
-            "relative shrink-0 overflow-hidden border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
-            dropTargetActive &&
-              "outline outline-2 outline-accent outline-offset-[-4px]",
-          )}
           style={{
-            width: canvasShell.width,
-            height: canvasShell.height,
-            background: canvasShell.background,
+            width: canvasShell.width * canvasScale,
+            height: canvasShell.height * canvasScale,
           }}
         >
-          {imageIds.map((imageId) => (
-            <CanvasImageItem
-              key={imageId}
-              imageId={imageId}
-              isSelected={selectedImageId === imageId}
-              onPointerDown={handleImagePointerDown}
-            />
-          ))}
+          <div
+            ref={canvasRef}
+            onPointerDown={(event) => {
+              event.stopPropagation();
 
-          {textIds.map((textId) => (
-            <CanvasTextItem
-              key={textId}
-              textId={textId}
-              isSelected={selectedTextId === textId}
-              onPointerDown={handleTextPointerDown}
-            />
+              if (event.target === event.currentTarget) {
+                clearSelection();
+              }
+            }}
+            onDragOver={handleCanvasDragOver}
+            onDragLeave={handleCanvasDragLeave}
+            onDrop={handleCanvasDrop}
+            className={clsx(
+              "relative shrink-0 overflow-hidden border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
+              dropTargetActive &&
+                "outline outline-2 outline-accent outline-offset-[-4px]",
+            )}
+            style={{
+              width: canvasShell.width,
+              height: canvasShell.height,
+              background: canvasShell.background,
+              transform: `scale(${canvasScale})`,
+              transformOrigin: "top left",
+            }}
+          >
+          {images.map((image) => {
+            const media = resolvedMediaByAssetId[image.assetId]?.full;
+            if (!media) {
+              return null;
+            }
+
+            return (
+              <button
+                key={image.id}
+                type="button"
+                onPointerDown={handleImagePointerDown(image.id)}
+                className={clsx(
+                  "absolute left-0 top-0 overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent",
+                  selectedImageId === image.id && "outline-accent",
+                )}
+                style={{
+                  width: image.width,
+                  height: image.height,
+                  zIndex: selectedImageId === image.id ? 2 : 1,
+                  transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
+                }}
+              >
+                <img
+                  src={media.src}
+                  alt={image.alt}
+                  draggable={false}
+                  className="pointer-events-none h-full w-full select-none object-contain"
+                />
+              </button>
+            );
+          })}
+
+          {texts.map((text) => (
+            <button
+              key={text.id}
+              type="button"
+              onPointerDown={handleTextPointerDown(text.id)}
+              className={clsx(
+                "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline outline-1 outline-transparent",
+                selectedTextId === text.id && "outline-accent",
+              )}
+              style={{
+                zIndex: selectedTextId === text.id ? 4 : 3,
+                maxWidth: text.maxWidth,
+                transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
+                color: text.color,
+                fontFamily: `${text.fontFamily}, sans-serif`,
+                fontSize: text.fontSize,
+                fontWeight: text.fontWeight,
+                textAlign: text.align,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {text.text}
+            </button>
           ))}
+          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 
 export const FileMenu = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const isOpen = useEditorUiStore((state) => state.isFileMenuOpen);
+  const setIsOpen = useEditorUiStore((state) => state.setFileMenuOpen);
 
   useDismissibleLayer({
     containerRef,

@@ -1,6 +1,9 @@
 import clsx from "clsx";
 
-import { useCanvasBackgroundPresets } from "@/stores/useConfigStore";
+import {
+  useCanvasBackgroundPresets,
+  useConfigStore,
+} from "@/stores/useConfigStore";
 import {
   useActiveCanvasBackground,
   useCanvasStore,
@@ -9,6 +12,9 @@ import {
 export const BoardBackgroundPanel = () => {
   const backgroundPresets = useCanvasBackgroundPresets();
   const activeBackground = useActiveCanvasBackground();
+  const setDefaultBackgroundPresetId = useConfigStore(
+    (state) => state.setDefaultBackgroundPresetId,
+  );
   const applyBackgroundToCanvas = useCanvasStore(
     (state) => state.applyBackgroundToCanvas,
   );
@@ -33,7 +39,10 @@ export const BoardBackgroundPanel = () => {
           <button
             key={backgroundPreset.id}
             type="button"
-            onClick={() => applyBackgroundToCanvas(backgroundPreset.id)}
+            onClick={() => {
+              setDefaultBackgroundPresetId(backgroundPreset.id);
+              applyBackgroundToCanvas(backgroundPreset.id);
+            }}
             className={clsx(
               "rounded-xl p-2 text-left outline outline-1 transition hover:outline-accent/70",
               backgroundPreset.id === activeBackground?.id

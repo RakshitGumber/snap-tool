@@ -1,13 +1,13 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
-import { useBoardUiStore } from "@/stores/useBoardUiStore";
 import {
   getCanvasPresetById,
   getCanvasPresetGroupIcon,
+  useConfigStore,
   useCanvasPresetGroups,
 } from "@/stores/useConfigStore";
 import {
@@ -15,17 +15,23 @@ import {
   useCanvasShell,
   useCanvasStore,
 } from "@/stores/useCanvasStore";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import type { CanvasPresetGroupId } from "@/types/canvas";
 
 export const PresetControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [activeGroupId, setActiveGroupId] =
-    useState<CanvasPresetGroupId | null>(null);
   const presetGroups = useCanvasPresetGroups();
   const activePreset = useActiveCanvasPreset();
   const canvasShell = useCanvasShell();
-  const isPresetMenuOpen = useBoardUiStore((state) => state.isPresetMenuOpen);
-  const setPresetMenuOpen = useBoardUiStore((state) => state.setPresetMenuOpen);
+  const isPresetMenuOpen = useEditorUiStore((state) => state.isPresetMenuOpen);
+  const setPresetMenuOpen = useEditorUiStore((state) => state.setPresetMenuOpen);
+  const activeGroupId = useEditorUiStore((state) => state.activePresetGroupId);
+  const setActivePresetGroupId = useEditorUiStore(
+    (state) => state.setActivePresetGroupId,
+  );
+  const setDefaultCanvasPresetId = useConfigStore(
+    (state) => state.setDefaultCanvasPresetId,
+  );
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
   );
@@ -50,7 +56,7 @@ export const PresetControl = () => {
     containerRef,
     isOpen: isPresetMenuOpen,
     onDismiss: () => {
-      setActiveGroupId(null);
+      setActivePresetGroupId(null);
       setPresetMenuOpen(false);
     },
   });
@@ -63,7 +69,8 @@ export const PresetControl = () => {
     }
 
     resizeCanvas(preset.size, preset.id);
-    setActiveGroupId(null);
+    setDefaultCanvasPresetId(preset.id);
+    setActivePresetGroupId(null);
     setPresetMenuOpen(false);
   };
 
@@ -75,7 +82,7 @@ export const PresetControl = () => {
         aria-expanded={isPresetMenuOpen}
         onClick={() => {
           if (isPresetMenuOpen) {
-            setActiveGroupId(null);
+            setActivePresetGroupId(null);
           }
 
           setPresetMenuOpen(!isPresetMenuOpen);
@@ -103,7 +110,7 @@ export const PresetControl = () => {
             <div className="space-y-1">
               <button
                 type="button"
-                onClick={() => setActiveGroupId(null)}
+                onClick={() => setActivePresetGroupId(null)}
                 className="ui-button w-full justify-start rounded-xl px-3 text-left text-sm font-semibold"
               >
                 <Icon
@@ -153,7 +160,9 @@ export const PresetControl = () => {
                   <button
                     key={group.id}
                     type="button"
-                    onClick={() => setActiveGroupId(group.id)}
+                    onClick={() =>
+                      setActivePresetGroupId(group.id as CanvasPresetGroupId)
+                    }
                     className={clsx(
                       "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
                       isActive

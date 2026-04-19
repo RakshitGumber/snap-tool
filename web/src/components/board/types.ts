@@ -1,11 +1,5 @@
 import type { ReactNode } from "react";
-
-export type BoardSidebarSectionId =
-  | "overview"
-  | "background"
-  | "elements"
-  | "text"
-  | "uploads";
+import type { BoardSidebarSectionId } from "@/types/board";
 
 export type BoardSidebarSection = {
   id: BoardSidebarSectionId;

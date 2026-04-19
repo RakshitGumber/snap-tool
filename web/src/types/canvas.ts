@@ -48,6 +48,13 @@ export type CanvasBackgroundPreset = {
 
 export type BoardTextAlign = "left" | "center" | "right";
 
+export type BoardImagePositionPreset =
+  | "center"
+  | "top"
+  | "bottom"
+  | "left"
+  | "right";
+
 export type CanvasFrame = {
   id: string;
   title: string;
@@ -86,23 +93,7 @@ export type BoardTextItem = {
 export type BoardTextInput = Omit<BoardTextItem, "id" | "x" | "y"> &
   Partial<Pick<BoardTextItem, "x" | "y">>;
 
-export type CanvasRecord = Omit<CanvasFrame, "images" | "texts"> & {
-  presetId: CanvasPresetId | null;
-  imageOrder: string[];
-  imagesById: Record<string, BoardImageItem>;
-  textOrder: string[];
-  textsById: Record<string, BoardTextItem>;
-};
-
 export type CanvasShell = Omit<
-  CanvasRecord,
-  "imageOrder" | "imagesById" | "textOrder" | "textsById"
+  CanvasFrame,
+  "images" | "texts"
 >;
-
-export type CanvasActions = {
-  delete: () => void;
-  save: () => void;
-  clear: () => void;
-};
-
-export type ShortcutMap = Record<string, () => void>;

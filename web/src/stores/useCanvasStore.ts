@@ -1,27 +1,23 @@
 import { create } from "zustand";
 
 import {
-  DEFAULT_BOARD_TEXT_INPUT,
-  normalizeBoardTextFamily,
-} from "@/board/text";
-import {
-  DEFAULT_BACKGROUND_PRESET_ID,
-  DEFAULT_CANVAS_PRESET_ID,
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
   getCanvasPresetBySize,
   getCanvasPresetGroupById,
+  normalizeBoardTextFamily,
   resolveCanvasPreset,
+  useConfigStore,
 } from "@/stores/useConfigStore";
-import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import type {
   BoardImageItem,
+  BoardImagePositionPreset,
   BoardTextInput,
   BoardTextItem,
   CanvasFrame,
   CanvasPresetId,
-  CanvasRecord,
   CanvasShell,
   CanvasSize,
 } from "@/types/canvas";
@@ -46,6 +42,7 @@ type CanvasActions = {
   ) => string | null;
   insertTextOnActiveCanvas: (text: BoardTextInput) => string | null;
   moveImageOnCanvas: (imageId: string, x: number, y: number) => void;
+  positionImageOnCanvas: (imageId: string, preset: BoardImagePositionPreset) => void;
   moveTextOnCanvas: (
     textId: string,
     x: number,
@@ -61,6 +58,7 @@ type CanvasActions = {
 
 const MAX_INITIAL_IMAGE_SCALE = 0.8;
 const IMAGE_INSERT_OFFSET_STEP = 18;
+const IMAGE_POSITION_INSET = 24;
 const TEXT_INSERT_OFFSET_STEP = 24;
 const MIN_TEXT_FONT_SIZE = 12;
 const MAX_TEXT_FONT_SIZE = 180;
@@ -73,6 +71,8 @@ const clamp = (value: number, min: number, max: number) =>
 
 const EMPTY_CANVAS_IMAGES: Record<string, BoardImageItem> = {};
 const EMPTY_CANVAS_TEXT: Record<string, BoardTextItem> = {};
+
+const getDefaultTextInput = () => useConfigStore.getState().text.defaultInput;
 
 const normalizeCanvasFrame = (canvas: CanvasFrame) => {
   const texts = canvas.texts ?? [];
@@ -175,28 +175,86 @@ const createCanvasImageItem = (
   };
 };
 
-const normalizeTextInput = (textInput: Partial<BoardTextInput>, canvasMeta: CanvasShell) => {
+const getImagePositionForPreset = ({
+  canvasMeta,
+  image,
+  preset,
+}: {
+  canvasMeta: CanvasShell;
+  image: BoardImageItem;
+  preset: BoardImagePositionPreset;
+}) => {
+  const maxX = Math.max(canvasMeta.width - image.width, 0);
+  const maxY = Math.max(canvasMeta.height - image.height, 0);
+  const centerX = (canvasMeta.width - image.width) / 2;
+  const centerY = (canvasMeta.height - image.height) / 2;
+  const isAtInsetTop = image.y === clamp(IMAGE_POSITION_INSET, 0, maxY);
+  const isAtInsetBottom =
+    image.y === clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, 0, maxY);
+  const isAtInsetLeft = image.x === clamp(IMAGE_POSITION_INSET, 0, maxX);
+  const isAtInsetRight =
+    image.x === clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, 0, maxX);
+
+  switch (preset) {
+    case "top":
+      return {
+        x: clamp(image.x, 0, maxX),
+        y: isAtInsetTop ? 0 : clamp(IMAGE_POSITION_INSET, 0, maxY),
+      };
+    case "bottom":
+      return {
+        x: clamp(image.x, 0, maxX),
+        y: isAtInsetBottom
+          ? maxY
+          : clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, 0, maxY),
+      };
+    case "left":
+      return {
+        x: isAtInsetLeft ? 0 : clamp(IMAGE_POSITION_INSET, 0, maxX),
+        y: clamp(image.y, 0, maxY),
+      };
+    case "right":
+      return {
+        x: isAtInsetRight
+          ? maxX
+          : clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, 0, maxX),
+        y: clamp(image.y, 0, maxY),
+      };
+    case "center":
+    default:
+      return {
+        x: clamp(centerX, 0, maxX),
+        y: clamp(centerY, 0, maxY),
+      };
+  }
+};
+
+const normalizeTextInput = (
+  textInput: Partial<BoardTextInput>,
+  canvasMeta: CanvasShell,
+) => {
+  const defaultTextInput = getDefaultTextInput();
   const fontFamily = normalizeBoardTextFamily(
-    textInput.fontFamily ?? DEFAULT_BOARD_TEXT_INPUT.fontFamily,
+    textInput.fontFamily ?? defaultTextInput.fontFamily,
   );
 
   return {
-    text: textInput.text ?? DEFAULT_BOARD_TEXT_INPUT.text,
-    fontFamily: fontFamily || DEFAULT_BOARD_TEXT_INPUT.fontFamily,
+    text: textInput.text ?? defaultTextInput.text,
+    fontFamily: fontFamily || defaultTextInput.fontFamily,
     fontSize: clamp(
-      Math.round(textInput.fontSize ?? DEFAULT_BOARD_TEXT_INPUT.fontSize),
+      Math.round(textInput.fontSize ?? defaultTextInput.fontSize),
       MIN_TEXT_FONT_SIZE,
       MAX_TEXT_FONT_SIZE,
     ),
     fontWeight: clamp(
-      Math.round(textInput.fontWeight ?? DEFAULT_BOARD_TEXT_INPUT.fontWeight),
+      Math.round(textInput.fontWeight ?? defaultTextInput.fontWeight),
       MIN_TEXT_FONT_WEIGHT,
       MAX_TEXT_FONT_WEIGHT,
     ),
-    color: textInput.color ?? DEFAULT_BOARD_TEXT_INPUT.color,
-    align: textInput.align ?? DEFAULT_BOARD_TEXT_INPUT.align,
+    color: textInput.color ?? defaultTextInput.color,
+    align: textInput.align ?? defaultTextInput.align,
     maxWidth: clamp(
-      Math.round(textInput.maxWidth ?? DEFAULT_BOARD_TEXT_INPUT.maxWidth),
+      Math.round(textInput.maxWidth ?? defaultTextInput.maxWidth),
       MIN_TEXT_BOX_WIDTH,
       canvasMeta.width,
     ),
@@ -248,33 +306,32 @@ const applyTextItemUpdates = ({
   updates: Partial<BoardTextInput>;
   canvasMeta: CanvasShell;
 }) => {
-  const normalized = normalizeTextInput(updates, canvasMeta);
-  const nextMaxWidth =
-    updates.maxWidth === undefined ? text.maxWidth : normalized.maxWidth;
+  const normalized = normalizeTextInput(
+    {
+      ...text,
+      ...updates,
+    },
+    canvasMeta,
+  );
+  const nextMaxWidth = normalized.maxWidth;
   const nextX = clamp(text.x, 0, Math.max(canvasMeta.width - nextMaxWidth, 0));
-  const nextFontSize =
-    updates.fontSize === undefined ? text.fontSize : normalized.fontSize;
+  const nextFontSize = normalized.fontSize;
   const nextY = clamp(text.y, 0, Math.max(canvasMeta.height - nextFontSize * 1.4, 0));
 
   return {
     ...text,
-    text: updates.text ?? text.text,
-    fontFamily:
-      updates.fontFamily === undefined ? text.fontFamily : normalized.fontFamily,
-    fontSize: nextFontSize,
-    fontWeight:
-      updates.fontWeight === undefined ? text.fontWeight : normalized.fontWeight,
-    color: updates.color === undefined ? text.color : normalized.color,
-    align: updates.align === undefined ? text.align : normalized.align,
-    maxWidth: nextMaxWidth,
+    ...normalized,
     x: nextX,
     y: nextY,
   } satisfies BoardTextItem;
 };
 
 const createDefaultCanvas = () => {
-  const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-  return createCanvasFrame(preset.size, DEFAULT_BACKGROUND_PRESET_ID, preset.id);
+  const { defaultCanvasPresetId, defaultBackgroundPresetId } =
+    useConfigStore.getState();
+  const preset = getCanvasPresetById(defaultCanvasPresetId);
+
+  return createCanvasFrame(preset.size, defaultBackgroundPresetId, preset.id);
 };
 
 export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => ({
@@ -292,7 +349,8 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
 
     const canvas = createDefaultCanvas();
     set(normalizeCanvasFrame(canvas));
-    useBoardSelectionStore.getState().clearSelection();
+    useEditorUiStore.getState().clearSelection();
+    useEditorUiStore.getState().resetTextDraft();
 
     return canvas;
   },
@@ -344,7 +402,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
         [image.id]: image,
       },
     }));
-    useBoardSelectionStore.getState().setSelectedImage(image.id);
+    useEditorUiStore.getState().selectImage(image.id);
 
     return image.id;
   },
@@ -362,7 +420,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
         [image.id]: image,
       },
     }));
-    useBoardSelectionStore.getState().setSelectedImage(image.id);
+    useEditorUiStore.getState().selectImage(image.id);
 
     return image.id;
   },
@@ -380,7 +438,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
         [text.id]: text,
       },
     }));
-    useBoardSelectionStore.getState().setSelectedText(text.id);
+    useEditorUiStore.getState().selectText(text);
 
     return text.id;
   },
@@ -404,6 +462,35 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
             ...image,
             x: clamp(x, 0, maxX),
             y: clamp(y, 0, maxY),
+          },
+        },
+      };
+    }),
+
+  positionImageOnCanvas: (imageId, preset) =>
+    set((state) => {
+      const canvasMeta = state.canvasMeta;
+      const image = state.imagesById[imageId];
+      if (!canvasMeta || !image) {
+        return state;
+      }
+
+      const nextPosition = getImagePositionForPreset({
+        canvasMeta,
+        image,
+        preset,
+      });
+
+      if (image.x === nextPosition.x && image.y === nextPosition.y) {
+        return state;
+      }
+
+      return {
+        imagesById: {
+          ...state.imagesById,
+          [imageId]: {
+            ...image,
+            ...nextPosition,
           },
         },
       };
@@ -446,28 +533,30 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
         return state;
       }
 
+      const nextText = applyTextItemUpdates({
+        text,
+        updates,
+        canvasMeta,
+      });
+
       return {
         textsById: {
           ...state.textsById,
-          [textId]: applyTextItemUpdates({
-            text,
-            updates,
-            canvasMeta,
-          }),
+          [textId]: nextText,
         },
       };
     }),
 
   removeSelectedImage: () =>
     set((state) => {
-      const selectedImageId = useBoardSelectionStore.getState().selectedImageId;
+      const selectedImageId = useEditorUiStore.getState().selectedImageId;
       if (!selectedImageId || !state.imagesById[selectedImageId]) {
         return state;
       }
 
       const nextImagesById = { ...state.imagesById };
       delete nextImagesById[selectedImageId];
-      useBoardSelectionStore.getState().clearSelection();
+      useEditorUiStore.getState().clearSelection();
 
       return {
         imageOrder: state.imageOrder.filter((imageId) => imageId !== selectedImageId),
@@ -477,14 +566,15 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
 
   removeSelectedText: () =>
     set((state) => {
-      const selectedTextId = useBoardSelectionStore.getState().selectedTextId;
+      const selectedTextId = useEditorUiStore.getState().selectedTextId;
       if (!selectedTextId || !state.textsById[selectedTextId]) {
         return state;
       }
 
       const nextTextsById = { ...state.textsById };
       delete nextTextsById[selectedTextId];
-      useBoardSelectionStore.getState().clearSelection();
+      useEditorUiStore.getState().clearSelection();
+      useEditorUiStore.getState().resetTextDraft();
 
       return {
         textOrder: state.textOrder.filter((textId) => textId !== selectedTextId),
@@ -494,13 +584,15 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
 
   resetCanvas: (size) => {
     const preset = getCanvasPresetBySize(size);
+    const { defaultBackgroundPresetId } = useConfigStore.getState();
     const canvas = createCanvasFrame(
       size,
-      DEFAULT_BACKGROUND_PRESET_ID,
+      defaultBackgroundPresetId,
       preset?.id ?? null,
     );
     set(normalizeCanvasFrame(canvas));
-    useBoardSelectionStore.getState().clearSelection();
+    useEditorUiStore.getState().clearSelection();
+    useEditorUiStore.getState().resetTextDraft();
 
     return canvas;
   },
@@ -510,45 +602,20 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
 
 export const useCanvasShell = () => useCanvasStore((state) => state.canvasMeta);
 
-export const useCanvasImageIds = () => useCanvasStore((state) => state.imageOrder);
-
 export const useCanvasImage = (imageId: string) =>
   useCanvasStore((state) => state.imagesById[imageId] ?? null);
-
-export const useSelectedImageId = () =>
-  useBoardSelectionStore((state) => state.selectedImageId);
-
-export const useCanvasTextIds = () => useCanvasStore((state) => state.textOrder);
 
 export const useCanvasText = (textId: string) =>
   useCanvasStore((state) => state.textsById[textId] ?? null);
 
-export const useSelectedTextId = () =>
-  useBoardSelectionStore((state) => state.selectedTextId);
-
-export const useActiveCanvas = (): CanvasRecord | null => {
-  const canvasMeta = useCanvasShell();
-  const imageOrder = useCanvasImageIds();
-  const imagesById = useCanvasStore((state) => state.imagesById);
-  const textOrder = useCanvasTextIds();
-  const textsById = useCanvasStore((state) => state.textsById);
-
-  return canvasMeta
-    ? {
-        ...canvasMeta,
-        imageOrder,
-        imagesById,
-        textOrder,
-        textsById,
-      }
-    : null;
-};
-
 export const useActiveCanvasPreset = () => {
   const canvasMeta = useCanvasShell();
+  const defaultCanvasPresetId = useConfigStore(
+    (state) => state.defaultCanvasPresetId,
+  );
 
   if (!canvasMeta) {
-    const preset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
+    const preset = getCanvasPresetById(defaultCanvasPresetId);
 
     return {
       kind: "preset" as const,

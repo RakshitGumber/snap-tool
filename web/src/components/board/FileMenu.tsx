@@ -21,7 +21,7 @@ export const FileMenu = () => {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition hover:bg-secondary-text/20"
+        className="flex items-center gap-1 rounded-lg px-3 hover:bg-text-color/20 py-2 cursor-pointer"
       >
         <svg
           width="24"
@@ -48,17 +48,14 @@ export const FileMenu = () => {
           />
         </svg>
 
-        <span className="text-sm font-semibold uppercase tracking-[0.16em] text-secondary-text">
+        <span className="text-sm font-sans font-bold uppercase tracking-[0.16em] text-title-color">
           File
         </span>
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-48 rounded-xl bg-card-bg p-2 outline outline-border-color/60">
-          <p className="px-3 py-2 text-xs uppercase tracking-[0.14em] text-secondary-text">
-            Appearance
-          </p>
-          <div className="border-t border-border-color/50 pt-2">
+        <div className="absolute left-0 top-full z-50 mt-2 min-w-48 rounded-lg bg-card-bg p-2 border-2 border-border-color">
+          <div className="">
             <ThemeButton variant="menu" onClick={() => setIsOpen(false)} />
           </div>
         </div>

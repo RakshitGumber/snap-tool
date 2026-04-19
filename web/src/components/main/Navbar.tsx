@@ -99,7 +99,7 @@ export const Navbar = () => {
           <div className="hidden md:flex gap-2">
             <a
               href="https://github.com/RakshitGumber/snap-tool"
-              className="rounded-lg font-semibold hover:bg-accent-light items-center flex gap-1 text-xl p-2 text-title-color"
+              className="rounded-lg font-semibold hover:bg-title-color/20 items-center flex gap-1 text-xl px-2.5 text-title-color"
               target="_blank"
               rel="noreferrer"
             >

@@ -5,28 +5,9 @@ import clsx from "clsx";
 
 import { getCanvasPresetGroupIcon } from "@/board/config";
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
-import type {
-  CanvasPresetGroup,
-  CanvasPresetId,
-  CanvasPresetGroupId,
-  ResolvedCanvasPreset,
-} from "@/types/canvas";
+import type { CanvasPresetGroupId } from "@/types/canvas";
 
-type BoardPresetControlProps = {
-  activePreset: ResolvedCanvasPreset;
-  presetGroups: CanvasPresetGroup[];
-  isPresetMenuOpen: boolean;
-  onPresetMenuOpenChange: (isOpen: boolean) => void;
-  onSelectPreset: (presetId: CanvasPresetId) => void;
-};
-
-export const BoardPresetControl = ({
-  activePreset,
-  presetGroups,
-  isPresetMenuOpen,
-  onPresetMenuOpenChange,
-  onSelectPreset,
-}: BoardPresetControlProps) => {
+export const BoardPresetControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [activeGroupId, setActiveGroupId] =
     useState<CanvasPresetGroupId | null>(null);

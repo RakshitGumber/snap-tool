@@ -10,7 +10,22 @@ import {
   type ReactElement,
 } from "react";
 
-import { useRouter } from "./routerStore";
+import { create } from "zustand";
+
+interface RouterState {
+  route: string;
+  setRoute: (path: string) => void;
+}
+
+export const useRouter = create<RouterState>((set) => ({
+  route: window.location.pathname,
+  setRoute: (path) => {
+    window.history.pushState({}, "", path);
+    startTransition(() => {
+      set({ route: path });
+    });
+  },
+}));
 
 type RouteComponent = LazyExoticComponent<() => ReactElement>;
 
@@ -35,7 +50,7 @@ const CreateRoute = lazy(async () => {
 
 const PageNotFound = lazy(async () => {
   const mod = await import("./not-found");
-  return { default: mod.PageNotFound };
+  return { default: mod.NotFound };
 });
 
 const ROUTES: RouteConfig[] = [
@@ -111,7 +126,8 @@ export const Link = ({
 
     if (event.defaultPrevented) return;
     if (event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
     if (target && target !== "_self") return;
     if (download) return;
     if (!isLocalRoute(to)) return;

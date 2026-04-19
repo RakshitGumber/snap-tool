@@ -1,6 +1,6 @@
-import { Footer } from "@/Components/main/Footer";
-import { Hero } from "@/Components/main/Hero";
-import { Navbar } from "@/Components/main/Navbar";
+import { Footer } from "@/components/main/Footer";
+import { Hero } from "@/components/main/Hero";
+import { Navbar } from "@/components/main/Navbar";
 
 export const RootRoute = () => {
   return (

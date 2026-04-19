@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
-import { ThemeButton } from "@/Components/ui/ThemeButton";
+import { ThemeButton } from "@/components/ui/ThemeButton";
 
 export const BoardFileMenu = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);

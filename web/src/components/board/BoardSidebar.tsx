@@ -8,7 +8,7 @@ import {
 } from "@/board/config";
 import { useCanvasShell } from "@/stores/useCanvasStore";
 
-import type { BoardSidebarProps, BoardSidebarSectionId } from "./types";
+import type { BoardSidebarSectionId } from "./types";
 
 const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   overview: "solar:document-text-linear",

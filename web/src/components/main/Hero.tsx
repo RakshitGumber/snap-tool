@@ -1,7 +1,7 @@
 import { Link } from "@/pages/Router";
 import { Icon } from "@iconify/react";
 import { motion, type Variants } from "framer-motion";
-import { HeroAnimation } from "../ui/HeroAnimation";
+import { HeroAnimation } from "@/components/ui/HeroAnimation";
 
 const heroContentReveal: Variants = {
   hidden: { opacity: 0, y: 28 },

@@ -16,6 +16,26 @@ export const DEFAULT_SIDEBAR_WIDTH =
 export const MIN_SIDEBAR_WIDTH = 352;
 export const MAX_SIDEBAR_WIDTH = 448;
 
+import type { BoardTextInput } from "@/types/canvas";
+
+export const DEFAULT_BOARD_TEXT_INPUT: BoardTextInput = {
+  text: "",
+  fontFamily: "Inter",
+  fontSize: 24,
+  fontWeight: 400,
+  color: "#000000",
+  align: "left",
+  maxWidth: 320,
+};
+
+export const BOARD_TEXT_WEIGHT_OPTIONS = [300, 400, 500, 600, 700, 800, 900];
+
+export const normalizeBoardTextFamily = (value: string) =>
+  value
+    .trim()
+    .replace(/^['"]+|['"]+$/g, "")
+    .replace(/\s+/g, " ");
+
 export const CANVAS_PRESET_GROUPS: CanvasPresetGroup[] = [
   {
     id: "twitter",
@@ -199,28 +219,35 @@ export const CANVAS_BACKGROUND_PRESETS: CanvasBackgroundPreset[] = [
   },
 ];
 
-export const findCanvasPresetById = (presetId: CanvasPresetId | null | undefined) =>
-  presetId ? CANVAS_PRESETS.find((preset) => preset.id === presetId) ?? null : null;
+export const findCanvasPresetById = (
+  presetId: CanvasPresetId | null | undefined,
+) =>
+  presetId
+    ? (CANVAS_PRESETS.find((preset) => preset.id === presetId) ?? null)
+    : null;
 
 export const getCanvasPresetById = (presetId: CanvasPresetId) =>
   findCanvasPresetById(presetId) ?? CANVAS_PRESETS[0];
 
 export const getCanvasPresetGroupById = (groupId: CanvasPresetGroupId) =>
-  CANVAS_PRESET_GROUPS.find((group) => group.id === groupId) ?? CANVAS_PRESET_GROUPS[0];
+  CANVAS_PRESET_GROUPS.find((group) => group.id === groupId) ??
+  CANVAS_PRESET_GROUPS[0];
 
 export const getCanvasPresetGroupIcon = (groupId: CanvasPresetGroupId) =>
   (
-    {
+    ({
       twitter: "ri:twitter-x-fill",
       linkedin: "mdi:linkedin",
       instagram: "mdi:instagram",
       pinterest: "mdi:pinterest",
       general: "solar:ruler-angular-linear",
-    } satisfies Record<CanvasPresetGroupId, string>
+    }) satisfies Record<CanvasPresetGroupId, string>
   )[groupId];
 
 export const getCanvasPresetBySize = ({ width, height }: CanvasSize) =>
-  CANVAS_PRESETS.find((preset) => preset.size.width === width && preset.size.height === height);
+  CANVAS_PRESETS.find(
+    (preset) => preset.size.width === width && preset.size.height === height,
+  );
 
 export const resolveCanvasPreset = ({
   width,

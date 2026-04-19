@@ -5,7 +5,6 @@ import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import { useRouter } from "@/stores/useRouter";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
-import { Icon } from "@iconify/react";
 
 export const FileMenu = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -36,7 +35,7 @@ export const FileMenu = () => {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="flex items-center gap-1 rounded-lg px-3 hover:bg-text-color/20 py-2 cursor-pointer"
+        className="flex items-center gap-3 rounded-lg px-3 hover:bg-text-color/20 py-2 cursor-pointer"
       >
         <svg
           width="24"

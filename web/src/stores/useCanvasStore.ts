@@ -31,11 +31,21 @@ type CanvasState = {
   textsById: Record<string, BoardTextItem>;
 };
 
+type CanvasHistoryState = {
+  historyPast: CanvasFrame[];
+  historyFuture: CanvasFrame[];
+  historyTransactionStart: CanvasFrame | null;
+};
+
 type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
   clearCanvas: () => void;
+  undo: () => void;
+  redo: () => void;
+  beginHistoryTransaction: () => void;
+  endHistoryTransaction: () => void;
   insertImageOnActiveCanvas: (asset: UploadLibraryAssetMeta) => string | null;
   insertImageOnCanvasAtPoint: (
     asset: UploadLibraryAssetMeta,
@@ -81,6 +91,9 @@ const EMPTY_CANVAS_IMAGES: Record<string, BoardImageItem> = {};
 const EMPTY_CANVAS_TEXT: Record<string, BoardTextItem> = {};
 
 const getDefaultTextInput = () => useConfigStore.getState().text.defaultInput;
+
+const areCanvasFramesEqual = (left: CanvasFrame, right: CanvasFrame) =>
+  JSON.stringify(left) === JSON.stringify(right);
 
 const normalizeCanvasFrame = (canvas: CanvasFrame) => {
   const texts = canvas.texts ?? [];
@@ -350,12 +363,83 @@ const createDefaultCanvas = () => {
   return createCanvasFrame(preset.size, defaultBackgroundPresetId, preset.id);
 };
 
-export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => ({
+const syncEditorUiWithCanvasFrame = (frame: CanvasFrame | null) => {
+  const editorUiState = useEditorUiStore.getState();
+
+  if (!frame) {
+    editorUiState.clearSelection();
+    editorUiState.resetTextDraft();
+    return;
+  }
+
+  const selectedTextId = editorUiState.selectedTextId;
+  if (selectedTextId) {
+    const selectedText =
+      frame.texts.find((text) => text.id === selectedTextId) ?? null;
+
+    if (selectedText) {
+      editorUiState.selectText(selectedText);
+      return;
+    }
+  }
+
+  const selectedImageId = editorUiState.selectedImageId;
+  if (
+    selectedImageId &&
+    frame.images.some((image) => image.id === selectedImageId)
+  ) {
+    editorUiState.selectImage(selectedImageId);
+    return;
+  }
+
+  editorUiState.clearSelection();
+  editorUiState.resetTextDraft();
+};
+
+type CanvasStore = CanvasState & CanvasHistoryState & CanvasActions;
+
+type CanvasStoreSet = (
+  partial:
+    | CanvasStore
+    | Partial<CanvasStore>
+    | ((state: CanvasStore) => CanvasStore | Partial<CanvasStore>),
+) => void;
+
+const applyCanvasStateChange = (
+  set: CanvasStoreSet,
+  updater: (
+    state: CanvasStore,
+  ) => Partial<CanvasState> | CanvasStore,
+) => {
+  set((state) => {
+    const nextState = updater(state);
+
+    if (nextState === state) {
+      return state;
+    }
+
+    const currentFrame = serializeCanvasState(state);
+
+    return {
+      ...nextState,
+      historyPast:
+        currentFrame && !state.historyTransactionStart
+          ? [...state.historyPast, currentFrame]
+          : state.historyPast,
+      historyFuture: currentFrame ? [] : state.historyFuture,
+    };
+  });
+};
+
+export const useCanvasStore = create<CanvasStore>((set, get) => ({
   canvasMeta: null,
   imageOrder: [],
   imagesById: EMPTY_CANVAS_IMAGES,
   textOrder: [],
   textsById: EMPTY_CANVAS_TEXT,
+  historyPast: [],
+  historyFuture: [],
+  historyTransactionStart: null,
 
   initializeDefaultCanvas: () => {
     const existingCanvas = serializeCanvasState(get());
@@ -364,7 +448,12 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }
 
     const canvas = createDefaultCanvas();
-    set(normalizeCanvasFrame(canvas));
+    set({
+      ...normalizeCanvasFrame(canvas),
+      historyPast: [],
+      historyFuture: [],
+      historyTransactionStart: null,
+    });
     useEditorUiStore.getState().clearSelection();
     useEditorUiStore.getState().resetTextDraft();
 
@@ -372,7 +461,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
   },
 
   resizeCanvas: (size, presetId = null) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       if (!state.canvasMeta) {
         return state;
       }
@@ -390,7 +479,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
   applyBackgroundToCanvas: (backgroundPresetId) => {
     const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
 
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       if (!state.canvasMeta) {
         return state;
       }
@@ -406,7 +495,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
   },
 
   clearCanvas: () =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       if (!state.canvasMeta) {
         return state;
       }
@@ -422,13 +511,91 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       };
     }),
 
+  undo: () => {
+    const previousFrame =
+      get().historyPast[get().historyPast.length - 1] ?? null;
+
+    if (!previousFrame) {
+      return;
+    }
+
+    set((state) => {
+      const currentFrame = serializeCanvasState(state);
+
+      return {
+        ...normalizeCanvasFrame(previousFrame),
+        historyPast: state.historyPast.slice(0, -1),
+        historyFuture: currentFrame
+          ? [currentFrame, ...state.historyFuture]
+          : state.historyFuture,
+        historyTransactionStart: null,
+      };
+    });
+
+    syncEditorUiWithCanvasFrame(previousFrame);
+  },
+
+  redo: () => {
+    const nextFrame = get().historyFuture[0] ?? null;
+
+    if (!nextFrame) {
+      return;
+    }
+
+    set((state) => {
+      const currentFrame = serializeCanvasState(state);
+
+      return {
+        ...normalizeCanvasFrame(nextFrame),
+        historyPast: currentFrame
+          ? [...state.historyPast, currentFrame]
+          : state.historyPast,
+        historyFuture: state.historyFuture.slice(1),
+        historyTransactionStart: null,
+      };
+    });
+
+    syncEditorUiWithCanvasFrame(nextFrame);
+  },
+
+  beginHistoryTransaction: () => {
+    if (get().historyTransactionStart) {
+      return;
+    }
+
+    set((state) => ({
+      historyTransactionStart: serializeCanvasState(state),
+    }));
+  },
+
+  endHistoryTransaction: () =>
+    set((state) => {
+      const transactionStart = state.historyTransactionStart;
+      const currentFrame = serializeCanvasState(state);
+
+      if (!transactionStart) {
+        return state;
+      }
+
+      if (!currentFrame || areCanvasFramesEqual(transactionStart, currentFrame)) {
+        return {
+          historyTransactionStart: null,
+        };
+      }
+
+      return {
+        historyPast: [...state.historyPast, transactionStart],
+        historyTransactionStart: null,
+      };
+    }),
+
   insertImageOnActiveCanvas: (asset) => {
     const image = createCanvasImageItem(asset, get());
     if (!image) {
       return null;
     }
 
-    set((state) => ({
+    applyCanvasStateChange(set, (state) => ({
       imageOrder: [...state.imageOrder, image.id],
       imagesById: {
         ...state.imagesById,
@@ -446,7 +613,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       return null;
     }
 
-    set((state) => ({
+    applyCanvasStateChange(set, (state) => ({
       imageOrder: [...state.imageOrder, image.id],
       imagesById: {
         ...state.imagesById,
@@ -464,7 +631,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       return null;
     }
 
-    set((state) => ({
+    applyCanvasStateChange(set, (state) => ({
       textOrder: [...state.textOrder, text.id],
       textsById: {
         ...state.textsById,
@@ -477,7 +644,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
   },
 
   moveImageOnCanvas: (imageId, x, y) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const canvasMeta = state.canvasMeta;
       const image = state.imagesById[imageId];
 
@@ -507,7 +674,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   resizeImageOnCanvas: (imageId, width, height) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const image = state.imagesById[imageId];
 
       if (!image) {
@@ -538,7 +705,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   positionImageOnCanvas: (imageId, preset) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const canvasMeta = state.canvasMeta;
       const image = state.imagesById[imageId];
       if (!canvasMeta || !image) {
@@ -567,7 +734,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   moveTextOnCanvas: (textId, x, y, bounds) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const canvasMeta = state.canvasMeta;
       const text = state.textsById[textId];
       if (!canvasMeta || !text) {
@@ -596,7 +763,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   updateTextOnCanvas: (textId, updates) =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const canvasMeta = state.canvasMeta;
       const text = state.textsById[textId];
       if (!canvasMeta || !text) {
@@ -618,7 +785,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   removeSelectedImage: () =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const selectedImageId = useEditorUiStore.getState().selectedImageId;
       if (!selectedImageId || !state.imagesById[selectedImageId]) {
         return state;
@@ -635,7 +802,7 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   removeSelectedText: () =>
-    set((state) => {
+    applyCanvasStateChange(set, (state) => {
       const selectedTextId = useEditorUiStore.getState().selectedTextId;
       if (!selectedTextId || !state.textsById[selectedTextId]) {
         return state;
@@ -660,7 +827,18 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       defaultBackgroundPresetId,
       preset?.id ?? null,
     );
-    set(normalizeCanvasFrame(canvas));
+    set((state) => {
+      const currentFrame = serializeCanvasState(state);
+
+      return {
+        ...normalizeCanvasFrame(canvas),
+        historyPast: currentFrame
+          ? [...state.historyPast, currentFrame]
+          : state.historyPast,
+        historyFuture: [],
+        historyTransactionStart: null,
+      };
+    });
     useEditorUiStore.getState().clearSelection();
     useEditorUiStore.getState().resetTextDraft();
 

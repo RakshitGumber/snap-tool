@@ -76,6 +76,12 @@ export const Canvas = memo(function BoardCanvas() {
     (state) => state.resizeImageOnCanvas,
   );
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
+  const beginHistoryTransaction = useCanvasStore(
+    (state) => state.beginHistoryTransaction,
+  );
+  const endHistoryTransaction = useCanvasStore(
+    (state) => state.endHistoryTransaction,
+  );
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
   );
@@ -281,12 +287,17 @@ export const Canvas = memo(function BoardCanvas() {
     };
 
     const handlePointerUp = () => {
+      const hadDragState = dragStateRef.current !== null;
       dragStateRef.current = null;
       pointerSnapshotRef.current = null;
 
       if (frameRequestRef.current !== null) {
         window.cancelAnimationFrame(frameRequestRef.current);
         frameRequestRef.current = null;
+      }
+
+      if (hadDragState) {
+        endHistoryTransaction();
       }
     };
 
@@ -315,6 +326,7 @@ export const Canvas = memo(function BoardCanvas() {
 
       event.stopPropagation();
       selectImage(imageId);
+      beginHistoryTransaction();
 
       const rect = event.currentTarget.getBoundingClientRect();
       dragStateRef.current = {
@@ -338,6 +350,7 @@ export const Canvas = memo(function BoardCanvas() {
 
       event.stopPropagation();
       selectText(text);
+      beginHistoryTransaction();
 
       const rect = event.currentTarget.getBoundingClientRect();
       dragStateRef.current = {
@@ -360,6 +373,7 @@ export const Canvas = memo(function BoardCanvas() {
       event.stopPropagation();
       event.preventDefault();
       selectImage(image.id);
+      beginHistoryTransaction();
       const localPoint = getCanvasPoint(event.clientX, event.clientY);
       dragStateRef.current = {
         kind: "image-resize",

@@ -10,7 +10,11 @@ import {
   normalizeBoardTextFamily,
   useTextConfig,
 } from "@/stores/useConfigStore";
-import { useCanvasShell, useCanvasStore, useCanvasText } from "@/stores/useCanvasStore";
+import {
+  useCanvasShell,
+  useCanvasStore,
+  useCanvasText,
+} from "@/stores/useCanvasStore";
 import {
   useEditorUiStore,
   useSelectedTextId,
@@ -32,8 +36,12 @@ export const BoardTextPanel = () => {
   const draft = useTextDraft();
   const selectedTextId = useSelectedTextId();
   const selectedText = useCanvasText(selectedTextId ?? "");
-  const insertTextOnActiveCanvas = useCanvasStore((state) => state.insertTextOnActiveCanvas);
-  const updateTextOnCanvas = useCanvasStore((state) => state.updateTextOnCanvas);
+  const insertTextOnActiveCanvas = useCanvasStore(
+    (state) => state.insertTextOnActiveCanvas,
+  );
+  const updateTextOnCanvas = useCanvasStore(
+    (state) => state.updateTextOnCanvas,
+  );
   const clearSelection = useEditorUiStore((state) => state.clearSelection);
   const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
   const resetTextDraft = useEditorUiStore((state) => state.resetTextDraft);
@@ -92,8 +100,8 @@ export const BoardTextPanel = () => {
           Text layer
         </p>
         <p className="mt-1 text-sm text-secondary-text">
-          Add text to the board, then drag it into place. Selecting a text block links
-          these controls to it.
+          Add text to the board, then drag it into place. Selecting a text block
+          links these controls to it.
         </p>
         {selectedText ? (
           <div className="mt-3 rounded-xl bg-accent-light/20 px-3 py-2 text-sm text-title-color">
@@ -126,7 +134,7 @@ export const BoardTextPanel = () => {
               `VITE_GOOGLE_FONTS_API_KEY` is configured.
             </p>
           </div>
-          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
+          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
             {fontCatalog.source === "api" ? fontCatalog.families.length : "Any"}
           </span>
         </div>
@@ -145,7 +153,8 @@ export const BoardTextPanel = () => {
         </datalist>
 
         <p className="mt-2 text-xs text-secondary-text">
-          {fontCatalog.status === "loading" && "Loading Google Fonts catalog..."}
+          {fontCatalog.status === "loading" &&
+            "Loading Google Fonts catalog..."}
           {fontCatalog.status === "ready" &&
             "Google Fonts catalog loaded for searchable suggestions."}
           {fontCatalog.status === "error" &&
@@ -166,7 +175,9 @@ export const BoardTextPanel = () => {
             max="160"
             step="1"
             value={draft.fontSize}
-            onChange={(event) => syncDraft("fontSize", Number(event.target.value))}
+            onChange={(event) =>
+              syncDraft("fontSize", Number(event.target.value))
+            }
             className="w-full accent-accent"
           />
           <span className="text-sm text-title-color">{draft.fontSize}px</span>
@@ -179,10 +190,18 @@ export const BoardTextPanel = () => {
           <input
             type="range"
             min="160"
-            max={Math.max(canvasShell?.width ?? textConfig.defaultInput.maxWidth, 160)}
+            max={Math.max(
+              canvasShell?.width ?? textConfig.defaultInput.maxWidth,
+              160,
+            )}
             step="10"
-            value={Math.min(draft.maxWidth, canvasShell?.width ?? draft.maxWidth)}
-            onChange={(event) => syncDraft("maxWidth", Number(event.target.value))}
+            value={Math.min(
+              draft.maxWidth,
+              canvasShell?.width ?? draft.maxWidth,
+            )}
+            onChange={(event) =>
+              syncDraft("maxWidth", Number(event.target.value))
+            }
             className="w-full accent-accent"
           />
           <span className="text-sm text-title-color">{draft.maxWidth}px</span>
@@ -196,7 +215,9 @@ export const BoardTextPanel = () => {
           </span>
           <select
             value={draft.fontWeight}
-            onChange={(event) => syncDraft("fontWeight", Number(event.target.value))}
+            onChange={(event) =>
+              syncDraft("fontWeight", Number(event.target.value))
+            }
             className="w-full rounded-xl border border-border-color/70 bg-card-bg px-3 py-2 text-sm text-title-color outline-none transition focus:border-accent"
           >
             {textConfig.weightOptions.map((weight) => (
@@ -224,7 +245,9 @@ export const BoardTextPanel = () => {
       </div>
 
       <div className="rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">Align</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+          Align
+        </p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {ALIGN_OPTIONS.map((option) => {
             const isActive = draft.align === option.value;
@@ -238,7 +261,7 @@ export const BoardTextPanel = () => {
                   "rounded-xl px-3 py-2 text-sm font-semibold transition",
                   isActive
                     ? "bg-title-color text-bg"
-                    : "outline outline-1 outline-border-color/60 hover:outline-accent/70",
+                    : "outline outline-border-color/60 hover:outline-accent/70",
                 )}
               >
                 {option.label}
@@ -249,7 +272,9 @@ export const BoardTextPanel = () => {
       </div>
 
       <div className="rounded-2xl border border-border-color/60 bg-card-bg/70 p-4">
-        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">Preview</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+          Preview
+        </p>
         <div
           className="mt-3 min-h-28 rounded-2xl border border-dashed border-border-color/70 bg-bg px-4 py-4"
           style={{
@@ -276,7 +301,9 @@ export const BoardTextPanel = () => {
         <button
           type="button"
           onClick={handleAddText}
-          disabled={!draft.text.trim() || !normalizeBoardTextFamily(draft.fontFamily)}
+          disabled={
+            !draft.text.trim() || !normalizeBoardTextFamily(draft.fontFamily)
+          }
           className="flex-1 rounded-xl bg-title-color px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Add text to board
@@ -284,7 +311,7 @@ export const BoardTextPanel = () => {
         <button
           type="button"
           onClick={handleResetDraft}
-          className="rounded-xl px-4 py-2 text-sm font-semibold text-title-color outline outline-1 outline-border-color/60 transition hover:outline-accent/70"
+          className="rounded-xl px-4 py-2 text-sm font-semibold text-title-color outline outline-border-color/60 transition hover:outline-accent/70"
         >
           Reset
         </button>

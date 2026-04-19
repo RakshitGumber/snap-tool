@@ -225,12 +225,12 @@ export const BoardUploadsPanel = () => {
               Click to insert, or drag an image onto the canvas.
             </p>
           </div>
-          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-1 outline-border-color/60">
+          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
             {assetIds.length}
           </span>
         </div>
 
-        <div className="max-h-[420px] overflow-auto rounded-2xl">
+        <div className="max-h-105 overflow-auto rounded-2xl">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {assetIds.map((assetId) => {
               const asset = assetMetaById[assetId];
@@ -255,7 +255,7 @@ export const BoardUploadsPanel = () => {
                     setDraggedAssetId(event.dataTransfer, asset.id);
                   }}
                   onDragEnd={clearDraggedAssetId}
-                  className="overflow-hidden rounded-2xl text-left outline outline-1 outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
+                  className="overflow-hidden rounded-2xl text-left outline outline-border-color/60 transition hover:-translate-y-0.5 hover:outline-accent/70"
                 >
                   <div className="aspect-square overflow-hidden bg-transparent p-2">
                     {media ? (

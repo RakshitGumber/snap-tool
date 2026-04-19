@@ -53,10 +53,8 @@ const MIN_FITTED_FRAME_SIZE = 1;
 export const Canvas = memo(function BoardCanvas() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const viewportInnerRef = useRef<HTMLDivElement | null>(null);
-  const scaledFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<CanvasDragState | null>(null);
-  const centerFrameRequestRef = useRef<number | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
@@ -74,7 +72,9 @@ export const Canvas = memo(function BoardCanvas() {
   const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
   const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
-  const resizeImageOnCanvas = useCanvasStore((state) => state.resizeImageOnCanvas);
+  const resizeImageOnCanvas = useCanvasStore(
+    (state) => state.resizeImageOnCanvas,
+  );
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
@@ -145,7 +145,8 @@ export const Canvas = memo(function BoardCanvas() {
       viewport.clientHeight - verticalPadding,
       1,
     );
-    const canvasAspectRatio = canvasShell.width / Math.max(canvasShell.height, 1);
+    const canvasAspectRatio =
+      canvasShell.width / Math.max(canvasShell.height, 1);
     const viewportAspectRatio = availableWidth / Math.max(availableHeight, 1);
     const fittedWidth =
       canvasAspectRatio > viewportAspectRatio
@@ -158,11 +159,10 @@ export const Canvas = memo(function BoardCanvas() {
     const nextScale = Math.min(
       fittedWidth / Math.max(canvasShell.width, 1),
       fittedHeight / Math.max(canvasShell.height, 1),
-      1,
     );
     const nextDisplayFrameSize = {
-      width: Math.max(fittedWidth, MIN_FITTED_FRAME_SIZE),
-      height: Math.max(fittedHeight, MIN_FITTED_FRAME_SIZE),
+      width: Math.max(canvasShell.width * nextScale, MIN_FITTED_FRAME_SIZE),
+      height: Math.max(canvasShell.height * nextScale, MIN_FITTED_FRAME_SIZE),
     };
 
     setCanvasScale((currentScale) =>
@@ -174,51 +174,6 @@ export const Canvas = memo(function BoardCanvas() {
         ? currentSize
         : nextDisplayFrameSize,
     );
-  });
-
-  const centerCanvasInViewport = useEffectEvent(() => {
-    const viewport = viewportRef.current;
-    const scaledFrame = scaledFrameRef.current;
-    if (!viewport || !scaledFrame) {
-      return;
-    }
-
-    const maxScrollLeft = Math.max(viewport.scrollWidth - viewport.clientWidth, 0);
-    const maxScrollTop = Math.max(viewport.scrollHeight - viewport.clientHeight, 0);
-    const nextScrollLeft = Math.min(
-      Math.max(
-        scaledFrame.offsetLeft + scaledFrame.clientWidth / 2 - viewport.clientWidth / 2,
-        0,
-      ),
-      maxScrollLeft,
-    );
-    const nextScrollTop = Math.min(
-      Math.max(
-        scaledFrame.offsetTop + scaledFrame.clientHeight / 2 - viewport.clientHeight / 2,
-        0,
-      ),
-      maxScrollTop,
-    );
-
-    viewport.scrollLeft = nextScrollLeft;
-    viewport.scrollTop = nextScrollTop;
-  });
-
-  const cancelScheduledCentering = useEffectEvent(() => {
-    if (centerFrameRequestRef.current !== null) {
-      window.cancelAnimationFrame(centerFrameRequestRef.current);
-      centerFrameRequestRef.current = null;
-    }
-  });
-
-  const scheduleCenterCanvasInViewport = useEffectEvent(() => {
-    cancelScheduledCentering();
-    centerFrameRequestRef.current = window.requestAnimationFrame(() => {
-      centerFrameRequestRef.current = window.requestAnimationFrame(() => {
-        centerFrameRequestRef.current = null;
-        centerCanvasInViewport();
-      });
-    });
   });
 
   useLayoutEffect(() => {
@@ -237,29 +192,13 @@ export const Canvas = memo(function BoardCanvas() {
 
     const observer = new ResizeObserver(() => {
       updateCanvasScale();
-      scheduleCenterCanvasInViewport();
     });
     observer.observe(viewport);
 
     return () => {
       observer.disconnect();
-      cancelScheduledCentering();
     };
   }, [canvasShell]);
-
-  useLayoutEffect(() => {
-    scheduleCenterCanvasInViewport();
-    return () => {
-      cancelScheduledCentering();
-    };
-  }, [canvasShell?.width, canvasShell?.height, canvasScale]);
-
-  useEffect(
-    () => () => {
-      cancelScheduledCentering();
-    },
-    [],
-  );
 
   const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -412,7 +351,8 @@ export const Canvas = memo(function BoardCanvas() {
     };
 
   const handleImageResizePointerDown =
-    (image: BoardImageItem) => (event: ReactPointerEvent<HTMLButtonElement>) => {
+    (image: BoardImageItem) =>
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
       if (event.button !== 0) {
         return;
       }
@@ -485,130 +425,128 @@ export const Canvas = memo(function BoardCanvas() {
   }
 
   return (
+    <div
+      ref={viewportRef}
+      onPointerDown={handleSurfacePointerDown}
+      onDragEnd={() => setDropTargetActive(false)}
+      className="h-full w-full overflow-hidden bg-bg"
+      aria-label="Canvas workspace"
+    >
       <div
-        ref={viewportRef}
-        onPointerDown={handleSurfacePointerDown}
-        onDragEnd={() => setDropTargetActive(false)}
-        className="h-full w-full overflow-hidden bg-bg"
-        aria-label="Canvas workspace"
+        ref={viewportInnerRef}
+        className="flex h-full w-full items-center justify-center overflow-visible p-4 sm:p-6"
       >
         <div
-          ref={viewportInnerRef}
-          className="flex h-full w-full items-center justify-center overflow-visible p-4 sm:p-6"
+          className="relative overflow-visible"
+          style={{
+            width: displayFrameSize.width,
+            height: displayFrameSize.height,
+          }}
         >
           <div
-            ref={scaledFrameRef}
-            className="relative overflow-visible"
+            ref={canvasRef}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+
+              if (event.target === event.currentTarget) {
+                clearSelection();
+              }
+            }}
+            onDragOver={handleCanvasDragOver}
+            onDragLeave={handleCanvasDragLeave}
+            onDrop={handleCanvasDrop}
+            className={clsx(
+              "absolute left-0 top-0 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
+              dropTargetActive && "outline-2 outline-accent -outline-offset-4",
+            )}
             style={{
-              width: displayFrameSize.width,
-              height: displayFrameSize.height,
+              width: canvasShell.width,
+              height: canvasShell.height,
+              background: canvasShell.background,
+              transform: `scale(${canvasScale})`,
+              transformOrigin: "top left",
             }}
           >
-            <div
-              ref={canvasRef}
-              onPointerDown={(event) => {
-                event.stopPropagation();
+            {images.map((image) => {
+              const media = resolvedMediaByAssetId[image.assetId]?.full;
+              if (!media) {
+                return null;
+              }
 
-                if (event.target === event.currentTarget) {
-                  clearSelection();
-                }
-              }}
-              onDragOver={handleCanvasDragOver}
-              onDragLeave={handleCanvasDragLeave}
-              onDrop={handleCanvasDrop}
-              className={clsx(
-                "absolute left-0 top-0 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
-                dropTargetActive &&
-                  "outline outline-2 outline-accent outline-offset-[-4px]",
-              )}
-              style={{
-                width: canvasShell.width,
-                height: canvasShell.height,
-                background: canvasShell.background,
-                transform: `scale(${canvasScale})`,
-                transformOrigin: "top left",
-              }}
-            >
-              {images.map((image) => {
-                const media = resolvedMediaByAssetId[image.assetId]?.full;
-                if (!media) {
-                  return null;
-                }
-
-                return (
-                  <div
-                    key={image.id}
-                    className="absolute left-0 top-0"
-                    style={{
-                      width: image.width,
-                      height: image.height,
-                      zIndex: selectedImageId === image.id ? 2 : 1,
-                      transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onPointerDown={handleImagePointerDown(image.id)}
-                      className={clsx(
-                        "h-full w-full overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent",
-                        selectedImageId === image.id && "outline-accent",
-                      )}
-                      style={{ touchAction: "none" }}
-                    >
-                      <img
-                        src={media.src}
-                        alt={image.alt}
-                        draggable={false}
-                        className="pointer-events-none h-full w-full select-none object-contain"
-                      />
-                    </button>
-
-                    {selectedImageId === image.id ? (
-                      <button
-                        type="button"
-                        aria-label="Resize image"
-                        onPointerDown={handleImageResizePointerDown(image)}
-                        className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
-                        style={{
-                          right: 0,
-                          bottom: 0,
-                          transform: "translate(50%, 50%)",
-                          touchAction: "none",
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                );
-              })}
-
-              {texts.map((text) => (
-                <button
-                  key={text.id}
-                  type="button"
-                  onPointerDown={handleTextPointerDown(text.id)}
-                  className={clsx(
-                    "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline outline-1 outline-transparent",
-                    selectedTextId === text.id && "outline-accent",
-                  )}
+              return (
+                <div
+                  key={image.id}
+                  className="absolute left-0 top-0"
                   style={{
-                    zIndex: selectedTextId === text.id ? 4 : 3,
-                    maxWidth: text.maxWidth,
-                    transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
-                    color: text.color,
-                    fontFamily: `${text.fontFamily}, sans-serif`,
-                    fontSize: text.fontSize,
-                    fontWeight: text.fontWeight,
-                    textAlign: text.align,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    width: image.width,
+                    height: image.height,
+                    zIndex: selectedImageId === image.id ? 2 : 1,
+                    transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
                   }}
                 >
-                  {text.text}
-                </button>
-              ))}
-            </div>
+                  <button
+                    type="button"
+                    onPointerDown={handleImagePointerDown(image.id)}
+                    className={clsx(
+                      "h-full w-full overflow-hidden rounded-lg shadow-md outline-transparent",
+                      selectedImageId === image.id && "outline-accent",
+                    )}
+                    style={{ touchAction: "none" }}
+                  >
+                    <img
+                      src={media.src}
+                      alt={image.alt}
+                      draggable={false}
+                      className="pointer-events-none h-full w-full select-none object-contain"
+                    />
+                  </button>
+
+                  {selectedImageId === image.id ? (
+                    <button
+                      type="button"
+                      aria-label="Resize image"
+                      onPointerDown={handleImageResizePointerDown(image)}
+                      className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
+                      style={{
+                        right: 0,
+                        bottom: 0,
+                        transform: "translate(50%, 50%)",
+                        touchAction: "none",
+                      }}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+
+            {texts.map((text) => (
+              <button
+                key={text.id}
+                type="button"
+                onPointerDown={handleTextPointerDown(text.id)}
+                className={clsx(
+                  "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline-transparent",
+                  selectedTextId === text.id && "outline-accent",
+                )}
+                style={{
+                  zIndex: selectedTextId === text.id ? 4 : 3,
+                  maxWidth: text.maxWidth,
+                  transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
+                  color: text.color,
+                  fontFamily: `${text.fontFamily}, sans-serif`,
+                  fontSize: text.fontSize,
+                  fontWeight: text.fontWeight,
+                  textAlign: text.align,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {text.text}
+              </button>
+            ))}
           </div>
         </div>
       </div>
+    </div>
   );
 });

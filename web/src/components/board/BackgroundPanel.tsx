@@ -23,7 +23,7 @@ export const BoardBackgroundPanel = () => {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <div
-          className="h-10 w-10 rounded-lg outline outline-1 outline-border-color/60"
+          className="h-10 w-10 rounded-lg outline outline-border-color/60"
           style={{ background: activeBackground?.preview }}
         />
         <div>
@@ -44,14 +44,14 @@ export const BoardBackgroundPanel = () => {
               applyBackgroundToCanvas(backgroundPreset.id);
             }}
             className={clsx(
-              "rounded-xl p-2 text-left outline outline-1 transition hover:outline-accent/70",
+              "rounded-xl p-2 text-left outline transition hover:outline-accent/70",
               backgroundPreset.id === activeBackground?.id
                 ? "outline-accent"
                 : "outline-border-color/60",
             )}
           >
             <div
-              className="h-12 rounded-md outline outline-1 outline-border-color/60"
+              className="h-12 rounded-md outline outline-border-color/60"
               style={{ background: backgroundPreset.preview }}
             />
             <span className="mt-2 block text-xs font-semibold text-title-color">

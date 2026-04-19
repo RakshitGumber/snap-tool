@@ -49,7 +49,7 @@ export const Navbar = () => {
       }}
     >
       <nav className="relative max-w-7xl flex items-center justify-between p-4 md:p-6 flex-1 gap-3">
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3 mr-auto">
           <button
             type="button"
             className="flex lg:hidden rounded-lg p-2 text-title-color transition hover:bg-text-color/20"
@@ -80,22 +80,22 @@ export const Navbar = () => {
             to="/"
             onClick={() => setMenuOpen(false)}
           >
-            <h1 className="font-heading text-2xl text-title-color hover:text-accent tracking-wider capitalize select-none">
+            <h1 className="font-sans font-bold px-2 text-2xl text-title-color hover:text-accent tracking-wider capitalize select-none">
               Single Filter
             </h1>
           </Link>
         </div>
-        <ul className="hidden lg:flex gap-1 flex-1 px-8">
+        <ul className="hidden lg:flex gap-1 px-8">
           {navItems.map((item) => (
             <li
               key={item.to}
-              className="flex px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg"
+              className="flex px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-medium"
             >
               <Link to={item.to}>{item.label}</Link>
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3 ml-auto">
           <div className="hidden md:flex gap-2">
             <a
               href="https://github.com/RakshitGumber/snap-tool"
@@ -144,7 +144,7 @@ export const Navbar = () => {
                   <li key={item.to}>
                     <Link
                       to={item.to}
-                      className="flex rounded-lg px-4 py-3 text-title-color transition hover:bg-text-color/20"
+                      className="flex rounded-lg px-4 py-3 text-title-color transition hover:bg-text-color/20 font-medium"
                       onClick={() => setMenuOpen(false)}
                     >
                       {item.label}

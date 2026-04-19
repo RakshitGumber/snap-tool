@@ -39,7 +39,7 @@ export const Navbar = () => {
 
   return (
     <motion.header
-      className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-accent dark:border-accent/70 w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30"
+      className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-border-color w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30"
       variants={parentVariants}
       animate={hidden ? "hidden" : "visible"}
       transition={{
@@ -138,7 +138,7 @@ export const Navbar = () => {
 
         {menuOpen ? (
           <div className="absolute top-full left-0 right-0 lg:hidden">
-            <div className="rounded-b-2xl border-b-2 border-accent/80 bg-card-bg p-3 shadow-lg">
+            <div className="rounded-b-2xl border-b-2 border-border-color bg-card-bg p-3 shadow-lg">
               <ul className="flex flex-col gap-1">
                 {navItems.map((item) => (
                   <li key={item.to}>

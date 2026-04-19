@@ -8,6 +8,7 @@ import {
 
 import clsx from "clsx";
 
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { clearDraggedAssetId, setDraggedAssetId } from "@/uploads/drag";
 
@@ -32,6 +33,8 @@ export const BoardUploadsPanel = () => {
   const status = useUploadLibraryStore((state) => state.status);
   const importStatus = useUploadLibraryStore((state) => state.importStatus);
   const lastError = useUploadLibraryStore((state) => state.lastError);
+  const setOpenSectionId = useEditorUiStore((state) => state.setOpenSectionId);
+  const setSidebarOpen = useEditorUiStore((state) => state.setSidebarOpen);
   const hydrateLibrary = useUploadLibraryStore((state) => state.hydrateLibrary);
   const addLocalFiles = useUploadLibraryStore((state) => state.addLocalFiles);
   const importFromUrl = useUploadLibraryStore((state) => state.importFromUrl);
@@ -61,10 +64,19 @@ export const BoardUploadsPanel = () => {
     }
   }, [assetIds, resolveAssetMedia, resolvedMediaByAssetId]);
 
+  const returnToOverview = () => {
+    setOpenSectionId("overview");
+    setSidebarOpen(true);
+  };
+
   const insertAssets = (nextAssetIds: string[]) => {
     nextAssetIds.forEach((assetId) => {
       insertAssetOnActiveCanvas(assetId);
     });
+
+    if (nextAssetIds.length) {
+      returnToOverview();
+    }
   };
 
   const handleFiles = async (files: File[]) => {
@@ -93,6 +105,7 @@ export const BoardUploadsPanel = () => {
     try {
       const asset = await importFromUrl(urlInput);
       insertAssetOnActiveCanvas(asset.id);
+      returnToOverview();
       resetUrlInput();
     } catch {
       return;
@@ -235,6 +248,7 @@ export const BoardUploadsPanel = () => {
                   onClick={() => {
                     clearError();
                     insertAssetOnActiveCanvas(asset.id);
+                    returnToOverview();
                   }}
                   onDragStart={(event) => {
                     clearError();

@@ -13,10 +13,7 @@ import {
 import clsx from "clsx";
 
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
-import {
-  useCanvasShell,
-  useCanvasStore,
-} from "@/stores/useCanvasStore";
+import { useCanvasShell, useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { clearDraggedAssetId, getDraggedAssetId } from "@/uploads/drag";
@@ -28,6 +25,14 @@ type CanvasDragState =
       itemId: string;
       offsetX: number;
       offsetY: number;
+    }
+  | {
+      kind: "image-resize";
+      itemId: string;
+      startPointerX: number;
+      startPointerY: number;
+      startWidth: number;
+      startHeight: number;
     }
   | {
       kind: "text";
@@ -43,15 +48,23 @@ type PointerSnapshot = {
   clientY: number;
 };
 
+const MIN_FITTED_FRAME_SIZE = 1;
+
 export const Canvas = memo(function BoardCanvas() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const viewportInnerRef = useRef<HTMLDivElement | null>(null);
+  const scaledFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<CanvasDragState | null>(null);
+  const centerFrameRequestRef = useRef<number | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
   const [canvasScale, setCanvasScale] = useState(1);
+  const [displayFrameSize, setDisplayFrameSize] = useState({
+    width: MIN_FITTED_FRAME_SIZE,
+    height: MIN_FITTED_FRAME_SIZE,
+  });
 
   const canvasShell = useCanvasShell();
   const imageOrder = useCanvasStore((state) => state.imageOrder);
@@ -61,6 +74,7 @@ export const Canvas = memo(function BoardCanvas() {
   const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
   const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
+  const resizeImageOnCanvas = useCanvasStore((state) => state.resizeImageOnCanvas);
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
@@ -72,7 +86,9 @@ export const Canvas = memo(function BoardCanvas() {
     (state) => state.resolvedMediaByAssetId,
   );
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
-  const resolveAssetMedia = useUploadLibraryStore((state) => state.resolveAssetMedia);
+  const resolveAssetMedia = useUploadLibraryStore(
+    (state) => state.resolveAssetMedia,
+  );
   const images = useMemo(
     () =>
       imageOrder
@@ -121,22 +137,93 @@ export const Canvas = memo(function BoardCanvas() {
       Number.parseFloat(computedStyle.paddingTop) +
       Number.parseFloat(computedStyle.paddingBottom);
 
-    const availableWidth = Math.max(viewport.clientWidth - horizontalPadding, 1);
-    const availableHeight = Math.max(viewport.clientHeight - verticalPadding, 1);
-    const nextScale = Math.min(
-      availableWidth / canvasShell.width,
-      availableHeight / canvasShell.height,
+    const availableWidth = Math.max(
+      viewport.clientWidth - horizontalPadding,
       1,
     );
+    const availableHeight = Math.max(
+      viewport.clientHeight - verticalPadding,
+      1,
+    );
+    const canvasAspectRatio = canvasShell.width / Math.max(canvasShell.height, 1);
+    const viewportAspectRatio = availableWidth / Math.max(availableHeight, 1);
+    const fittedWidth =
+      canvasAspectRatio > viewportAspectRatio
+        ? availableWidth
+        : availableHeight * canvasAspectRatio;
+    const fittedHeight =
+      canvasAspectRatio > viewportAspectRatio
+        ? availableWidth / Math.max(canvasAspectRatio, 0.001)
+        : availableHeight;
+    const nextScale = Math.min(
+      fittedWidth / Math.max(canvasShell.width, 1),
+      fittedHeight / Math.max(canvasShell.height, 1),
+      1,
+    );
+    const nextDisplayFrameSize = {
+      width: Math.max(fittedWidth, MIN_FITTED_FRAME_SIZE),
+      height: Math.max(fittedHeight, MIN_FITTED_FRAME_SIZE),
+    };
 
     setCanvasScale((currentScale) =>
       Math.abs(currentScale - nextScale) < 0.001 ? currentScale : nextScale,
     );
+    setDisplayFrameSize((currentSize) =>
+      Math.abs(currentSize.width - nextDisplayFrameSize.width) < 0.5 &&
+      Math.abs(currentSize.height - nextDisplayFrameSize.height) < 0.5
+        ? currentSize
+        : nextDisplayFrameSize,
+    );
+  });
+
+  const centerCanvasInViewport = useEffectEvent(() => {
+    const viewport = viewportRef.current;
+    const scaledFrame = scaledFrameRef.current;
+    if (!viewport || !scaledFrame) {
+      return;
+    }
+
+    const maxScrollLeft = Math.max(viewport.scrollWidth - viewport.clientWidth, 0);
+    const maxScrollTop = Math.max(viewport.scrollHeight - viewport.clientHeight, 0);
+    const nextScrollLeft = Math.min(
+      Math.max(
+        scaledFrame.offsetLeft + scaledFrame.clientWidth / 2 - viewport.clientWidth / 2,
+        0,
+      ),
+      maxScrollLeft,
+    );
+    const nextScrollTop = Math.min(
+      Math.max(
+        scaledFrame.offsetTop + scaledFrame.clientHeight / 2 - viewport.clientHeight / 2,
+        0,
+      ),
+      maxScrollTop,
+    );
+
+    viewport.scrollLeft = nextScrollLeft;
+    viewport.scrollTop = nextScrollTop;
+  });
+
+  const cancelScheduledCentering = useEffectEvent(() => {
+    if (centerFrameRequestRef.current !== null) {
+      window.cancelAnimationFrame(centerFrameRequestRef.current);
+      centerFrameRequestRef.current = null;
+    }
+  });
+
+  const scheduleCenterCanvasInViewport = useEffectEvent(() => {
+    cancelScheduledCentering();
+    centerFrameRequestRef.current = window.requestAnimationFrame(() => {
+      centerFrameRequestRef.current = window.requestAnimationFrame(() => {
+        centerFrameRequestRef.current = null;
+        centerCanvasInViewport();
+      });
+    });
   });
 
   useLayoutEffect(() => {
     updateCanvasScale();
-  }, [canvasShell?.width, canvasShell?.height, updateCanvasScale]);
+  }, [canvasShell?.width, canvasShell?.height]);
 
   useEffect(() => {
     if (!canvasShell) {
@@ -150,39 +237,29 @@ export const Canvas = memo(function BoardCanvas() {
 
     const observer = new ResizeObserver(() => {
       updateCanvasScale();
+      scheduleCenterCanvasInViewport();
     });
     observer.observe(viewport);
 
     return () => {
       observer.disconnect();
+      cancelScheduledCentering();
     };
-  }, [canvasShell, updateCanvasScale]);
+  }, [canvasShell]);
 
   useLayoutEffect(() => {
-    if (!canvasShell) {
-      return;
-    }
-
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      const nextScrollLeft = Math.max((viewport.scrollWidth - viewport.clientWidth) / 2, 0);
-      const nextScrollTop = Math.max((viewport.scrollHeight - viewport.clientHeight) / 2, 0);
-
-      viewport.scrollTo({
-        left: nextScrollLeft,
-        top: nextScrollTop,
-        behavior: "smooth",
-      });
-    });
-
+    scheduleCenterCanvasInViewport();
     return () => {
-      window.cancelAnimationFrame(frameId);
+      cancelScheduledCentering();
     };
   }, [canvasShell?.width, canvasShell?.height, canvasScale]);
+
+  useEffect(
+    () => () => {
+      cancelScheduledCentering();
+    },
+    [],
+  );
 
   const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -213,6 +290,23 @@ export const Canvas = memo(function BoardCanvas() {
         dragState.itemId,
         localPoint.x - dragState.offsetX,
         localPoint.y - dragState.offsetY,
+      );
+      return;
+    }
+
+    if (dragState.kind === "image-resize") {
+      const widthRatio =
+        (dragState.startWidth + (localPoint.x - dragState.startPointerX)) /
+        Math.max(dragState.startWidth, 1);
+      const heightRatio =
+        (dragState.startHeight + (localPoint.y - dragState.startPointerY)) /
+        Math.max(dragState.startHeight, 1);
+      const nextScale = Math.max(widthRatio, heightRatio, 0.05);
+
+      resizeImageOnCanvas(
+        dragState.itemId,
+        dragState.startWidth * nextScale,
+        dragState.startHeight * nextScale,
       );
       return;
     }
@@ -317,6 +411,26 @@ export const Canvas = memo(function BoardCanvas() {
       };
     };
 
+  const handleImageResizePointerDown =
+    (image: BoardImageItem) => (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      event.stopPropagation();
+      event.preventDefault();
+      selectImage(image.id);
+      const localPoint = getCanvasPoint(event.clientX, event.clientY);
+      dragStateRef.current = {
+        kind: "image-resize",
+        itemId: image.id,
+        startPointerX: localPoint.x,
+        startPointerY: localPoint.y,
+        startWidth: image.width,
+        startHeight: image.height,
+      };
+    };
+
   const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
     const assetId = getDraggedAssetId(event.dataTransfer);
     if (!assetId) {
@@ -333,7 +447,10 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleCanvasDragLeave = (event: ReactDragEvent<HTMLDivElement>) => {
     const nextTarget = event.relatedTarget;
-    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+    if (
+      nextTarget instanceof Node &&
+      event.currentTarget.contains(nextTarget)
+    ) {
       return;
     }
 
@@ -357,119 +474,141 @@ export const Canvas = memo(function BoardCanvas() {
       return;
     }
 
-    insertImageOnCanvasAtPoint(asset, {
-      x: canvasShell.width / 2,
-      y: canvasShell.height / 2,
-    });
+    // Precise canvas insertion utilizing real drop event coordinates
+    const dropPoint = getCanvasPoint(event.clientX, event.clientY);
+
+    insertImageOnCanvasAtPoint(asset, dropPoint);
   };
 
   if (!canvasShell) {
     return null;
   }
 
-    return (
-    <div
-      ref={viewportRef}
-      onPointerDown={handleSurfacePointerDown}
-      onDragEnd={() => setDropTargetActive(false)}
-      className="h-full w-full overflow-auto bg-bg"
-      aria-label="Canvas workspace"
-    >
+  return (
       <div
-        ref={viewportInnerRef}
-        className="flex min-h-full min-w-full items-center justify-center p-6 sm:p-10"
+        ref={viewportRef}
+        onPointerDown={handleSurfacePointerDown}
+        onDragEnd={() => setDropTargetActive(false)}
+        className="h-full w-full overflow-hidden bg-bg"
+        aria-label="Canvas workspace"
       >
         <div
-          style={{
-            width: canvasShell.width * canvasScale,
-            height: canvasShell.height * canvasScale,
-          }}
+          ref={viewportInnerRef}
+          className="flex h-full w-full items-center justify-center overflow-visible p-4 sm:p-6"
         >
           <div
-            ref={canvasRef}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-
-              if (event.target === event.currentTarget) {
-                clearSelection();
-              }
-            }}
-            onDragOver={handleCanvasDragOver}
-            onDragLeave={handleCanvasDragLeave}
-            onDrop={handleCanvasDrop}
-            className={clsx(
-              "relative shrink-0 overflow-hidden border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
-              dropTargetActive &&
-                "outline outline-2 outline-accent outline-offset-[-4px]",
-            )}
+            ref={scaledFrameRef}
+            className="relative overflow-visible"
             style={{
-              width: canvasShell.width,
-              height: canvasShell.height,
-              background: canvasShell.background,
-              transform: `scale(${canvasScale})`,
-              transformOrigin: "top left",
+              width: displayFrameSize.width,
+              height: displayFrameSize.height,
             }}
           >
-          {images.map((image) => {
-            const media = resolvedMediaByAssetId[image.assetId]?.full;
-            if (!media) {
-              return null;
-            }
+            <div
+              ref={canvasRef}
+              onPointerDown={(event) => {
+                event.stopPropagation();
 
-            return (
-              <button
-                key={image.id}
-                type="button"
-                onPointerDown={handleImagePointerDown(image.id)}
-                className={clsx(
-                  "absolute left-0 top-0 overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent",
-                  selectedImageId === image.id && "outline-accent",
-                )}
-                style={{
-                  width: image.width,
-                  height: image.height,
-                  zIndex: selectedImageId === image.id ? 2 : 1,
-                  transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
-                }}
-              >
-                <img
-                  src={media.src}
-                  alt={image.alt}
-                  draggable={false}
-                  className="pointer-events-none h-full w-full select-none object-contain"
-                />
-              </button>
-            );
-          })}
-
-          {texts.map((text) => (
-            <button
-              key={text.id}
-              type="button"
-              onPointerDown={handleTextPointerDown(text.id)}
+                if (event.target === event.currentTarget) {
+                  clearSelection();
+                }
+              }}
+              onDragOver={handleCanvasDragOver}
+              onDragLeave={handleCanvasDragLeave}
+              onDrop={handleCanvasDrop}
               className={clsx(
-                "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline outline-1 outline-transparent",
-                selectedTextId === text.id && "outline-accent",
+                "absolute left-0 top-0 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
+                dropTargetActive &&
+                  "outline outline-2 outline-accent outline-offset-[-4px]",
               )}
               style={{
-                zIndex: selectedTextId === text.id ? 4 : 3,
-                maxWidth: text.maxWidth,
-                transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
-                color: text.color,
-                fontFamily: `${text.fontFamily}, sans-serif`,
-                fontSize: text.fontSize,
-                fontWeight: text.fontWeight,
-                textAlign: text.align,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
+                width: canvasShell.width,
+                height: canvasShell.height,
+                background: canvasShell.background,
+                transform: `scale(${canvasScale})`,
+                transformOrigin: "top left",
               }}
             >
-              {text.text}
-            </button>
-          ))}
+              {images.map((image) => {
+                const media = resolvedMediaByAssetId[image.assetId]?.full;
+                if (!media) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={image.id}
+                    className="absolute left-0 top-0"
+                    style={{
+                      width: image.width,
+                      height: image.height,
+                      zIndex: selectedImageId === image.id ? 2 : 1,
+                      transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onPointerDown={handleImagePointerDown(image.id)}
+                      className={clsx(
+                        "h-full w-full overflow-hidden rounded-lg shadow-md outline outline-1 outline-transparent",
+                        selectedImageId === image.id && "outline-accent",
+                      )}
+                      style={{ touchAction: "none" }}
+                    >
+                      <img
+                        src={media.src}
+                        alt={image.alt}
+                        draggable={false}
+                        className="pointer-events-none h-full w-full select-none object-contain"
+                      />
+                    </button>
+
+                    {selectedImageId === image.id ? (
+                      <button
+                        type="button"
+                        aria-label="Resize image"
+                        onPointerDown={handleImageResizePointerDown(image)}
+                        className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
+                        style={{
+                          right: 0,
+                          bottom: 0,
+                          transform: "translate(50%, 50%)",
+                          touchAction: "none",
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
+
+              {texts.map((text) => (
+                <button
+                  key={text.id}
+                  type="button"
+                  onPointerDown={handleTextPointerDown(text.id)}
+                  className={clsx(
+                    "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline outline-1 outline-transparent",
+                    selectedTextId === text.id && "outline-accent",
+                  )}
+                  style={{
+                    zIndex: selectedTextId === text.id ? 4 : 3,
+                    maxWidth: text.maxWidth,
+                    transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
+                    color: text.color,
+                    fontFamily: `${text.fontFamily}, sans-serif`,
+                    fontSize: text.fontSize,
+                    fontWeight: text.fontWeight,
+                    textAlign: text.align,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {text.text}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 });

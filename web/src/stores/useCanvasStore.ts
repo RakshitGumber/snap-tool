@@ -42,6 +42,7 @@ type CanvasActions = {
   ) => string | null;
   insertTextOnActiveCanvas: (text: BoardTextInput) => string | null;
   moveImageOnCanvas: (imageId: string, x: number, y: number) => void;
+  resizeImageOnCanvas: (imageId: string, width: number, height: number) => void;
   positionImageOnCanvas: (imageId: string, preset: BoardImagePositionPreset) => void;
   moveTextOnCanvas: (
     textId: string,
@@ -59,6 +60,7 @@ type CanvasActions = {
 const MAX_INITIAL_IMAGE_SCALE = 0.8;
 const IMAGE_INSERT_OFFSET_STEP = 18;
 const IMAGE_POSITION_INSET = 24;
+const MIN_IMAGE_SIZE = 48;
 const TEXT_INSERT_OFFSET_STEP = 24;
 const MIN_TEXT_FONT_SIZE = 12;
 const MAX_TEXT_FONT_SIZE = 180;
@@ -68,6 +70,11 @@ const MIN_TEXT_BOX_WIDTH = 120;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
+
+const getItemAxisBounds = (containerSize: number, itemSize: number) => ({
+  min: Math.min(containerSize - itemSize, 0),
+  max: Math.max(containerSize - itemSize, 0),
+});
 
 const EMPTY_CANVAS_IMAGES: Record<string, BoardImageItem> = {};
 const EMPTY_CANVAS_TEXT: Record<string, BoardTextItem> = {};
@@ -152,23 +159,17 @@ const createCanvasImageItem = (
     maxWidth: state.canvasMeta.width * MAX_INITIAL_IMAGE_SCALE,
     maxHeight: state.canvasMeta.height * MAX_INITIAL_IMAGE_SCALE,
   });
-  const maxX = Math.max(state.canvasMeta.width - width, 0);
-  const maxY = Math.max(state.canvasMeta.height - height, 0);
+  const { min: minX, max: maxX } = getItemAxisBounds(state.canvasMeta.width, width);
+  const { min: minY, max: maxY } = getItemAxisBounds(state.canvasMeta.height, height);
   const offset = Math.min(state.imageOrder.length * IMAGE_INSERT_OFFSET_STEP, 72);
-  const defaultX = Math.min(
-    Math.max((state.canvasMeta.width - width) / 2 + offset, 0),
-    maxX,
-  );
-  const defaultY = Math.min(
-    Math.max((state.canvasMeta.height - height) / 2 + offset, 0),
-    maxY,
-  );
+  const defaultX = clamp((state.canvasMeta.width - width) / 2 + offset, minX, maxX);
+  const defaultY = clamp((state.canvasMeta.height - height) / 2 + offset, minY, maxY);
 
   return {
     id: crypto.randomUUID(),
     assetId: asset.id,
-    x: point ? clamp(point.x - width / 2, 0, maxX) : defaultX,
-    y: point ? clamp(point.y - height / 2, 0, maxY) : defaultY,
+    x: point ? clamp(point.x - width / 2, minX, maxX) : defaultX,
+    y: point ? clamp(point.y - height / 2, minY, maxY) : defaultY,
     width,
     height,
     alt: asset.name,
@@ -184,47 +185,61 @@ const getImagePositionForPreset = ({
   image: BoardImageItem;
   preset: BoardImagePositionPreset;
 }) => {
-  const maxX = Math.max(canvasMeta.width - image.width, 0);
-  const maxY = Math.max(canvasMeta.height - image.height, 0);
+  const { min: minX, max: maxX } = getItemAxisBounds(canvasMeta.width, image.width);
+  const { min: minY, max: maxY } = getItemAxisBounds(canvasMeta.height, image.height);
   const centerX = (canvasMeta.width - image.width) / 2;
   const centerY = (canvasMeta.height - image.height) / 2;
-  const isAtInsetTop = image.y === clamp(IMAGE_POSITION_INSET, 0, maxY);
+  const overflowsHorizontally = image.width > canvasMeta.width;
+  const overflowsVertically = image.height > canvasMeta.height;
+  const isAtInsetTop = image.y === clamp(IMAGE_POSITION_INSET, minY, maxY);
   const isAtInsetBottom =
-    image.y === clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, 0, maxY);
-  const isAtInsetLeft = image.x === clamp(IMAGE_POSITION_INSET, 0, maxX);
+    image.y === clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, minY, maxY);
+  const isAtInsetLeft = image.x === clamp(IMAGE_POSITION_INSET, minX, maxX);
   const isAtInsetRight =
-    image.x === clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, 0, maxX);
+    image.x === clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, minX, maxX);
 
   switch (preset) {
     case "top":
       return {
-        x: clamp(image.x, 0, maxX),
-        y: isAtInsetTop ? 0 : clamp(IMAGE_POSITION_INSET, 0, maxY),
+        x: clamp(image.x, minX, maxX),
+        y: overflowsVertically
+          ? maxY
+          : isAtInsetTop
+            ? maxY
+            : clamp(IMAGE_POSITION_INSET, minY, maxY),
       };
     case "bottom":
       return {
-        x: clamp(image.x, 0, maxX),
-        y: isAtInsetBottom
-          ? maxY
-          : clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, 0, maxY),
+        x: clamp(image.x, minX, maxX),
+        y: overflowsVertically
+          ? minY
+          : isAtInsetBottom
+            ? minY
+            : clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, minY, maxY),
       };
     case "left":
       return {
-        x: isAtInsetLeft ? 0 : clamp(IMAGE_POSITION_INSET, 0, maxX),
-        y: clamp(image.y, 0, maxY),
+        x: overflowsHorizontally
+          ? maxX
+          : isAtInsetLeft
+            ? maxX
+            : clamp(IMAGE_POSITION_INSET, minX, maxX),
+        y: clamp(image.y, minY, maxY),
       };
     case "right":
       return {
-        x: isAtInsetRight
-          ? maxX
-          : clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, 0, maxX),
-        y: clamp(image.y, 0, maxY),
+        x: overflowsHorizontally
+          ? minX
+          : isAtInsetRight
+            ? minX
+            : clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, minX, maxX),
+        y: clamp(image.y, minY, maxY),
       };
     case "center":
     default:
       return {
-        x: clamp(centerX, 0, maxX),
-        y: clamp(centerY, 0, maxY),
+        x: clamp(centerX, minX, maxX),
+        y: clamp(centerY, minY, maxY),
       };
   }
 };
@@ -452,16 +467,53 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
         return state;
       }
 
-      const maxX = Math.max(canvasMeta.width - image.width, 0);
-      const maxY = Math.max(canvasMeta.height - image.height, 0);
+      const { min: minX, max: maxX } = getItemAxisBounds(
+        canvasMeta.width,
+        image.width,
+      );
+      const { min: minY, max: maxY } = getItemAxisBounds(
+        canvasMeta.height,
+        image.height,
+      );
 
       return {
         imagesById: {
           ...state.imagesById,
           [imageId]: {
             ...image,
-            x: clamp(x, 0, maxX),
-            y: clamp(y, 0, maxY),
+            x: clamp(x, minX, maxX),
+            y: clamp(y, minY, maxY),
+          },
+        },
+      };
+    }),
+
+  resizeImageOnCanvas: (imageId, width, height) =>
+    set((state) => {
+      const image = state.imagesById[imageId];
+
+      if (!image) {
+        return state;
+      }
+
+      const requestedWidth = Math.max(width, MIN_IMAGE_SIZE);
+      const requestedHeight = Math.max(height, MIN_IMAGE_SIZE);
+      const nextSize = {
+        width: Math.round(requestedWidth),
+        height: Math.round(requestedHeight),
+      };
+
+      if (image.width === nextSize.width && image.height === nextSize.height) {
+        return state;
+      }
+
+      return {
+        imagesById: {
+          ...state.imagesById,
+          [imageId]: {
+            ...image,
+            width: nextSize.width,
+            height: nextSize.height,
           },
         },
       };

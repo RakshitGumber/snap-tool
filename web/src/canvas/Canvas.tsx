@@ -145,7 +145,7 @@ const CanvasTextItem = memo(
 
 CanvasTextItem.displayName = "CanvasTextItem";
 
-export const BoardCanvas = memo(function BoardCanvas() {
+export const Canvas = memo(function BoardCanvas() {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<CanvasDragState | null>(null);
   const frameRequestRef = useRef<number | null>(null);
@@ -162,9 +162,15 @@ export const BoardCanvas = memo(function BoardCanvas() {
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
   );
-  const clearSelection = useBoardSelectionStore((state) => state.clearSelection);
-  const setSelectedImage = useBoardSelectionStore((state) => state.setSelectedImage);
-  const setSelectedText = useBoardSelectionStore((state) => state.setSelectedText);
+  const clearSelection = useBoardSelectionStore(
+    (state) => state.clearSelection,
+  );
+  const setSelectedImage = useBoardSelectionStore(
+    (state) => state.setSelectedImage,
+  );
+  const setSelectedText = useBoardSelectionStore(
+    (state) => state.setSelectedText,
+  );
 
   const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -306,7 +312,10 @@ export const BoardCanvas = memo(function BoardCanvas() {
 
   const handleCanvasDragLeave = (event: ReactDragEvent<HTMLDivElement>) => {
     const nextTarget = event.relatedTarget;
-    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+    if (
+      nextTarget instanceof Node &&
+      event.currentTarget.contains(nextTarget)
+    ) {
       return;
     }
 
@@ -362,7 +371,8 @@ export const BoardCanvas = memo(function BoardCanvas() {
           onDrop={handleCanvasDrop}
           className={clsx(
             "relative shrink-0 overflow-hidden border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
-            dropTargetActive && "outline outline-2 outline-accent outline-offset-[-4px]",
+            dropTargetActive &&
+              "outline outline-2 outline-accent outline-offset-[-4px]",
           )}
           style={{
             width: canvasShell.width,

@@ -1,6 +1,6 @@
-import { BoardSidebar } from "@/components/board/BoardSidebar";
+import { BoardSidebar } from "@/components/board/Sidebar";
 import { TopRibbon } from "@/components/board/TopRibbon";
-import { BoardCanvas } from "@/canvas";
+import { Canvas } from "@/canvas/Canvas";
 
 export const Board = () => {
   return (
@@ -9,7 +9,7 @@ export const Board = () => {
       <div className="flex min-h-0 flex-1">
         <BoardSidebar />
         <section className="relative min-w-0 flex-1">
-          <BoardCanvas />
+          <Canvas />
         </section>
       </div>
     </main>

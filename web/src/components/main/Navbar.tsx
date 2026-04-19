@@ -3,7 +3,7 @@ import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 
 import { Icon } from "@iconify/react";
 
-import { ThemeButton } from "../ui/ThemeButton";
+import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useState } from "react";
 
 const parentVariants = {

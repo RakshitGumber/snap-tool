@@ -1,1 +1,0 @@
-export { BoardCanvas } from "./BoardCanvas";

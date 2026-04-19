@@ -1,7 +1,7 @@
 import { useRef, useMemo, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
-import { useShallow } from "zustand/react/shallow"; // Recommended for Zustand
+import { useShallow } from "zustand/react/shallow";
 
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import {
@@ -21,12 +21,10 @@ import type { CanvasPresetGroupId } from "@/types/canvas";
 export const PresetControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // -- Store Selectors --
   const presetGroups = useCanvasPresetGroups();
   const activePreset = useActiveCanvasPreset();
   const canvasShell = useCanvasShell();
 
-  // Grouped UI store selectors for cleaner code (useShallow prevents unnecessary renders)
   const {
     isPresetMenuOpen,
     setPresetMenuOpen,
@@ -52,7 +50,7 @@ export const PresetControl = () => {
   );
 
   // -- Memoized Derived State --
-  const { activeLabel, activeDetail, activeIcon } = useMemo(() => {
+  const { activeLabel, activeIcon } = useMemo(() => {
     const isPreset = activePreset.kind === "preset";
     const width = isPreset
       ? activePreset.preset.size.width

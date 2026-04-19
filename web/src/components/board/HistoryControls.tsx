@@ -10,7 +10,7 @@ export const HistoryControls = () => {
   const canRedo = useCanvasStore((state) => state.historyFuture.length > 0);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center">
       <button
         type="button"
         aria-label="Undo"

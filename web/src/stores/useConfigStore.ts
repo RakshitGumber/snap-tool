@@ -1,125 +1,26 @@
+import { create } from "zustand";
+
 import type {
   CanvasBackgroundPreset,
   CanvasFrame,
+  CanvasPreset,
   CanvasPresetGroup,
   CanvasPresetGroupId,
-  CanvasPreset,
   CanvasPresetId,
   CanvasSize,
   ResolvedCanvasPreset,
 } from "@/types/canvas";
 
-import type { BoardTextInput } from "@/types/canvas";
-
-export const DEFAULT_BOARD_TEXT_INPUT: BoardTextInput = {
-  text: "",
-  fontFamily: "Inter",
-  fontSize: 24,
-  fontWeight: 400,
-  color: "#000000",
-  align: "left",
-  maxWidth: 320,
+type ConfigState = {
+  defaultCanvasPresetId: CanvasPresetId;
+  defaultBackgroundPresetId: string;
+  canvasPresetGroups: CanvasPresetGroup[];
+  canvasPresets: CanvasPreset[];
+  canvasBackgroundPresets: CanvasBackgroundPreset[];
+  canvasPresetGroupIcons: Record<CanvasPresetGroupId, string>;
 };
 
-export const BOARD_TEXT_WEIGHT_OPTIONS = [300, 400, 500, 600, 700, 800, 900];
-
-export const normalizeBoardTextFamily = (value: string) =>
-  value
-    .trim()
-    .replace(/^['"]+|['"]+$/g, "")
-    .replace(/\s+/g, " ");
-
-export const CANVAS_PRESET_GROUPS: CanvasPresetGroup[] = [
-  {
-    id: "twitter",
-    label: "Twitter",
-    presets: [
-      {
-        id: "twitter-square-post",
-        groupId: "twitter",
-        label: "Square",
-        size: { width: 1200, height: 1200 },
-      },
-      {
-        id: "twitter-landscape-post",
-        groupId: "twitter",
-        label: "Landscape",
-        size: { width: 1200, height: 628 },
-      },
-    ],
-  },
-  {
-    id: "linkedin",
-    label: "LinkedIn",
-    presets: [
-      {
-        id: "linkedin-landscape-post",
-        groupId: "linkedin",
-        label: "Landscape",
-        size: { width: 1200, height: 628 },
-      },
-      {
-        id: "linkedin-square-post",
-        groupId: "linkedin",
-        label: "Square",
-        size: { width: 1200, height: 1200 },
-      },
-      {
-        id: "linkedin-portrait-post",
-        groupId: "linkedin",
-        label: "Portrait",
-        size: { width: 720, height: 900 },
-      },
-    ],
-  },
-  {
-    id: "instagram",
-    label: "Instagram",
-    presets: [
-      {
-        id: "instagram-landscape-post",
-        groupId: "instagram",
-        label: "Landscape",
-        size: { width: 1080, height: 566 },
-      },
-      {
-        id: "instagram-square-post",
-        groupId: "instagram",
-        label: "Square",
-        size: { width: 1080, height: 1080 },
-      },
-      {
-        id: "instagram-portrait-post",
-        groupId: "instagram",
-        label: "Portrait",
-        size: { width: 1080, height: 1350 },
-      },
-      {
-        id: "instagram-full-portrait-post",
-        groupId: "instagram",
-        label: "Full Portrait",
-        size: { width: 1080, height: 1440 },
-      },
-    ],
-  },
-  {
-    id: "pinterest",
-    label: "Pinterest",
-    presets: [
-      {
-        id: "pinterest-standard-pin",
-        groupId: "pinterest",
-        label: "Standard",
-        size: { width: 1000, height: 1500 },
-      },
-      {
-        id: "pinterest-square-pin",
-        groupId: "pinterest",
-        label: "Square",
-        size: { width: 1000, height: 1000 },
-      },
-    ],
-  },
+const canvasPresetGroups: CanvasPresetGroup[] = [
   {
     id: "general",
     label: "General",
@@ -144,9 +45,53 @@ export const CANVAS_PRESET_GROUPS: CanvasPresetGroup[] = [
       },
     ],
   },
+  {
+    id: "instagram",
+    label: "Instagram",
+    presets: [
+      {
+        id: "instagram-square-post",
+        groupId: "instagram",
+        label: "Square Post",
+        size: { width: 1080, height: 1080 },
+      },
+      {
+        id: "instagram-portrait-post",
+        groupId: "instagram",
+        label: "Portrait Post",
+        size: { width: 1080, height: 1350 },
+      },
+      {
+        id: "instagram-story",
+        groupId: "instagram",
+        label: "Story",
+        size: { width: 1080, height: 1920 },
+      },
+    ],
+  },
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    presets: [
+      {
+        id: "linkedin-landscape-post",
+        groupId: "linkedin",
+        label: "Landscape Post",
+        size: { width: 1200, height: 628 },
+      },
+      {
+        id: "linkedin-square-post",
+        groupId: "linkedin",
+        label: "Square Post",
+        size: { width: 1200, height: 1200 },
+      },
+    ],
+  },
 ];
 
-export const CANVAS_BACKGROUND_PRESETS: CanvasBackgroundPreset[] = [
+const canvasPresets = canvasPresetGroups.flatMap((group) => group.presets);
+
+const canvasBackgroundPresets: CanvasBackgroundPreset[] = [
   {
     id: "solid-white",
     label: "White",
@@ -205,33 +150,51 @@ export const CANVAS_BACKGROUND_PRESETS: CanvasBackgroundPreset[] = [
   },
 ];
 
+export const DEFAULT_CANVAS_PRESET_ID: CanvasPresetId = "general-square";
+export const DEFAULT_BACKGROUND_PRESET_ID = "solid-white";
+
+export const useConfigStore = create<ConfigState>(() => ({
+  defaultCanvasPresetId: DEFAULT_CANVAS_PRESET_ID,
+  defaultBackgroundPresetId: DEFAULT_BACKGROUND_PRESET_ID,
+  canvasPresetGroups,
+  canvasPresets,
+  canvasBackgroundPresets,
+  canvasPresetGroupIcons: {
+    twitter: "ri:twitter-x-fill",
+    linkedin: "mdi:linkedin",
+    instagram: "mdi:instagram",
+    pinterest: "mdi:pinterest",
+    general: "solar:ruler-angular-linear",
+  },
+}));
+
+const getConfigState = () => useConfigStore.getState();
+
+export const useCanvasPresetGroups = () =>
+  useConfigStore((state) => state.canvasPresetGroups);
+
+export const useCanvasBackgroundPresets = () =>
+  useConfigStore((state) => state.canvasBackgroundPresets);
+
 export const findCanvasPresetById = (
   presetId: CanvasPresetId | null | undefined,
 ) =>
   presetId
-    ? (CANVAS_PRESETS.find((preset) => preset.id === presetId) ?? null)
+    ? (getConfigState().canvasPresets.find((preset) => preset.id === presetId) ?? null)
     : null;
 
 export const getCanvasPresetById = (presetId: CanvasPresetId) =>
-  findCanvasPresetById(presetId) ?? CANVAS_PRESETS[0];
+  findCanvasPresetById(presetId) ?? getConfigState().canvasPresets[0];
 
 export const getCanvasPresetGroupById = (groupId: CanvasPresetGroupId) =>
-  CANVAS_PRESET_GROUPS.find((group) => group.id === groupId) ??
-  CANVAS_PRESET_GROUPS[0];
+  getConfigState().canvasPresetGroups.find((group) => group.id === groupId) ??
+  getConfigState().canvasPresetGroups[0];
 
 export const getCanvasPresetGroupIcon = (groupId: CanvasPresetGroupId) =>
-  (
-    ({
-      twitter: "ri:twitter-x-fill",
-      linkedin: "mdi:linkedin",
-      instagram: "mdi:instagram",
-      pinterest: "mdi:pinterest",
-      general: "solar:ruler-angular-linear",
-    }) satisfies Record<CanvasPresetGroupId, string>
-  )[groupId];
+  getConfigState().canvasPresetGroupIcons[groupId];
 
 export const getCanvasPresetBySize = ({ width, height }: CanvasSize) =>
-  CANVAS_PRESETS.find(
+  getConfigState().canvasPresets.find(
     (preset) => preset.size.width === width && preset.size.height === height,
   );
 
@@ -247,6 +210,7 @@ export const resolveCanvasPreset = ({
     presetFromId.size.height === height
       ? presetFromId
       : getCanvasPresetBySize({ width, height });
+
   if (!preset) {
     return {
       kind: "custom",
@@ -262,8 +226,8 @@ export const resolveCanvasPreset = ({
 };
 
 export const getCanvasBackgroundById = (presetId: string) =>
-  CANVAS_BACKGROUND_PRESETS.find((preset) => preset.id === presetId) ??
-  CANVAS_BACKGROUND_PRESETS[0];
+  getConfigState().canvasBackgroundPresets.find((preset) => preset.id === presetId) ??
+  getConfigState().canvasBackgroundPresets[0];
 
 export const createCanvasFrame = (
   size: CanvasSize,

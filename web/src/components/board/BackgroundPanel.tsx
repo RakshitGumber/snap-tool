@@ -1,16 +1,17 @@
-import { useActiveCanvasBackground } from "@/stores/useCanvasStore";
-import type { CanvasBackgroundPreset } from "@/types/canvas";
+import clsx from "clsx";
 
-type BoardBackgroundPanelProps = {
-  backgroundPresets: CanvasBackgroundPreset[];
-  onBackgroundSelect: (backgroundPresetId: string) => void;
-};
+import { useCanvasBackgroundPresets } from "@/stores/useConfigStore";
+import {
+  useActiveCanvasBackground,
+  useCanvasStore,
+} from "@/stores/useCanvasStore";
 
-export const BoardBackgroundPanel = ({
-  backgroundPresets,
-  onBackgroundSelect,
-}: BoardBackgroundPanelProps) => {
+export const BoardBackgroundPanel = () => {
+  const backgroundPresets = useCanvasBackgroundPresets();
   const activeBackground = useActiveCanvasBackground();
+  const applyBackgroundToCanvas = useCanvasStore(
+    (state) => state.applyBackgroundToCanvas,
+  );
 
   return (
     <div className="space-y-4">
@@ -32,8 +33,13 @@ export const BoardBackgroundPanel = ({
           <button
             key={backgroundPreset.id}
             type="button"
-            onClick={() => onBackgroundSelect(backgroundPreset.id)}
-            className="rounded-xl p-2 text-left outline outline-1 outline-border-color/60 transition hover:outline-accent/70"
+            onClick={() => applyBackgroundToCanvas(backgroundPreset.id)}
+            className={clsx(
+              "rounded-xl p-2 text-left outline outline-1 transition hover:outline-accent/70",
+              backgroundPreset.id === activeBackground?.id
+                ? "outline-accent"
+                : "outline-border-color/60",
+            )}
           >
             <div
               className="h-12 rounded-md outline outline-1 outline-border-color/60"

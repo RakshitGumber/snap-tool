@@ -5,10 +5,15 @@ import {
   DEFAULT_ACCESS_PANEL_WIDTH,
   DEFAULT_DESIGN_PANEL_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
-} from "@/board/config";
+} from "@/config";
+import { useBoardUiStore } from "@/stores/useBoardUiStore";
 import { useCanvasShell } from "@/stores/useCanvasStore";
 
-import type { BoardSidebarSectionId } from "./types";
+import { BoardBackgroundPanel } from "./BackgroundPanel";
+import { BoardOverviewPanel } from "./OverviewPanel";
+import { BoardTextPanel } from "./TextPanel";
+import type { BoardSidebarSection, BoardSidebarSectionId } from "./types";
+import { BoardUploadsPanel } from "./UploadsPanel";
 
 const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   overview: "solar:document-text-linear",
@@ -20,6 +25,42 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
 
 export const BoardSidebar = () => {
   const canvasShell = useCanvasShell();
+  const openSectionId = useBoardUiStore((state) => state.openSectionId);
+  const isOpen = useBoardUiStore((state) => state.isSidebarOpen);
+  const toggleSection = useBoardUiStore((state) => state.toggleSection);
+  const setSidebarOpen = useBoardUiStore((state) => state.setSidebarOpen);
+  const sections: BoardSidebarSection[] = [
+    {
+      id: "overview",
+      label: "Overview",
+      description: "Canvas summary and active layer details.",
+      content: <BoardOverviewPanel />,
+    },
+    {
+      id: "background",
+      label: "Background",
+      description: "Pick a fill preset for the current canvas.",
+      content: <BoardBackgroundPanel />,
+    },
+    {
+      id: "elements",
+      label: "Elements",
+      description: "Reusable design elements will live here.",
+      isPlaceholder: true,
+    },
+    {
+      id: "text",
+      label: "Text",
+      description: "Add and edit text layers for the canvas.",
+      content: <BoardTextPanel />,
+    },
+    {
+      id: "uploads",
+      label: "Uploads",
+      description: "Import local files or URLs into the board.",
+      content: <BoardUploadsPanel />,
+    },
+  ];
   const activeSection =
     sections.find((section) => section.id === openSectionId) ?? sections[0];
   const shouldShowSectionMeta = activeSection?.id !== "overview";
@@ -50,7 +91,7 @@ export const BoardSidebar = () => {
                 <button
                   key={section.id}
                   type="button"
-                  onClick={() => onSectionToggle(section.id)}
+                  onClick={() => toggleSection(section.id)}
                   className={clsx(
                     "flex w-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-center transition hover:bg-secondary-text/20",
                     isActive ? "text-title-color" : "text-secondary-text",
@@ -92,7 +133,7 @@ export const BoardSidebar = () => {
             <button
               type="button"
               aria-label="Close design panel"
-              onClick={() => onToggleSidebar(false)}
+              onClick={() => setSidebarOpen(false)}
               className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-title-color transition hover:bg-secondary-text/20"
             >
               <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />

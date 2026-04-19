@@ -10,9 +10,10 @@ import {
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
+  getCanvasPresetBySize,
   getCanvasPresetGroupById,
   resolveCanvasPreset,
-} from "@/board/config";
+} from "@/stores/useConfigStore";
 import { useBoardSelectionStore } from "@/stores/useBoardSelectionStore";
 import type {
   BoardImageItem,
@@ -492,10 +493,11 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
     }),
 
   resetCanvas: (size) => {
+    const preset = getCanvasPresetBySize(size);
     const canvas = createCanvasFrame(
       size,
       DEFAULT_BACKGROUND_PRESET_ID,
-      DEFAULT_CANVAS_PRESET_ID,
+      preset?.id ?? null,
     );
     set(normalizeCanvasFrame(canvas));
     useBoardSelectionStore.getState().clearSelection();

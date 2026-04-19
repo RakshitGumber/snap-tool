@@ -3,14 +3,33 @@ import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
-import { getCanvasPresetGroupIcon } from "@/board/config";
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
+import { useBoardUiStore } from "@/stores/useBoardUiStore";
+import {
+  getCanvasPresetById,
+  getCanvasPresetGroupIcon,
+  useCanvasPresetGroups,
+} from "@/stores/useConfigStore";
+import {
+  useActiveCanvasPreset,
+  useCanvasShell,
+  useCanvasStore,
+} from "@/stores/useCanvasStore";
 import type { CanvasPresetGroupId } from "@/types/canvas";
 
-export const BoardPresetControl = () => {
+export const PresetControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [activeGroupId, setActiveGroupId] =
     useState<CanvasPresetGroupId | null>(null);
+  const presetGroups = useCanvasPresetGroups();
+  const activePreset = useActiveCanvasPreset();
+  const canvasShell = useCanvasShell();
+  const isPresetMenuOpen = useBoardUiStore((state) => state.isPresetMenuOpen);
+  const setPresetMenuOpen = useBoardUiStore((state) => state.setPresetMenuOpen);
+  const initializeDefaultCanvas = useCanvasStore(
+    (state) => state.initializeDefaultCanvas,
+  );
+  const resizeCanvas = useCanvasStore((state) => state.resizeCanvas);
   const menuOffsetX = 0;
   const menuMaxHeight = undefined;
 
@@ -32,9 +51,21 @@ export const BoardPresetControl = () => {
     isOpen: isPresetMenuOpen,
     onDismiss: () => {
       setActiveGroupId(null);
-      onPresetMenuOpenChange(false);
+      setPresetMenuOpen(false);
     },
   });
+
+  const handleSelectPreset = (presetId: Parameters<typeof getCanvasPresetById>[0]) => {
+    const preset = getCanvasPresetById(presetId);
+
+    if (!canvasShell) {
+      initializeDefaultCanvas();
+    }
+
+    resizeCanvas(preset.size, preset.id);
+    setActiveGroupId(null);
+    setPresetMenuOpen(false);
+  };
 
   return (
     <div ref={containerRef} className="relative">
@@ -47,7 +78,7 @@ export const BoardPresetControl = () => {
             setActiveGroupId(null);
           }
 
-          onPresetMenuOpenChange(!isPresetMenuOpen);
+          setPresetMenuOpen(!isPresetMenuOpen);
         }}
         className="inline-flex h-10 items-center gap-2 rounded-lg px-2 text-title-color transition hover:bg-secondary-text/20"
       >
@@ -92,9 +123,7 @@ export const BoardPresetControl = () => {
                     key={preset.id}
                     type="button"
                     onClick={() => {
-                      setActiveGroupId(null);
-                      onPresetMenuOpenChange(false);
-                      onSelectPreset(preset.id);
+                      handleSelectPreset(preset.id);
                     }}
                     className={clsx(
                       "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",

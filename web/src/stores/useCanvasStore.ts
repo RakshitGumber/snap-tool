@@ -35,6 +35,7 @@ type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
+  clearCanvas: () => void;
   insertImageOnActiveCanvas: (asset: UploadLibraryAssetMeta) => string | null;
   insertImageOnCanvasAtPoint: (
     asset: UploadLibraryAssetMeta,
@@ -403,6 +404,23 @@ export const useCanvasStore = create<CanvasState & CanvasActions>((set, get) => 
       };
     });
   },
+
+  clearCanvas: () =>
+    set((state) => {
+      if (!state.canvasMeta) {
+        return state;
+      }
+
+      useEditorUiStore.getState().clearSelection();
+      useEditorUiStore.getState().resetTextDraft();
+
+      return {
+        imageOrder: [],
+        imagesById: EMPTY_CANVAS_IMAGES,
+        textOrder: [],
+        textsById: EMPTY_CANVAS_TEXT,
+      };
+    }),
 
   insertImageOnActiveCanvas: (asset) => {
     const image = createCanvasImageItem(asset, get());

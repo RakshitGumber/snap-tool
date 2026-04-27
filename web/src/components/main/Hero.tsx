@@ -26,10 +26,10 @@ export const Hero = () => {
         className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-16 px-7 py-20 sm:text-center text-left lg:text-left"
       >
         <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold mx-auto lg:mx-0">
-          Releasing new templates everyday.
+          Releasing a new version everyday.
         </div>
         <div className="flex flex-col gap-10">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-sans tracking-wider font-bold text-title-color capitalize leading-snug">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans tracking-wider font-bold text-title-color capitalize leading-snug">
             Minimalist solution to creating your next post
           </h1>
           <span className="text-lg lg:text-2xl text px-1 w-full md:w-4/5 lg:w-3/4 mx-auto lg:mx-0">

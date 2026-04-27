@@ -39,7 +39,7 @@ export const Navbar = () => {
 
   return (
     <motion.header
-      className="h-18 bg-card-bg/95 backdrop-blur-3xl border-b-2 border-border-color w-full fixed top-0 z-20 flex justify-center shadow-md light:shadow-title-color/30"
+      className="h-18 bg-card-bg/95 backdrop-blur-3xl w-full fixed top-0 z-20 flex justify-center shadow-sm light:shadow-title-color/30"
       variants={parentVariants}
       animate={hidden ? "hidden" : "visible"}
       transition={{
@@ -138,7 +138,7 @@ export const Navbar = () => {
 
         {menuOpen ? (
           <div className="absolute top-full left-0 right-0 lg:hidden">
-            <div className="rounded-b-2xl border-b-2 border-border-color bg-card-bg p-3 shadow-lg">
+            <div className="rounded-b-2xl bg-card-bg p-3 shadow-sm">
               <ul className="flex flex-col gap-1">
                 {navItems.map((item) => (
                   <li key={item.to}>
@@ -152,7 +152,7 @@ export const Navbar = () => {
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 flex items-center gap-2 border-t border-accent/30 p-2 md:hidden">
+              <div className="mt-3 flex items-center gap-2 border-t border-border-color p-2 md:hidden">
                 <a
                   href="https://github.com/RakshitGumber/snap-tool"
                   className="rounded-lg font-semibold hover:bg-title-color/20 items-center flex gap-1 text-xl p-2 text-title-color"

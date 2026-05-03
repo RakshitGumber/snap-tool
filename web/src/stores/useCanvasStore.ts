@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 import {
   areCanvasBackgroundEffectsEqual,
@@ -62,14 +63,20 @@ type CanvasActions = {
   insertTextOnActiveCanvas: (text: BoardTextInput) => string | null;
   moveImageOnCanvas: (imageId: string, x: number, y: number) => void;
   resizeImageOnCanvas: (imageId: string, width: number, height: number) => void;
-  positionImageOnCanvas: (imageId: string, preset: BoardImagePositionPreset) => void;
+  positionImageOnCanvas: (
+    imageId: string,
+    preset: BoardImagePositionPreset,
+  ) => void;
   moveTextOnCanvas: (
     textId: string,
     x: number,
     y: number,
     bounds?: { width: number; height: number },
   ) => void;
-  updateTextOnCanvas: (textId: string, updates: Partial<BoardTextInput>) => void;
+  updateTextOnCanvas: (
+    textId: string,
+    updates: Partial<BoardTextInput>,
+  ) => void;
   removeSelectedImage: () => void;
   removeSelectedText: () => void;
   resetCanvas: (size: CanvasSize) => CanvasFrame;
@@ -86,6 +93,21 @@ const MAX_TEXT_FONT_SIZE = 180;
 const MIN_TEXT_FONT_WEIGHT = 100;
 const MAX_TEXT_FONT_WEIGHT = 900;
 const MIN_TEXT_BOX_WIDTH = 120;
+
+// Safe UUID generation fallback for non-HTTPS dev environments (like local network testing)
+const generateId = () => {
+  if (
+    typeof window !== "undefined" &&
+    window.crypto &&
+    window.crypto.randomUUID
+  ) {
+    return window.crypto.randomUUID();
+  }
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
+};
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -120,7 +142,9 @@ const normalizeCanvasFrame = (canvas: CanvasFrame) => {
       ),
     } satisfies CanvasShell,
     imageOrder: canvas.images.map((image) => image.id),
-    imagesById: Object.fromEntries(canvas.images.map((image) => [image.id, image])),
+    imagesById: Object.fromEntries(
+      canvas.images.map((image) => [image.id, image]),
+    ),
     textOrder: texts.map((text) => text.id),
     textsById: Object.fromEntries(texts.map((text) => [text.id, text])),
   };
@@ -161,7 +185,11 @@ const getContainedImageSize = ({
 }) => {
   const safeSourceWidth = Math.max(sourceWidth, 1);
   const safeSourceHeight = Math.max(sourceHeight, 1);
-  const scale = Math.min(maxWidth / safeSourceWidth, maxHeight / safeSourceHeight, 1);
+  const scale = Math.min(
+    maxWidth / safeSourceWidth,
+    maxHeight / safeSourceHeight,
+    1,
+  );
 
   return {
     width: Math.max(1, Math.round(safeSourceWidth * scale)),
@@ -184,14 +212,31 @@ const createCanvasImageItem = (
     maxWidth: state.canvasMeta.width * MAX_INITIAL_IMAGE_SCALE,
     maxHeight: state.canvasMeta.height * MAX_INITIAL_IMAGE_SCALE,
   });
-  const { min: minX, max: maxX } = getItemAxisBounds(state.canvasMeta.width, width);
-  const { min: minY, max: maxY } = getItemAxisBounds(state.canvasMeta.height, height);
-  const offset = Math.min(state.imageOrder.length * IMAGE_INSERT_OFFSET_STEP, 72);
-  const defaultX = clamp((state.canvasMeta.width - width) / 2 + offset, minX, maxX);
-  const defaultY = clamp((state.canvasMeta.height - height) / 2 + offset, minY, maxY);
+  const { min: minX, max: maxX } = getItemAxisBounds(
+    state.canvasMeta.width,
+    width,
+  );
+  const { min: minY, max: maxY } = getItemAxisBounds(
+    state.canvasMeta.height,
+    height,
+  );
+  const offset = Math.min(
+    state.imageOrder.length * IMAGE_INSERT_OFFSET_STEP,
+    72,
+  );
+  const defaultX = clamp(
+    (state.canvasMeta.width - width) / 2 + offset,
+    minX,
+    maxX,
+  );
+  const defaultY = clamp(
+    (state.canvasMeta.height - height) / 2 + offset,
+    minY,
+    maxY,
+  );
 
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     assetId: asset.id,
     x: point ? clamp(point.x - width / 2, minX, maxX) : defaultX,
     y: point ? clamp(point.y - height / 2, minY, maxY) : defaultY,
@@ -210,18 +255,26 @@ const getImagePositionForPreset = ({
   image: BoardImageItem;
   preset: BoardImagePositionPreset;
 }) => {
-  const { min: minX, max: maxX } = getItemAxisBounds(canvasMeta.width, image.width);
-  const { min: minY, max: maxY } = getItemAxisBounds(canvasMeta.height, image.height);
+  const { min: minX, max: maxX } = getItemAxisBounds(
+    canvasMeta.width,
+    image.width,
+  );
+  const { min: minY, max: maxY } = getItemAxisBounds(
+    canvasMeta.height,
+    image.height,
+  );
   const centerX = (canvasMeta.width - image.width) / 2;
   const centerY = (canvasMeta.height - image.height) / 2;
   const overflowsHorizontally = image.width > canvasMeta.width;
   const overflowsVertically = image.height > canvasMeta.height;
   const isAtInsetTop = image.y === clamp(IMAGE_POSITION_INSET, minY, maxY);
   const isAtInsetBottom =
-    image.y === clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, minY, maxY);
+    image.y ===
+    clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, minY, maxY);
   const isAtInsetLeft = image.x === clamp(IMAGE_POSITION_INSET, minX, maxX);
   const isAtInsetRight =
-    image.x === clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, minX, maxX);
+    image.x ===
+    clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, minX, maxX);
 
   switch (preset) {
     case "top":
@@ -240,7 +293,11 @@ const getImagePositionForPreset = ({
           ? minY
           : isAtInsetBottom
             ? minY
-            : clamp(canvasMeta.height - image.height - IMAGE_POSITION_INSET, minY, maxY),
+            : clamp(
+                canvasMeta.height - image.height - IMAGE_POSITION_INSET,
+                minY,
+                maxY,
+              ),
       };
     case "left":
       return {
@@ -257,7 +314,11 @@ const getImagePositionForPreset = ({
           ? minX
           : isAtInsetRight
             ? minX
-            : clamp(canvasMeta.width - image.width - IMAGE_POSITION_INSET, minX, maxX),
+            : clamp(
+                canvasMeta.width - image.width - IMAGE_POSITION_INSET,
+                minX,
+                maxX,
+              ),
         y: clamp(image.y, minY, maxY),
       };
     case "center":
@@ -316,10 +377,11 @@ const createCanvasTextItem = (
   const maxY = Math.max(state.canvasMeta.height - estimatedHeight, 0);
 
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     text: normalizedText.text,
     x: clamp(
-      textInput.x ?? (state.canvasMeta.width - normalizedText.maxWidth) / 2 + offset,
+      textInput.x ??
+        (state.canvasMeta.width - normalizedText.maxWidth) / 2 + offset,
       0,
       maxX,
     ),
@@ -356,7 +418,11 @@ const applyTextItemUpdates = ({
   const nextMaxWidth = normalized.maxWidth;
   const nextX = clamp(text.x, 0, Math.max(canvasMeta.width - nextMaxWidth, 0));
   const nextFontSize = normalized.fontSize;
-  const nextY = clamp(text.y, 0, Math.max(canvasMeta.height - nextFontSize * 1.4, 0));
+  const nextY = clamp(
+    text.y,
+    0,
+    Math.max(canvasMeta.height - nextFontSize * 1.4, 0),
+  );
 
   return {
     ...text,
@@ -418,9 +484,7 @@ type CanvasStoreSet = (
 
 const applyCanvasStateChange = (
   set: CanvasStoreSet,
-  updater: (
-    state: CanvasStore,
-  ) => Partial<CanvasState> | CanvasStore,
+  updater: (state: CanvasStore) => Partial<CanvasState> | CanvasStore,
 ) => {
   set((state) => {
     const nextState = updater(state);
@@ -442,450 +506,476 @@ const applyCanvasStateChange = (
   });
 };
 
-export const useCanvasStore = create<CanvasStore>((set, get) => ({
-  canvasMeta: null,
-  imageOrder: [],
-  imagesById: EMPTY_CANVAS_IMAGES,
-  textOrder: [],
-  textsById: EMPTY_CANVAS_TEXT,
-  historyPast: [],
-  historyFuture: [],
-  historyTransactionStart: null,
-
-  initializeDefaultCanvas: () => {
-    const existingCanvas = serializeCanvasState(get());
-    if (existingCanvas) {
-      return existingCanvas;
-    }
-
-    const canvas = createDefaultCanvas();
-    set({
-      ...normalizeCanvasFrame(canvas),
+export const useCanvasStore = create<CanvasStore>()(
+  persist(
+    (set, get) => ({
+      canvasMeta: null,
+      imageOrder: [],
+      imagesById: EMPTY_CANVAS_IMAGES,
+      textOrder: [],
+      textsById: EMPTY_CANVAS_TEXT,
       historyPast: [],
       historyFuture: [],
       historyTransactionStart: null,
-    });
-    useEditorUiStore.getState().clearSelection();
-    useEditorUiStore.getState().resetTextDraft();
 
-    return canvas;
-  },
+      initializeDefaultCanvas: () => {
+        // Will correctly return the hydrated local storage version after reload
+        const existingCanvas = serializeCanvasState(get());
+        if (existingCanvas) {
+          return existingCanvas;
+        }
 
-  resizeCanvas: (size, presetId = null) =>
-    applyCanvasStateChange(set, (state) => {
-      if (!state.canvasMeta) {
-        return state;
-      }
-
-      return {
-        canvasMeta: {
-          ...state.canvasMeta,
-          width: size.width,
-          height: size.height,
-          presetId,
-        },
-      };
-    }),
-
-  applyBackgroundToCanvas: (backgroundPresetId) => {
-    const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
-
-    applyCanvasStateChange(set, (state) => {
-      if (!state.canvasMeta) {
-        return state;
-      }
-
-      return {
-        canvasMeta: {
-          ...state.canvasMeta,
-          backgroundPresetId: backgroundPreset.id,
-          background: backgroundPreset.value,
-        },
-      };
-    });
-  },
-
-  updateCanvasBackgroundEffects: (updates) =>
-    applyCanvasStateChange(set, (state) => {
-      if (!state.canvasMeta) {
-        return state;
-      }
-
-      const nextEffects = normalizeCanvasBackgroundEffects({
-        ...state.canvasMeta.backgroundEffects,
-        ...updates,
-      });
-
-      if (
-        areCanvasBackgroundEffectsEqual(
-          state.canvasMeta.backgroundEffects,
-          nextEffects,
-        )
-      ) {
-        return state;
-      }
-
-      return {
-        canvasMeta: {
-          ...state.canvasMeta,
-          backgroundEffects: nextEffects,
-        },
-      };
-    }),
-
-  clearCanvas: () =>
-    applyCanvasStateChange(set, (state) => {
-      if (!state.canvasMeta) {
-        return state;
-      }
-
-      useEditorUiStore.getState().clearSelection();
-      useEditorUiStore.getState().resetTextDraft();
-
-      return {
-        imageOrder: [],
-        imagesById: EMPTY_CANVAS_IMAGES,
-        textOrder: [],
-        textsById: EMPTY_CANVAS_TEXT,
-      };
-    }),
-
-  undo: () => {
-    const previousFrame =
-      get().historyPast[get().historyPast.length - 1] ?? null;
-
-    if (!previousFrame) {
-      return;
-    }
-
-    set((state) => {
-      const currentFrame = serializeCanvasState(state);
-
-      return {
-        ...normalizeCanvasFrame(previousFrame),
-        historyPast: state.historyPast.slice(0, -1),
-        historyFuture: currentFrame
-          ? [currentFrame, ...state.historyFuture]
-          : state.historyFuture,
-        historyTransactionStart: null,
-      };
-    });
-
-    syncEditorUiWithCanvasFrame(previousFrame);
-  },
-
-  redo: () => {
-    const nextFrame = get().historyFuture[0] ?? null;
-
-    if (!nextFrame) {
-      return;
-    }
-
-    set((state) => {
-      const currentFrame = serializeCanvasState(state);
-
-      return {
-        ...normalizeCanvasFrame(nextFrame),
-        historyPast: currentFrame
-          ? [...state.historyPast, currentFrame]
-          : state.historyPast,
-        historyFuture: state.historyFuture.slice(1),
-        historyTransactionStart: null,
-      };
-    });
-
-    syncEditorUiWithCanvasFrame(nextFrame);
-  },
-
-  beginHistoryTransaction: () => {
-    if (get().historyTransactionStart) {
-      return;
-    }
-
-    set((state) => ({
-      historyTransactionStart: serializeCanvasState(state),
-    }));
-  },
-
-  endHistoryTransaction: () =>
-    set((state) => {
-      const transactionStart = state.historyTransactionStart;
-      const currentFrame = serializeCanvasState(state);
-
-      if (!transactionStart) {
-        return state;
-      }
-
-      if (!currentFrame || areCanvasFramesEqual(transactionStart, currentFrame)) {
-        return {
+        const canvas = createDefaultCanvas();
+        set({
+          ...normalizeCanvasFrame(canvas),
+          historyPast: [],
+          historyFuture: [],
           historyTransactionStart: null,
-        };
-      }
+        });
+        useEditorUiStore.getState().clearSelection();
+        useEditorUiStore.getState().resetTextDraft();
 
-      return {
-        historyPast: [...state.historyPast, transactionStart],
-        historyTransactionStart: null,
-      };
-    }),
-
-  insertImageOnActiveCanvas: (asset) => {
-    const image = createCanvasImageItem(asset, get());
-    if (!image) {
-      return null;
-    }
-
-    applyCanvasStateChange(set, (state) => ({
-      imageOrder: [...state.imageOrder, image.id],
-      imagesById: {
-        ...state.imagesById,
-        [image.id]: image,
+        return canvas;
       },
-    }));
-    useEditorUiStore.getState().selectImage(image.id);
 
-    return image.id;
-  },
+      resizeCanvas: (size, presetId = null) =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
 
-  insertImageOnCanvasAtPoint: (asset, point) => {
-    const image = createCanvasImageItem(asset, get(), point);
-    if (!image) {
-      return null;
-    }
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              width: size.width,
+              height: size.height,
+              presetId,
+            },
+          };
+        }),
 
-    applyCanvasStateChange(set, (state) => ({
-      imageOrder: [...state.imageOrder, image.id],
-      imagesById: {
-        ...state.imagesById,
-        [image.id]: image,
+      applyBackgroundToCanvas: (backgroundPresetId) => {
+        const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
+
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
+
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              backgroundPresetId: backgroundPreset.id,
+              background: backgroundPreset.value,
+            },
+          };
+        });
       },
-    }));
-    useEditorUiStore.getState().selectImage(image.id);
 
-    return image.id;
-  },
+      updateCanvasBackgroundEffects: (updates) =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
 
-  insertTextOnActiveCanvas: (textInput) => {
-    const text = createCanvasTextItem(textInput, get());
-    if (!text) {
-      return null;
-    }
+          const nextEffects = normalizeCanvasBackgroundEffects({
+            ...state.canvasMeta.backgroundEffects,
+            ...updates,
+          });
 
-    applyCanvasStateChange(set, (state) => ({
-      textOrder: [...state.textOrder, text.id],
-      textsById: {
-        ...state.textsById,
-        [text.id]: text,
+          if (
+            areCanvasBackgroundEffectsEqual(
+              state.canvasMeta.backgroundEffects,
+              nextEffects,
+            )
+          ) {
+            return state;
+          }
+
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              backgroundEffects: nextEffects,
+            },
+          };
+        }),
+
+      clearCanvas: () =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
+
+          useEditorUiStore.getState().clearSelection();
+          useEditorUiStore.getState().resetTextDraft();
+
+          return {
+            imageOrder: [],
+            imagesById: EMPTY_CANVAS_IMAGES,
+            textOrder: [],
+            textsById: EMPTY_CANVAS_TEXT,
+          };
+        }),
+
+      undo: () => {
+        const previousFrame =
+          get().historyPast[get().historyPast.length - 1] ?? null;
+
+        if (!previousFrame) {
+          return;
+        }
+
+        set((state) => {
+          const currentFrame = serializeCanvasState(state);
+
+          return {
+            ...normalizeCanvasFrame(previousFrame),
+            historyPast: state.historyPast.slice(0, -1),
+            historyFuture: currentFrame
+              ? [currentFrame, ...state.historyFuture]
+              : state.historyFuture,
+            historyTransactionStart: null,
+          };
+        });
+
+        syncEditorUiWithCanvasFrame(previousFrame);
       },
-    }));
-    useEditorUiStore.getState().selectText(text);
 
-    return text.id;
-  },
+      redo: () => {
+        const nextFrame = get().historyFuture[0] ?? null;
 
-  moveImageOnCanvas: (imageId, x, y) =>
-    applyCanvasStateChange(set, (state) => {
-      const canvasMeta = state.canvasMeta;
-      const image = state.imagesById[imageId];
+        if (!nextFrame) {
+          return;
+        }
 
-      if (!canvasMeta || !image || (image.x === x && image.y === y)) {
-        return state;
-      }
+        set((state) => {
+          const currentFrame = serializeCanvasState(state);
 
-      const { min: minX, max: maxX } = getItemAxisBounds(
-        canvasMeta.width,
-        image.width,
-      );
-      const { min: minY, max: maxY } = getItemAxisBounds(
-        canvasMeta.height,
-        image.height,
-      );
+          return {
+            ...normalizeCanvasFrame(nextFrame),
+            historyPast: currentFrame
+              ? [...state.historyPast, currentFrame]
+              : state.historyPast,
+            historyFuture: state.historyFuture.slice(1),
+            historyTransactionStart: null,
+          };
+        });
 
-      return {
-        imagesById: {
-          ...state.imagesById,
-          [imageId]: {
-            ...image,
-            x: clamp(x, minX, maxX),
-            y: clamp(y, minY, maxY),
+        syncEditorUiWithCanvasFrame(nextFrame);
+      },
+
+      beginHistoryTransaction: () => {
+        if (get().historyTransactionStart) {
+          return;
+        }
+
+        set((state) => ({
+          historyTransactionStart: serializeCanvasState(state),
+        }));
+      },
+
+      endHistoryTransaction: () =>
+        set((state) => {
+          const transactionStart = state.historyTransactionStart;
+          const currentFrame = serializeCanvasState(state);
+
+          if (!transactionStart) {
+            return state;
+          }
+
+          if (
+            !currentFrame ||
+            areCanvasFramesEqual(transactionStart, currentFrame)
+          ) {
+            return {
+              historyTransactionStart: null,
+            };
+          }
+
+          return {
+            historyPast: [...state.historyPast, transactionStart],
+            historyTransactionStart: null,
+          };
+        }),
+
+      insertImageOnActiveCanvas: (asset) => {
+        const image = createCanvasImageItem(asset, get());
+        if (!image) {
+          return null;
+        }
+
+        applyCanvasStateChange(set, (state) => ({
+          imageOrder: [...state.imageOrder, image.id],
+          imagesById: {
+            ...state.imagesById,
+            [image.id]: image,
           },
-        },
-      };
-    }),
+        }));
+        useEditorUiStore.getState().selectImage(image.id);
 
-  resizeImageOnCanvas: (imageId, width, height) =>
-    applyCanvasStateChange(set, (state) => {
-      const image = state.imagesById[imageId];
+        return image.id;
+      },
 
-      if (!image) {
-        return state;
-      }
+      insertImageOnCanvasAtPoint: (asset, point) => {
+        const image = createCanvasImageItem(asset, get(), point);
+        if (!image) {
+          return null;
+        }
 
-      const requestedWidth = Math.max(width, MIN_IMAGE_SIZE);
-      const requestedHeight = Math.max(height, MIN_IMAGE_SIZE);
-      const nextSize = {
-        width: Math.round(requestedWidth),
-        height: Math.round(requestedHeight),
-      };
-
-      if (image.width === nextSize.width && image.height === nextSize.height) {
-        return state;
-      }
-
-      return {
-        imagesById: {
-          ...state.imagesById,
-          [imageId]: {
-            ...image,
-            width: nextSize.width,
-            height: nextSize.height,
+        applyCanvasStateChange(set, (state) => ({
+          imageOrder: [...state.imageOrder, image.id],
+          imagesById: {
+            ...state.imagesById,
+            [image.id]: image,
           },
-        },
-      };
-    }),
+        }));
+        useEditorUiStore.getState().selectImage(image.id);
 
-  positionImageOnCanvas: (imageId, preset) =>
-    applyCanvasStateChange(set, (state) => {
-      const canvasMeta = state.canvasMeta;
-      const image = state.imagesById[imageId];
-      if (!canvasMeta || !image) {
-        return state;
-      }
+        return image.id;
+      },
 
-      const nextPosition = getImagePositionForPreset({
-        canvasMeta,
-        image,
-        preset,
-      });
+      insertTextOnActiveCanvas: (textInput) => {
+        const text = createCanvasTextItem(textInput, get());
+        if (!text) {
+          return null;
+        }
 
-      if (image.x === nextPosition.x && image.y === nextPosition.y) {
-        return state;
-      }
-
-      return {
-        imagesById: {
-          ...state.imagesById,
-          [imageId]: {
-            ...image,
-            ...nextPosition,
+        applyCanvasStateChange(set, (state) => ({
+          textOrder: [...state.textOrder, text.id],
+          textsById: {
+            ...state.textsById,
+            [text.id]: text,
           },
-        },
-      };
+        }));
+        useEditorUiStore.getState().selectText(text);
+
+        return text.id;
+      },
+
+      moveImageOnCanvas: (imageId, x, y) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          const image = state.imagesById[imageId];
+
+          if (!canvasMeta || !image || (image.x === x && image.y === y)) {
+            return state;
+          }
+
+          const { min: minX, max: maxX } = getItemAxisBounds(
+            canvasMeta.width,
+            image.width,
+          );
+          const { min: minY, max: maxY } = getItemAxisBounds(
+            canvasMeta.height,
+            image.height,
+          );
+
+          return {
+            imagesById: {
+              ...state.imagesById,
+              [imageId]: {
+                ...image,
+                x: clamp(x, minX, maxX),
+                y: clamp(y, minY, maxY),
+              },
+            },
+          };
+        }),
+
+      resizeImageOnCanvas: (imageId, width, height) =>
+        applyCanvasStateChange(set, (state) => {
+          const image = state.imagesById[imageId];
+
+          if (!image) {
+            return state;
+          }
+
+          const requestedWidth = Math.max(width, MIN_IMAGE_SIZE);
+          const requestedHeight = Math.max(height, MIN_IMAGE_SIZE);
+          const nextSize = {
+            width: Math.round(requestedWidth),
+            height: Math.round(requestedHeight),
+          };
+
+          if (
+            image.width === nextSize.width &&
+            image.height === nextSize.height
+          ) {
+            return state;
+          }
+
+          return {
+            imagesById: {
+              ...state.imagesById,
+              [imageId]: {
+                ...image,
+                width: nextSize.width,
+                height: nextSize.height,
+              },
+            },
+          };
+        }),
+
+      positionImageOnCanvas: (imageId, preset) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          const image = state.imagesById[imageId];
+          if (!canvasMeta || !image) {
+            return state;
+          }
+
+          const nextPosition = getImagePositionForPreset({
+            canvasMeta,
+            image,
+            preset,
+          });
+
+          if (image.x === nextPosition.x && image.y === nextPosition.y) {
+            return state;
+          }
+
+          return {
+            imagesById: {
+              ...state.imagesById,
+              [imageId]: {
+                ...image,
+                ...nextPosition,
+              },
+            },
+          };
+        }),
+
+      moveTextOnCanvas: (textId, x, y, bounds) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          const text = state.textsById[textId];
+          if (!canvasMeta || !text) {
+            return state;
+          }
+
+          const width = bounds?.width ?? text.maxWidth;
+          const height = bounds?.height ?? text.fontSize * 1.4;
+          const nextX = clamp(x, 0, Math.max(canvasMeta.width - width, 0));
+          const nextY = clamp(y, 0, Math.max(canvasMeta.height - height, 0));
+
+          if (text.x === nextX && text.y === nextY) {
+            return state;
+          }
+
+          return {
+            textsById: {
+              ...state.textsById,
+              [textId]: {
+                ...text,
+                x: nextX,
+                y: nextY,
+              },
+            },
+          };
+        }),
+
+      updateTextOnCanvas: (textId, updates) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          const text = state.textsById[textId];
+          if (!canvasMeta || !text) {
+            return state;
+          }
+
+          const nextText = applyTextItemUpdates({
+            text,
+            updates,
+            canvasMeta,
+          });
+
+          return {
+            textsById: {
+              ...state.textsById,
+              [textId]: nextText,
+            },
+          };
+        }),
+
+      removeSelectedImage: () =>
+        applyCanvasStateChange(set, (state) => {
+          const selectedImageId = useEditorUiStore.getState().selectedImageId;
+          if (!selectedImageId || !state.imagesById[selectedImageId]) {
+            return state;
+          }
+
+          const nextImagesById = { ...state.imagesById };
+          delete nextImagesById[selectedImageId];
+          useEditorUiStore.getState().clearSelection();
+
+          return {
+            imageOrder: state.imageOrder.filter(
+              (imageId) => imageId !== selectedImageId,
+            ),
+            imagesById: nextImagesById,
+          };
+        }),
+
+      removeSelectedText: () =>
+        applyCanvasStateChange(set, (state) => {
+          const selectedTextId = useEditorUiStore.getState().selectedTextId;
+          if (!selectedTextId || !state.textsById[selectedTextId]) {
+            return state;
+          }
+
+          const nextTextsById = { ...state.textsById };
+          delete nextTextsById[selectedTextId];
+          useEditorUiStore.getState().clearSelection();
+          useEditorUiStore.getState().resetTextDraft();
+
+          return {
+            textOrder: state.textOrder.filter(
+              (textId) => textId !== selectedTextId,
+            ),
+            textsById: nextTextsById,
+          };
+        }),
+
+      resetCanvas: (size) => {
+        const preset = getCanvasPresetBySize(size);
+        const { defaultBackgroundPresetId } = useConfigStore.getState();
+        const canvas = createCanvasFrame(
+          size,
+          defaultBackgroundPresetId,
+          preset?.id ?? null,
+        );
+        set((state) => {
+          const currentFrame = serializeCanvasState(state);
+
+          return {
+            ...normalizeCanvasFrame(canvas),
+            historyPast: currentFrame
+              ? [...state.historyPast, currentFrame]
+              : state.historyPast,
+            historyFuture: [],
+            historyTransactionStart: null,
+          };
+        });
+        useEditorUiStore.getState().clearSelection();
+        useEditorUiStore.getState().resetTextDraft();
+
+        return canvas;
+      },
+
+      serializeCanvas: () => serializeCanvasState(get()),
     }),
-
-  moveTextOnCanvas: (textId, x, y, bounds) =>
-    applyCanvasStateChange(set, (state) => {
-      const canvasMeta = state.canvasMeta;
-      const text = state.textsById[textId];
-      if (!canvasMeta || !text) {
-        return state;
-      }
-
-      const width = bounds?.width ?? text.maxWidth;
-      const height = bounds?.height ?? text.fontSize * 1.4;
-      const nextX = clamp(x, 0, Math.max(canvasMeta.width - width, 0));
-      const nextY = clamp(y, 0, Math.max(canvasMeta.height - height, 0));
-
-      if (text.x === nextX && text.y === nextY) {
-        return state;
-      }
-
-      return {
-        textsById: {
-          ...state.textsById,
-          [textId]: {
-            ...text,
-            x: nextX,
-            y: nextY,
-          },
-        },
-      };
-    }),
-
-  updateTextOnCanvas: (textId, updates) =>
-    applyCanvasStateChange(set, (state) => {
-      const canvasMeta = state.canvasMeta;
-      const text = state.textsById[textId];
-      if (!canvasMeta || !text) {
-        return state;
-      }
-
-      const nextText = applyTextItemUpdates({
-        text,
-        updates,
-        canvasMeta,
-      });
-
-      return {
-        textsById: {
-          ...state.textsById,
-          [textId]: nextText,
-        },
-      };
-    }),
-
-  removeSelectedImage: () =>
-    applyCanvasStateChange(set, (state) => {
-      const selectedImageId = useEditorUiStore.getState().selectedImageId;
-      if (!selectedImageId || !state.imagesById[selectedImageId]) {
-        return state;
-      }
-
-      const nextImagesById = { ...state.imagesById };
-      delete nextImagesById[selectedImageId];
-      useEditorUiStore.getState().clearSelection();
-
-      return {
-        imageOrder: state.imageOrder.filter((imageId) => imageId !== selectedImageId),
-        imagesById: nextImagesById,
-      };
-    }),
-
-  removeSelectedText: () =>
-    applyCanvasStateChange(set, (state) => {
-      const selectedTextId = useEditorUiStore.getState().selectedTextId;
-      if (!selectedTextId || !state.textsById[selectedTextId]) {
-        return state;
-      }
-
-      const nextTextsById = { ...state.textsById };
-      delete nextTextsById[selectedTextId];
-      useEditorUiStore.getState().clearSelection();
-      useEditorUiStore.getState().resetTextDraft();
-
-      return {
-        textOrder: state.textOrder.filter((textId) => textId !== selectedTextId),
-        textsById: nextTextsById,
-      };
-    }),
-
-  resetCanvas: (size) => {
-    const preset = getCanvasPresetBySize(size);
-    const { defaultBackgroundPresetId } = useConfigStore.getState();
-    const canvas = createCanvasFrame(
-      size,
-      defaultBackgroundPresetId,
-      preset?.id ?? null,
-    );
-    set((state) => {
-      const currentFrame = serializeCanvasState(state);
-
-      return {
-        ...normalizeCanvasFrame(canvas),
-        historyPast: currentFrame
-          ? [...state.historyPast, currentFrame]
-          : state.historyPast,
-        historyFuture: [],
-        historyTransactionStart: null,
-      };
-    });
-    useEditorUiStore.getState().clearSelection();
-    useEditorUiStore.getState().resetTextDraft();
-
-    return canvas;
-  },
-
-  serializeCanvas: () => serializeCanvasState(get()),
-}));
+    {
+      name: "board-canvas-storage", // local storage key
+      // Specifically filter out large history arrays to prevent exceeding localStorage bounds
+      partialize: (state) => ({
+        canvasMeta: state.canvasMeta,
+        imageOrder: state.imageOrder,
+        imagesById: state.imagesById,
+        textOrder: state.textOrder,
+        textsById: state.textsById,
+      }),
+    },
+  ),
+);
 
 export const useCanvasShell = () => useCanvasStore((state) => state.canvasMeta);
 
@@ -921,7 +1011,9 @@ export const useActiveCanvasPreset = () => {
 export const useActiveCanvasBackground = () => {
   const canvasMeta = useCanvasShell();
 
-  return canvasMeta ? getCanvasBackgroundById(canvasMeta.backgroundPresetId) : null;
+  return canvasMeta
+    ? getCanvasBackgroundById(canvasMeta.backgroundPresetId)
+    : null;
 };
 
 export const useCanvasBackgroundEffects = () =>

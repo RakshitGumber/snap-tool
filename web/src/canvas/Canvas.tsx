@@ -53,8 +53,6 @@ type PointerSnapshot = {
   clientY: number;
 };
 
-const MIN_FITTED_FRAME_SIZE = 1;
-
 export const Canvas = memo(function BoardCanvas() {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const viewportInnerRef = useRef<HTMLDivElement | null>(null);
@@ -64,10 +62,6 @@ export const Canvas = memo(function BoardCanvas() {
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
   const [canvasScale, setCanvasScale] = useState(1);
-  const [displayFrameSize, setDisplayFrameSize] = useState({
-    width: MIN_FITTED_FRAME_SIZE,
-    height: MIN_FITTED_FRAME_SIZE,
-  });
 
   const canvasShell = useCanvasShell();
   const imageOrder = useCanvasStore((state) => state.imageOrder);
@@ -100,6 +94,7 @@ export const Canvas = memo(function BoardCanvas() {
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
+
   const images = useMemo(
     () =>
       imageOrder
@@ -107,6 +102,7 @@ export const Canvas = memo(function BoardCanvas() {
         .filter((image): image is BoardImageItem => image !== undefined),
     [imageOrder, imagesById],
   );
+
   const texts = useMemo(
     () =>
       textOrder
@@ -134,56 +130,21 @@ export const Canvas = memo(function BoardCanvas() {
       return;
     }
 
-    const viewport = viewportRef.current;
-    const viewportInner = viewportInnerRef.current;
-    if (!viewport || !viewportInner) {
+    const container = viewportInnerRef.current;
+    if (!container) {
       return;
     }
 
-    const computedStyle = window.getComputedStyle(viewportInner);
-    const horizontalPadding =
-      Number.parseFloat(computedStyle.paddingLeft) +
-      Number.parseFloat(computedStyle.paddingRight);
-    const verticalPadding =
-      Number.parseFloat(computedStyle.paddingTop) +
-      Number.parseFloat(computedStyle.paddingBottom);
+    // Inner bounding box represents exactly the screen space we want to fit inside
+    const availableWidth = container.clientWidth;
+    const availableHeight = container.clientHeight;
 
-    const availableWidth = Math.max(
-      viewport.clientWidth - horizontalPadding,
-      1,
-    );
-    const availableHeight = Math.max(
-      viewport.clientHeight - verticalPadding,
-      1,
-    );
-    const canvasAspectRatio =
-      canvasShell.width / Math.max(canvasShell.height, 1);
-    const viewportAspectRatio = availableWidth / Math.max(availableHeight, 1);
-    const fittedWidth =
-      canvasAspectRatio > viewportAspectRatio
-        ? availableWidth
-        : availableHeight * canvasAspectRatio;
-    const fittedHeight =
-      canvasAspectRatio > viewportAspectRatio
-        ? availableWidth / Math.max(canvasAspectRatio, 0.001)
-        : availableHeight;
-    const nextScale = Math.min(
-      fittedWidth / Math.max(canvasShell.width, 1),
-      fittedHeight / Math.max(canvasShell.height, 1),
-    );
-    const nextDisplayFrameSize = {
-      width: Math.max(canvasShell.width * nextScale, MIN_FITTED_FRAME_SIZE),
-      height: Math.max(canvasShell.height * nextScale, MIN_FITTED_FRAME_SIZE),
-    };
+    const scaleX = availableWidth / Math.max(canvasShell.width, 1);
+    const scaleY = availableHeight / Math.max(canvasShell.height, 1);
+    const nextScale = Math.max(Math.min(scaleX, scaleY), 0.01);
 
     setCanvasScale((currentScale) =>
       Math.abs(currentScale - nextScale) < 0.001 ? currentScale : nextScale,
-    );
-    setDisplayFrameSize((currentSize) =>
-      Math.abs(currentSize.width - nextDisplayFrameSize.width) < 0.5 &&
-      Math.abs(currentSize.height - nextDisplayFrameSize.height) < 0.5
-        ? currentSize
-        : nextDisplayFrameSize,
     );
   });
 
@@ -196,7 +157,7 @@ export const Canvas = memo(function BoardCanvas() {
       return;
     }
 
-    const viewport = viewportRef.current;
+    const viewport = viewportInnerRef.current;
     if (!viewport || typeof ResizeObserver === "undefined") {
       return;
     }
@@ -433,9 +394,7 @@ export const Canvas = memo(function BoardCanvas() {
       return;
     }
 
-    // Precise canvas insertion utilizing real drop event coordinates
     const dropPoint = getCanvasPoint(event.clientX, event.clientY);
-
     insertImageOnCanvasAtPoint(asset, dropPoint);
   };
 
@@ -452,140 +411,130 @@ export const Canvas = memo(function BoardCanvas() {
       ref={viewportRef}
       onPointerDown={handleSurfacePointerDown}
       onDragEnd={() => setDropTargetActive(false)}
-      className="h-full w-full overflow-hidden bg-bg"
+      className="flex h-full w-full flex-col overflow-hidden bg-bg"
       aria-label="Canvas workspace"
     >
-      <div
-        ref={viewportInnerRef}
-        className="flex h-full w-full items-center justify-center overflow-visible p-4 sm:p-6"
-      >
+      <div ref={viewportInnerRef} className="relative m-4 flex-1 sm:m-6">
         <div
-          className="relative overflow-visible"
+          ref={canvasRef}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+
+            if (event.target === event.currentTarget) {
+              clearSelection();
+            }
+          }}
+          onDragOver={handleCanvasDragOver}
+          onDragLeave={handleCanvasDragLeave}
+          onDrop={handleCanvasDrop}
+          className={clsx(
+            "absolute left-1/2 top-1/2 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
+            dropTargetActive && "outline-2 outline-accent -outline-offset-4",
+          )}
           style={{
-            width: displayFrameSize.width,
-            height: displayFrameSize.height,
+            width: canvasShell.width,
+            height: canvasShell.height,
+            /* Centers the canvas, then scales it down around the dead center */
+            transform: `translate(-50%, -50%) scale(${canvasScale})`,
+            transformOrigin: "center center",
           }}
         >
-          <div
-            ref={canvasRef}
-            onPointerDown={(event) => {
-              event.stopPropagation();
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              className="absolute"
+              style={{
+                top: -backgroundBlurPadding,
+                right: -backgroundBlurPadding,
+                bottom: -backgroundBlurPadding,
+                left: -backgroundBlurPadding,
+                background: canvasShell.background,
+                filter: buildCanvasBackgroundFilter(
+                  canvasShell.backgroundEffects,
+                ),
+                opacity: getCanvasBackgroundOpacity(
+                  canvasShell.backgroundEffects,
+                ),
+              }}
+            />
+          </div>
 
-              if (event.target === event.currentTarget) {
-                clearSelection();
-              }
-            }}
-            onDragOver={handleCanvasDragOver}
-            onDragLeave={handleCanvasDragLeave}
-            onDrop={handleCanvasDrop}
-            className={clsx(
-              "absolute left-0 top-0 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
-              dropTargetActive && "outline-2 outline-accent -outline-offset-4",
-            )}
-            style={{
-              width: canvasShell.width,
-              height: canvasShell.height,
-              transform: `scale(${canvasScale})`,
-              transformOrigin: "top left",
-            }}
-          >
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {images.map((image) => {
+            const media = resolvedMediaByAssetId[image.assetId]?.full;
+            if (!media) {
+              return null;
+            }
+
+            return (
               <div
-                className="absolute"
+                key={image.id}
                 style={{
-                  top: -backgroundBlurPadding,
-                  right: -backgroundBlurPadding,
-                  bottom: -backgroundBlurPadding,
-                  left: -backgroundBlurPadding,
-                  background: canvasShell.background,
-                  filter: buildCanvasBackgroundFilter(
-                    canvasShell.backgroundEffects,
-                  ),
-                  opacity: getCanvasBackgroundOpacity(
-                    canvasShell.backgroundEffects,
-                  ),
-                }}
-              />
-            </div>
-
-            {images.map((image) => {
-              const media = resolvedMediaByAssetId[image.assetId]?.full;
-              if (!media) {
-                return null;
-              }
-
-              return (
-                <div
-                  key={image.id}
-                  className="absolute left-0 top-0"
-                  style={{
-                    width: image.width,
-                    height: image.height,
-                    zIndex: selectedImageId === image.id ? 2 : 1,
-                    transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onPointerDown={handleImagePointerDown(image.id)}
-                    className={clsx(
-                      "h-full w-full overflow-hidden rounded-lg shadow-md outline-transparent",
-                      selectedImageId === image.id && "outline-accent",
-                    )}
-                    style={{ touchAction: "none" }}
-                  >
-                    <img
-                      src={media.src}
-                      alt={image.alt}
-                      draggable={false}
-                      className="pointer-events-none h-full w-full select-none object-contain"
-                    />
-                  </button>
-
-                  {selectedImageId === image.id ? (
-                    <button
-                      type="button"
-                      aria-label="Resize image"
-                      onPointerDown={handleImageResizePointerDown(image)}
-                      className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
-                      style={{
-                        right: 0,
-                        bottom: 0,
-                        transform: "translate(50%, 50%)",
-                        touchAction: "none",
-                      }}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-
-            {texts.map((text) => (
-              <button
-                key={text.id}
-                type="button"
-                onPointerDown={handleTextPointerDown(text.id)}
-                className={clsx(
-                  "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline-transparent",
-                  selectedTextId === text.id && "outline-accent",
-                )}
-                style={{
-                  zIndex: selectedTextId === text.id ? 4 : 3,
-                  maxWidth: text.maxWidth,
-                  transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
-                  color: text.color,
-                  fontFamily: `${text.fontFamily}, sans-serif`,
-                  fontSize: text.fontSize,
-                  fontWeight: text.fontWeight,
-                  textAlign: text.align,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
+                  width: image.width,
+                  height: image.height,
+                  zIndex: selectedImageId === image.id ? 2 : 1,
+                  transform: `translate3d(${image.x}px, ${image.y}px, 0)`,
+                  position: "absolute",
                 }}
               >
-                {text.text}
-              </button>
-            ))}
-          </div>
+                <button
+                  type="button"
+                  onPointerDown={handleImagePointerDown(image.id)}
+                  className={clsx(
+                    "h-full w-full overflow-hidden rounded-lg shadow-md outline-transparent",
+                    selectedImageId === image.id && "outline-accent",
+                  )}
+                  style={{ touchAction: "none" }}
+                >
+                  <img
+                    src={media.src}
+                    alt={image.alt}
+                    draggable={false}
+                    className="pointer-events-none h-full w-full select-none object-contain"
+                  />
+                </button>
+
+                {selectedImageId === image.id ? (
+                  <button
+                    type="button"
+                    aria-label="Resize image"
+                    onPointerDown={handleImageResizePointerDown(image)}
+                    className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
+                    style={{
+                      right: 0,
+                      bottom: 0,
+                      transform: "translate(50%, 50%)",
+                      touchAction: "none",
+                    }}
+                  />
+                ) : null}
+              </div>
+            );
+          })}
+
+          {texts.map((text) => (
+            <button
+              key={text.id}
+              type="button"
+              onPointerDown={handleTextPointerDown(text.id)}
+              className={clsx(
+                "absolute left-0 top-0 rounded-xl bg-transparent px-2 py-1 text-left outline-transparent",
+                selectedTextId === text.id && "outline-accent",
+              )}
+              style={{
+                zIndex: selectedTextId === text.id ? 4 : 3,
+                maxWidth: text.maxWidth,
+                transform: `translate3d(${text.x}px, ${text.y}px, 0)`,
+                color: text.color,
+                fontFamily: `${text.fontFamily}, sans-serif`,
+                fontSize: text.fontSize,
+                fontWeight: text.fontWeight,
+                textAlign: text.align,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {text.text}
+            </button>
+          ))}
         </div>
       </div>
     </div>

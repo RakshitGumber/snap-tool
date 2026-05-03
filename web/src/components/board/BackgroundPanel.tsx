@@ -20,7 +20,7 @@ export const BoardBackgroundPanel = () => {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-sans">
       <div className="flex items-center gap-3">
         <div
           className="h-10 w-10 rounded-lg outline outline-border-color/60"

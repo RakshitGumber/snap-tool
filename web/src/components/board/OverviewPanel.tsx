@@ -15,7 +15,8 @@ import type {
   BoardTextItem,
 } from "@/types/canvas";
 
-const formatImageDimensions = (image: BoardImageItem) => `${image.width} x ${image.height}`;
+const formatImageDimensions = (image: BoardImageItem) =>
+  `${image.width} x ${image.height}`;
 
 const truncateText = (value: string) =>
   value.length > 48 ? `${value.slice(0, 45).trimEnd()}...` : value;
@@ -42,10 +43,14 @@ export const BoardOverviewPanel = () => {
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
   );
-  const resolveAssetMedia = useUploadLibraryStore((state) => state.resolveAssetMedia);
+  const resolveAssetMedia = useUploadLibraryStore(
+    (state) => state.resolveAssetMedia,
+  );
   const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
   const selectImage = useEditorUiStore((state) => state.selectImage);
-  const positionImageOnCanvas = useCanvasStore((state) => state.positionImageOnCanvas);
+  const positionImageOnCanvas = useCanvasStore(
+    (state) => state.positionImageOnCanvas,
+  );
   const images = useMemo(
     () =>
       imageOrder
@@ -70,12 +75,18 @@ export const BoardOverviewPanel = () => {
   }, [images, resolvedMediaByAssetId, resolveAssetMedia]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-title-color">Background</h3>
         {canvasShell ? (
           <div className="space-y-1 text-sm text-secondary-text">
-            <p className="text-title-color">{activeBackground?.label ?? "Unknown background"}</p>
+            <div
+              className="h-10 w-10 rounded-lg outline outline-border-color/60"
+              style={{ background: activeBackground?.preview }}
+            />
+            <p className="text-title-color">
+              {activeBackground?.label ?? "Unknown background"}
+            </p>
             <p>{activeBackground?.kind ?? "custom"}</p>
           </div>
         ) : (
@@ -145,7 +156,9 @@ export const BoardOverviewPanel = () => {
             })}
           </div>
         ) : (
-          <p className="text-sm text-secondary-text">No images on this canvas.</p>
+          <p className="text-sm text-secondary-text">
+            No images on this canvas.
+          </p>
         )}
       </section>
 
@@ -173,7 +186,9 @@ export const BoardOverviewPanel = () => {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-title-color">Effects / Filters</h3>
+        <h3 className="text-sm font-semibold text-title-color">
+          Effects / Filters
+        </h3>
         <p className="text-sm text-secondary-text">No filters applied.</p>
       </section>
     </div>

@@ -130,7 +130,7 @@ export const BoardUploadsPanel = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-sans">
       <div className="rounded-2xl p-4">
         <div className="space-y-3">
           <div>

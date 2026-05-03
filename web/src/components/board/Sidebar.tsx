@@ -104,18 +104,16 @@ export const BoardSidebar = () => {
 
       {isOpen && (
         <div className="flex min-w-0 flex-1 flex-col border-r border-border-color w-80">
-          <div className="flex items-start justify-between gap-3 border-b border-border-color/50 px-5 py-4">
-            <div className="min-w-0">
-              <h2 className="mt-1 text-lg font-semibold text-title-color">
-                {activeSection.label ?? "Design"}
-              </h2>
-            </div>
+          <div className="flex items-center justify-between border-b border-border-color/50 px-5 py-4 select-none">
+            <h2 className="text-lg font-semibold text-title-color font-sans">
+              {activeSection.label ?? "Design"}
+            </h2>
 
             <button
               type="button"
               aria-label="Close design panel"
               onClick={handleClosePanel}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-title-color transition hover:bg-secondary-text/20"
+              className="rounded-lg text-title-color cursor-pointer"
             >
               <Icon icon="solar:alt-arrow-left-linear" className="text-lg" />
             </button>

@@ -94,7 +94,7 @@ export const BoardTextPanel = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-sans">
       <div className="rounded-2xl p-4">
         <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
           Text layer

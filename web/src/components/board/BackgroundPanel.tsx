@@ -1,17 +1,22 @@
 import clsx from "clsx";
 
+import { DEFAULT_CANVAS_BACKGROUND_EFFECTS } from "@/canvas/backgroundEffects";
 import {
   useCanvasBackgroundPresets,
   useConfigStore,
 } from "@/stores/useConfigStore";
 import {
   useActiveCanvasBackground,
+  useCanvasShell,
   useCanvasStore,
 } from "@/stores/useCanvasStore";
+
+import { BoardBackgroundPreview } from "./BackgroundPreview";
 
 export const BoardBackgroundPanel = () => {
   const backgroundPresets = useCanvasBackgroundPresets();
   const activeBackground = useActiveCanvasBackground();
+  const canvasShell = useCanvasShell();
   const setDefaultBackgroundPresetId = useConfigStore(
     (state) => state.setDefaultBackgroundPresetId,
   );
@@ -22,9 +27,12 @@ export const BoardBackgroundPanel = () => {
   return (
     <div className="space-y-4 font-sans">
       <div className="flex items-center gap-3">
-        <div
+        <BoardBackgroundPreview
+          background={canvasShell?.background ?? activeBackground?.preview}
+          effects={
+            canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS
+          }
           className="h-10 w-10 rounded-lg outline outline-border-color/60"
-          style={{ background: activeBackground?.preview }}
         />
         <div>
           <p className="text-sm font-semibold text-title-color">

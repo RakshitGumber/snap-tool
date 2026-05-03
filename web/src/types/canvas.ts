@@ -46,6 +46,15 @@ export type CanvasBackgroundPreset = {
   preview: string;
 };
 
+export type CanvasBackgroundEffects = {
+  hue: number;
+  saturation: number;
+  blur: number;
+  brightness: number;
+  contrast: number;
+  opacity: number;
+};
+
 export type BoardTextAlign = "left" | "center" | "right";
 
 export type BoardImagePositionPreset =
@@ -63,6 +72,7 @@ export type CanvasFrame = {
   presetId?: CanvasPresetId | null;
   background: string;
   backgroundPresetId: string;
+  backgroundEffects: CanvasBackgroundEffects;
   images: BoardImageItem[];
   texts: BoardTextItem[];
 };

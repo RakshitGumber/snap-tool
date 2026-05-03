@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { DEFAULT_CANVAS_BACKGROUND_EFFECTS } from "@/canvas/backgroundEffects";
 import { BOARD_CONFIG, type BoardLayoutConfig, type BoardTextConfig } from "@/config";
 import type {
   BoardTextInput,
@@ -158,6 +159,7 @@ export const createCanvasFrame = (
     presetId,
     background: backgroundPreset.value,
     backgroundPresetId: backgroundPreset.id,
+    backgroundEffects: { ...DEFAULT_CANVAS_BACKGROUND_EFFECTS },
     images: [],
     texts: [],
   };

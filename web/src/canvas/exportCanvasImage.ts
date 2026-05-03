@@ -3,6 +3,12 @@ import { normalizeBoardTextFamily } from "@/stores/useConfigStore";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import type { BoardImageItem, BoardTextItem } from "@/types/canvas";
+import {
+  buildCanvasBackgroundFilter,
+  getCanvasBackgroundBlurPadding,
+  getCanvasBackgroundOpacity,
+  normalizeCanvasBackgroundEffects,
+} from "@/canvas/backgroundEffects";
 
 export type CanvasExportFormat = "png" | "jpg";
 
@@ -167,6 +173,45 @@ const fillCanvasBackground = (
 
   context.fillStyle = canvasGradient;
   context.fillRect(0, 0, width, height);
+};
+
+const drawCanvasBackgroundWithEffects = (
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  background: string,
+  effects: ReturnType<typeof normalizeCanvasBackgroundEffects>,
+) => {
+  context.save();
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  context.restore();
+
+  const blurPadding = getCanvasBackgroundBlurPadding(effects);
+  const backgroundCanvas = document.createElement("canvas");
+  backgroundCanvas.width = width + blurPadding * 2;
+  backgroundCanvas.height = height + blurPadding * 2;
+
+  const backgroundContext = backgroundCanvas.getContext("2d");
+  if (!backgroundContext) {
+    fillCanvasBackground(context, width, height, background);
+    return;
+  }
+
+  backgroundContext.imageSmoothingEnabled = true;
+  backgroundContext.imageSmoothingQuality = "high";
+  backgroundContext.save();
+  backgroundContext.filter = buildCanvasBackgroundFilter(effects);
+  backgroundContext.globalAlpha = getCanvasBackgroundOpacity(effects);
+  fillCanvasBackground(
+    backgroundContext,
+    backgroundCanvas.width,
+    backgroundCanvas.height,
+    background,
+  );
+  backgroundContext.restore();
+
+  context.drawImage(backgroundCanvas, -blurPadding, -blurPadding);
 };
 
 const buildRoundedRectPath = (
@@ -423,11 +468,12 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
 
-  fillCanvasBackground(
+  drawCanvasBackgroundWithEffects(
     context,
     canvasFrame.width,
     canvasFrame.height,
     canvasFrame.background,
+    normalizeCanvasBackgroundEffects(canvasFrame.backgroundEffects),
   );
 
   for (const image of canvasFrame.images) {

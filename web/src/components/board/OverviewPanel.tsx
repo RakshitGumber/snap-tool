@@ -1,7 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { Icon } from "@iconify/react";
 
 import clsx from "clsx";
 
+import {
+  CANVAS_BACKGROUND_EFFECT_CONTROLS,
+  DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+  formatCanvasBackgroundEffectValue,
+  type CanvasBackgroundEffectKey,
+} from "@/canvas/backgroundEffects";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import {
   useActiveCanvasBackground,
@@ -14,6 +22,8 @@ import type {
   BoardImagePositionPreset,
   BoardTextItem,
 } from "@/types/canvas";
+
+import { BoardBackgroundPreview } from "./BackgroundPreview";
 
 const formatImageDimensions = (image: BoardImageItem) =>
   `${image.width} x ${image.height}`;
@@ -32,9 +42,31 @@ const IMAGE_POSITION_PRESETS: Array<{
   { id: "right", label: "Right" },
 ];
 
+const BACKGROUND_EFFECT_ORDER: CanvasBackgroundEffectKey[] = [
+  "hue",
+  "saturation",
+  "blur",
+  "brightness",
+  "contrast",
+  "opacity",
+];
+
+const BACKGROUND_EFFECT_ICONS: Record<CanvasBackgroundEffectKey, string> = {
+  hue: "solar:pallete-2-linear",
+  saturation: "solar:tuning-2-linear",
+  blur: "solar:filters-linear",
+  brightness: "solar:sun-2-linear",
+  contrast: "solar:slider-minimalistic-horizontal-linear",
+  opacity: "solar:droplets-minimalistic-linear",
+};
+
 export const BoardOverviewPanel = () => {
   const canvasShell = useCanvasShell();
   const activeBackground = useActiveCanvasBackground();
+  const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
+  const [activeBackgroundEffect, setActiveBackgroundEffect] =
+    useState<CanvasBackgroundEffectKey>("hue");
+  const backgroundEffectDragActiveRef = useRef(false);
   const imageOrder = useCanvasStore((state) => state.imageOrder);
   const imagesById = useCanvasStore((state) => state.imagesById);
   const textOrder = useCanvasStore((state) => state.textOrder);
@@ -51,6 +83,15 @@ export const BoardOverviewPanel = () => {
   const positionImageOnCanvas = useCanvasStore(
     (state) => state.positionImageOnCanvas,
   );
+  const updateCanvasBackgroundEffects = useCanvasStore(
+    (state) => state.updateCanvasBackgroundEffects,
+  );
+  const beginHistoryTransaction = useCanvasStore(
+    (state) => state.beginHistoryTransaction,
+  );
+  const endHistoryTransaction = useCanvasStore(
+    (state) => state.endHistoryTransaction,
+  );
   const images = useMemo(
     () =>
       imageOrder
@@ -65,6 +106,22 @@ export const BoardOverviewPanel = () => {
         .filter((text): text is BoardTextItem => text !== undefined),
     [textOrder, textsById],
   );
+  const backgroundEffects =
+    canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS;
+  const activeEffectControl =
+    CANVAS_BACKGROUND_EFFECT_CONTROLS[activeBackgroundEffect];
+  const activeEffectValue = backgroundEffects[activeBackgroundEffect];
+  const activeBackgroundEffectSummary = BACKGROUND_EFFECT_ORDER.filter(
+    (effectId) =>
+      backgroundEffects[effectId] !==
+      DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId],
+  ).map(
+    (effectId) =>
+      `${CANVAS_BACKGROUND_EFFECT_CONTROLS[effectId].label}: ${formatCanvasBackgroundEffectValue(
+        effectId,
+        backgroundEffects[effectId],
+      )}`,
+  );
 
   useEffect(() => {
     for (const image of images) {
@@ -74,6 +131,34 @@ export const BoardOverviewPanel = () => {
     }
   }, [images, resolvedMediaByAssetId, resolveAssetMedia]);
 
+  useEffect(
+    () => () => {
+      if (backgroundEffectDragActiveRef.current) {
+        backgroundEffectDragActiveRef.current = false;
+        endHistoryTransaction();
+      }
+    },
+    [endHistoryTransaction],
+  );
+
+  const beginBackgroundEffectDrag = () => {
+    if (backgroundEffectDragActiveRef.current || !canvasShell) {
+      return;
+    }
+
+    backgroundEffectDragActiveRef.current = true;
+    beginHistoryTransaction();
+  };
+
+  const endBackgroundEffectDrag = () => {
+    if (!backgroundEffectDragActiveRef.current) {
+      return;
+    }
+
+    backgroundEffectDragActiveRef.current = false;
+    endHistoryTransaction();
+  };
+
   return (
     <div className="space-y-8 font-sans">
       <section className="space-y-3">
@@ -81,17 +166,147 @@ export const BoardOverviewPanel = () => {
 
         {canvasShell ? (
           <div className="w-full max-w-sm overflow-hidden rounded-xl border border-border-color shadow-lg transition-all hover:shadow-xl">
-            <div
+            <BoardBackgroundPreview
+              background={canvasShell.background}
+              effects={backgroundEffects}
               className="h-28 w-full border-b border-border-color/20"
-              style={{ background: activeBackground?.preview }}
             />
-            <div className="flex flex-col space-y-0.5 p-3 sm:p-4">
-              <p className="text-lg font-semibold text-title-color truncate">
-                {activeBackground?.label ?? "Unknown background"}
-              </p>
-              <p className="text-sm text-secondary-text capitalize">
-                {activeBackground?.kind ?? "custom"}
-              </p>
+            <div className="p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-semibold text-title-color">
+                    {activeBackground?.label ?? "Unknown background"}
+                  </p>
+                  <p className="text-sm capitalize text-secondary-text">
+                    {activeBackground?.kind ?? "custom"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label={
+                    isBackgroundExpanded
+                      ? "Collapse background effects"
+                      : "Expand background effects"
+                  }
+                  aria-expanded={isBackgroundExpanded}
+                  onClick={() =>
+                    setIsBackgroundExpanded((currentValue) => !currentValue)
+                  }
+                  className={clsx(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border-color/60 text-title-color transition hover:border-accent/70 hover:text-accent",
+                    isBackgroundExpanded && "border-accent/70 text-accent",
+                  )}
+                >
+                  <Icon
+                    icon={
+                      isBackgroundExpanded
+                        ? "solar:alt-arrow-up-linear"
+                        : "solar:alt-arrow-down-linear"
+                    }
+                    className="text-lg"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={clsx(
+                "grid transition-all duration-300 ease-out motion-reduce:transition-none",
+                isBackgroundExpanded
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0",
+              )}
+            >
+              <div className="overflow-hidden">
+                <div className="border-t border-border-color/50 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {BACKGROUND_EFFECT_ORDER.map((effectId) => {
+                      const control =
+                        CANVAS_BACKGROUND_EFFECT_CONTROLS[effectId];
+                      const isActive = activeBackgroundEffect === effectId;
+
+                      return (
+                        <button
+                          key={effectId}
+                          type="button"
+                          onClick={() => setActiveBackgroundEffect(effectId)}
+                          className={clsx(
+                            "rounded-xl border px-3 py-2 text-left transition",
+                            isActive
+                              ? "border-accent/70 bg-accent/10 text-accent"
+                              : "border-border-color/50 text-title-color hover:border-accent/60 hover:text-accent",
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon
+                              icon={BACKGROUND_EFFECT_ICONS[effectId]}
+                              className="text-base"
+                            />
+                            <span className="text-sm font-semibold">
+                              {control.label}
+                            </span>
+                          </div>
+                          <p
+                            className={clsx(
+                              "mt-2 text-xs",
+                              isActive
+                                ? "text-accent/90"
+                                : "text-secondary-text",
+                            )}
+                          >
+                            {formatCanvasBackgroundEffectValue(
+                              effectId,
+                              backgroundEffects[effectId],
+                            )}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-border-color/50 bg-card-bg/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          icon={BACKGROUND_EFFECT_ICONS[activeBackgroundEffect]}
+                          className="text-lg text-title-color"
+                        />
+                        <div>
+                          <p className="text-sm font-semibold text-title-color">
+                            {activeEffectControl.label}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+                        {formatCanvasBackgroundEffectValue(
+                          activeBackgroundEffect,
+                          activeEffectValue,
+                        )}
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={activeEffectControl.min}
+                      max={activeEffectControl.max}
+                      step={activeEffectControl.step}
+                      value={activeEffectValue}
+                      onPointerDown={beginBackgroundEffectDrag}
+                      onPointerUp={endBackgroundEffectDrag}
+                      onPointerCancel={endBackgroundEffectDrag}
+                      onBlur={endBackgroundEffectDrag}
+                      onChange={(event) =>
+                        updateCanvasBackgroundEffects({
+                          [activeBackgroundEffect]: Number(event.target.value),
+                        })
+                      }
+                      className="mt-4 w-full accent-accent"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -196,7 +411,11 @@ export const BoardOverviewPanel = () => {
         <h3 className="text-sm font-semibold text-title-color">
           Effects / Filters
         </h3>
-        <p className="text-sm text-secondary-text">No filters applied.</p>
+        <p className="text-sm text-secondary-text">
+          {activeBackgroundEffectSummary.length
+            ? activeBackgroundEffectSummary.join(" · ")
+            : "No background effects applied."}
+        </p>
       </section>
     </div>
   );

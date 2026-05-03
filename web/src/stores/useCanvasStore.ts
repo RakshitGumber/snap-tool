@@ -1,6 +1,10 @@
 import { create } from "zustand";
 
 import {
+  areCanvasBackgroundEffectsEqual,
+  normalizeCanvasBackgroundEffects,
+} from "@/canvas/backgroundEffects";
+import {
   createCanvasFrame,
   getCanvasBackgroundById,
   getCanvasPresetById,
@@ -16,6 +20,7 @@ import type {
   BoardImagePositionPreset,
   BoardTextInput,
   BoardTextItem,
+  CanvasBackgroundEffects,
   CanvasFrame,
   CanvasPresetId,
   CanvasShell,
@@ -41,6 +46,9 @@ type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
+  updateCanvasBackgroundEffects: (
+    updates: Partial<CanvasBackgroundEffects>,
+  ) => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
@@ -107,6 +115,9 @@ const normalizeCanvasFrame = (canvas: CanvasFrame) => {
       presetId: canvas.presetId ?? null,
       background: canvas.background,
       backgroundPresetId: canvas.backgroundPresetId,
+      backgroundEffects: normalizeCanvasBackgroundEffects(
+        canvas.backgroundEffects,
+      ),
     } satisfies CanvasShell,
     imageOrder: canvas.images.map((image) => image.id),
     imagesById: Object.fromEntries(canvas.images.map((image) => [image.id, image])),
@@ -493,6 +504,34 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       };
     });
   },
+
+  updateCanvasBackgroundEffects: (updates) =>
+    applyCanvasStateChange(set, (state) => {
+      if (!state.canvasMeta) {
+        return state;
+      }
+
+      const nextEffects = normalizeCanvasBackgroundEffects({
+        ...state.canvasMeta.backgroundEffects,
+        ...updates,
+      });
+
+      if (
+        areCanvasBackgroundEffectsEqual(
+          state.canvasMeta.backgroundEffects,
+          nextEffects,
+        )
+      ) {
+        return state;
+      }
+
+      return {
+        canvasMeta: {
+          ...state.canvasMeta,
+          backgroundEffects: nextEffects,
+        },
+      };
+    }),
 
   clearCanvas: () =>
     applyCanvasStateChange(set, (state) => {
@@ -884,3 +923,8 @@ export const useActiveCanvasBackground = () => {
 
   return canvasMeta ? getCanvasBackgroundById(canvasMeta.backgroundPresetId) : null;
 };
+
+export const useCanvasBackgroundEffects = () =>
+  useCanvasStore((state) =>
+    normalizeCanvasBackgroundEffects(state.canvasMeta?.backgroundEffects),
+  );

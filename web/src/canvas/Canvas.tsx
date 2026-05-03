@@ -12,6 +12,11 @@ import {
 
 import clsx from "clsx";
 
+import {
+  buildCanvasBackgroundFilter,
+  getCanvasBackgroundBlurPadding,
+  getCanvasBackgroundOpacity,
+} from "@/canvas/backgroundEffects";
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
 import { useCanvasShell, useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
@@ -438,6 +443,10 @@ export const Canvas = memo(function BoardCanvas() {
     return null;
   }
 
+  const backgroundBlurPadding = getCanvasBackgroundBlurPadding(
+    canvasShell.backgroundEffects,
+  );
+
   return (
     <div
       ref={viewportRef}
@@ -476,11 +485,29 @@ export const Canvas = memo(function BoardCanvas() {
             style={{
               width: canvasShell.width,
               height: canvasShell.height,
-              background: canvasShell.background,
               transform: `scale(${canvasScale})`,
               transformOrigin: "top left",
             }}
           >
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div
+                className="absolute"
+                style={{
+                  top: -backgroundBlurPadding,
+                  right: -backgroundBlurPadding,
+                  bottom: -backgroundBlurPadding,
+                  left: -backgroundBlurPadding,
+                  background: canvasShell.background,
+                  filter: buildCanvasBackgroundFilter(
+                    canvasShell.backgroundEffects,
+                  ),
+                  opacity: getCanvasBackgroundOpacity(
+                    canvasShell.backgroundEffects,
+                  ),
+                }}
+              />
+            </div>
+
             {images.map((image) => {
               const media = resolvedMediaByAssetId[image.assetId]?.full;
               if (!media) {

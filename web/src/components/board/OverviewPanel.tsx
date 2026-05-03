@@ -162,7 +162,7 @@ export const BoardOverviewPanel = () => {
   return (
     <div className="space-y-8 font-sans">
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-title-color">Background</h3>
+        <h3 className="text-lg font-bold text-title-color">Background</h3>
 
         {canvasShell ? (
           <div className="w-full max-w-sm overflow-hidden rounded-xl border border-border-color shadow-lg transition-all hover:shadow-xl">
@@ -317,7 +317,7 @@ export const BoardOverviewPanel = () => {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-title-color">Images</h3>
+        <h3 className="text-lg font-bold text-title-color">Images</h3>
         {images.length ? (
           <div className="space-y-3">
             {images.map((image) => {
@@ -385,7 +385,7 @@ export const BoardOverviewPanel = () => {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-title-color">Text</h3>
+        <h3 className="text-lg font-bold text-title-color">Text</h3>
         {texts.length ? (
           <div className="space-y-3">
             {texts.map((text) => (
@@ -408,7 +408,7 @@ export const BoardOverviewPanel = () => {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-title-color">
+        <h3 className="text-lg font-bold text-title-color">
           Effects / Filters
         </h3>
         <p className="text-sm text-secondary-text">

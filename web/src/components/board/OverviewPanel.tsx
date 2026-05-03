@@ -76,21 +76,28 @@ export const BoardOverviewPanel = () => {
 
   return (
     <div className="space-y-8 font-sans">
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h3 className="text-sm font-semibold text-title-color">Background</h3>
+
         {canvasShell ? (
-          <div className="space-y-1 text-sm text-secondary-text">
+          <div className="w-full max-w-sm overflow-hidden rounded-xl border border-border-color shadow-lg transition-all hover:shadow-xl">
             <div
-              className="h-10 w-10 rounded-lg outline outline-border-color/60"
+              className="h-28 w-full border-b border-border-color/20"
               style={{ background: activeBackground?.preview }}
             />
-            <p className="text-title-color">
-              {activeBackground?.label ?? "Unknown background"}
-            </p>
-            <p>{activeBackground?.kind ?? "custom"}</p>
+            <div className="flex flex-col space-y-0.5 p-3 sm:p-4">
+              <p className="text-lg font-semibold text-title-color truncate">
+                {activeBackground?.label ?? "Unknown background"}
+              </p>
+              <p className="text-sm text-secondary-text capitalize">
+                {activeBackground?.kind ?? "custom"}
+              </p>
+            </div>
           </div>
         ) : (
-          <p className="text-sm text-secondary-text">No canvas selected.</p>
+          <div className="flex h-28 w-full max-w-sm items-center justify-center rounded-xl border border-dashed border-border-color/60 bg-black/5">
+            <p className="text-sm text-secondary-text">No canvas selected.</p>
+          </div>
         )}
       </section>
 

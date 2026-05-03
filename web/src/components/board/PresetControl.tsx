@@ -118,7 +118,7 @@ export const PresetControl = () => {
       <button
         type="button"
         onClick={() => setActivePresetGroupId(null)}
-        className="ui-button w-full justify-start rounded-xl px-3 text-left text-sm font-semibold"
+        className="flex items-center w-full gap-2 justify-start rounded-xl px-3 text-left text-base font-sans py-1 font-semibold cursor-pointer"
       >
         <Icon icon="solar:alt-arrow-left-linear" className="text-base" />
         <span>{activeGroup!.label}</span>
@@ -171,7 +171,7 @@ export const PresetControl = () => {
                 : "text-title-color hover:bg-surface-3/90",
             )}
           >
-            <span className="flex items-center gap-2 text-sm font-semibold font-sans">
+            <span className="flex items-center gap-3 cursor-pointer text-sm font-semibold font-sans">
               <Icon
                 icon={getCanvasPresetGroupIcon(group.id)}
                 className="text-xl mb-px"
@@ -198,7 +198,7 @@ export const PresetControl = () => {
       >
         <Icon icon={activeIcon} className="text-lg" />
         <div className="min-w-0 text-left">
-          <span className="block truncate font-sans">{activeLabel}</span>
+          <span className="truncate font-sans">{activeLabel}</span>
         </div>
       </button>
 

@@ -73,7 +73,7 @@ export const FileMenu = () => {
             <button
               type="button"
               onClick={handleGoHome}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20 cursor-pointer"
             >
               <svg
                 width="24"
@@ -93,7 +93,7 @@ export const FileMenu = () => {
             <button
               type="button"
               onClick={handleClearCanvas}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20 cursor-pointer"
             >
               <svg
                 width="24"

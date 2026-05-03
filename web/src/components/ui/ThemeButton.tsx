@@ -31,7 +31,7 @@ export const ThemeButton = ({
       }}
       className={
         variant === "menu"
-          ? "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20"
+          ? "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-title-color/20 cursor-pointer"
           : "rounded-lg px-2 py-2 text-title-color transition hover:border-accent hover:bg-title-color/20 cursor-pointer"
       }
     >

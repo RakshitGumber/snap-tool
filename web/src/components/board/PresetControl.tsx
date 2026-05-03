@@ -135,7 +135,7 @@ export const PresetControl = () => {
             type="button"
             onClick={() => handleSelectPreset(preset.id)}
             className={clsx(
-              "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
+              "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition font-sans",
               isActive
                 ? "bg-accent-light/70 text-title-color"
                 : "text-title-color hover:bg-surface-3/90",
@@ -165,16 +165,16 @@ export const PresetControl = () => {
               setActivePresetGroupId(group.id as CanvasPresetGroupId)
             }
             className={clsx(
-              "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
+              "flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition font-sans",
               isActive
                 ? "bg-accent-light/70 text-title-color"
                 : "text-title-color hover:bg-surface-3/90",
             )}
           >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold">
+            <span className="flex items-center gap-2 text-sm font-semibold font-sans">
               <Icon
                 icon={getCanvasPresetGroupIcon(group.id)}
-                className="text-base"
+                className="text-xl mb-px"
               />
               <span>{group.label}</span>
             </span>

@@ -9,13 +9,7 @@ export const Footer = () => {
             Crafted with Caffine and Serotonin.
           </p>
           <div className="flex flex-col gap-8 pb-4 sm:flex-row sm:items-center text-title-color">
-            <div className="flex flex-row gap-4">
-              <a href="https://gumberrakshit.com">
-                <Icon
-                  icon="solar:accessibility-broken"
-                  className="text-3xl fill-title-color transition-colors duration-200"
-                />
-              </a>
+            <div className="flex flex-row gap-6">
               <a href="https://github.com/RakshitGumber">
                 <Icon
                   icon="simple-icons:github"

@@ -14,7 +14,7 @@ const parentVariants = {
 const navItems = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
-  { label: "Contribute", to: "/contribute" },
+  { label: "Feedback", to: "/feedback" },
 ];
 
 export const Navbar = () => {
@@ -97,14 +97,6 @@ export const Navbar = () => {
         </ul>
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           <div className="hidden md:flex gap-2">
-            <a
-              href="https://github.com/RakshitGumber/snap-tool"
-              className="rounded-lg font-semibold hover:bg-title-color/20 items-center flex gap-1 text-xl px-2.5 text-title-color"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Icon icon="simple-icons:github" />
-            </a>
             <ThemeButton />
           </div>
           <Link

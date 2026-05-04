@@ -33,6 +33,11 @@ const CreateRoute = lazy(async () => {
   return { default: mod.CreateRoute };
 });
 
+const AboutRoute = lazy(async () => {
+  const mod = await import("./about");
+  return { default: mod.About };
+});
+
 const PageNotFound = lazy(async () => {
   const mod = await import("./not-found");
   return { default: mod.NotFound };
@@ -41,6 +46,7 @@ const PageNotFound = lazy(async () => {
 const ROUTES: RouteConfig[] = [
   { path: "/", element: RootRoute },
   { path: "/create", element: CreateRoute },
+  { path: "/about", element: AboutRoute },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {

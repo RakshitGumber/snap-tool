@@ -73,6 +73,12 @@ export type CanvasBackgroundPreset = {
   value: CanvasBackgroundValue;
 };
 
+export type CanvasBackgroundPresetGroup = {
+  id: string;
+  label: string;
+  presets: CanvasBackgroundPreset[];
+};
+
 export type CanvasBackgroundEffects = {
   hue: number;
   saturation: number;

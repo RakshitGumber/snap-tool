@@ -9,7 +9,7 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const IMAGE_BACKGROUND_DEFAULTS = {
-  fit: "contain" as CanvasBackgroundImageFit,
+  fit: "cover" as CanvasBackgroundImageFit,
   offsetX: 0,
   offsetY: 0,
 };

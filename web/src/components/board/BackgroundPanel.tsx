@@ -16,7 +16,7 @@ import {
   isCanvasBackgroundImageMovable,
 } from "@/canvas/backgrounds";
 import {
-  useCanvasBackgroundPresets,
+  useCanvasBackgroundPresetGroups,
   useConfigStore,
 } from "@/stores/useConfigStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
@@ -43,7 +43,7 @@ const formatFitLabel = (value: string) =>
 
 export const BoardBackgroundPanel = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const backgroundPresets = useCanvasBackgroundPresets();
+  const backgroundPresetGroups = useCanvasBackgroundPresetGroups();
   const canvasShell = useCanvasShell();
   const activeBackgroundPreset = useActiveCanvasBackground();
   const backgroundEffectDragActiveRef = useRef(false);
@@ -63,11 +63,17 @@ export const BoardBackgroundPanel = () => {
   const applyBackgroundToCanvas = useCanvasStore(
     (state) => state.applyBackgroundToCanvas,
   );
+  const applySolidColorBackground = useCanvasStore(
+    (state) => state.applySolidColorBackground,
+  );
   const applyAssetBackgroundToCanvas = useCanvasStore(
     (state) => state.applyAssetBackgroundToCanvas,
   );
   const updateCanvasBackgroundEffects = useCanvasStore(
     (state) => state.updateCanvasBackgroundEffects,
+  );
+  const resetCanvasBackgroundEffects = useCanvasStore(
+    (state) => state.resetCanvasBackgroundEffects,
   );
   const updateCanvasBackgroundImage = useCanvasStore(
     (state) => state.updateCanvasBackgroundImage,
@@ -78,7 +84,6 @@ export const BoardBackgroundPanel = () => {
   const endHistoryTransaction = useCanvasStore(
     (state) => state.endHistoryTransaction,
   );
-  const assetOrder = useUploadLibraryStore((state) => state.assetOrder);
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
@@ -115,6 +120,12 @@ export const BoardBackgroundPanel = () => {
     background?.kind === "image"
       ? activeBackgroundAsset?.height ?? background.height ?? null
       : null;
+  const customColorValue =
+    background?.kind === "solid" ? background.color : "#FFFFFF";
+  const filtersAreDefault = CANVAS_BACKGROUND_EFFECT_ORDER.every(
+    (effectId) =>
+      backgroundEffects[effectId] === DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId],
+  );
 
   const activeBackgroundTitle = useMemo(() => {
     if (activeBackgroundPreset) {
@@ -126,7 +137,7 @@ export const BoardBackgroundPanel = () => {
     }
 
     if (background?.kind === "solid") {
-      return "Solid background";
+      return "Custom Color";
     }
 
     if (background?.kind === "gradient") {
@@ -137,16 +148,17 @@ export const BoardBackgroundPanel = () => {
       return "Image background";
     }
 
-    return "White";
+    return "Background";
   }, [activeBackgroundAsset, activeBackgroundPreset, background]);
 
   useEffect(() => {
-    for (const assetId of assetOrder) {
-      if (!resolvedMediaByAssetId[assetId]?.preview) {
-        void resolveAssetMedia(assetId, "preview");
-      }
+    if (
+      activeBackgroundAssetId &&
+      !resolvedMediaByAssetId[activeBackgroundAssetId]?.preview
+    ) {
+      void resolveAssetMedia(activeBackgroundAssetId, "preview");
     }
-  }, [assetOrder, resolveAssetMedia, resolvedMediaByAssetId]);
+  }, [activeBackgroundAssetId, resolveAssetMedia, resolvedMediaByAssetId]);
 
   useEffect(
     () => () => {
@@ -230,8 +242,8 @@ export const BoardBackgroundPanel = () => {
                 type="button"
                 aria-label={
                   isBackgroundExpanded
-                    ? "Collapse background effects"
-                    : "Expand background effects"
+                    ? "Collapse background filters"
+                    : "Expand background filters"
                 }
                 aria-expanded={isBackgroundExpanded}
                 onClick={() =>
@@ -313,6 +325,25 @@ export const BoardBackgroundPanel = () => {
           >
             <div className="overflow-hidden">
               <div className="border-t border-border-color/50 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+                      Filters
+                    </p>
+                    <p className="mt-1 text-sm text-secondary-text">
+                      Tune color, blur, brightness, contrast, and opacity.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={resetCanvasBackgroundEffects}
+                    disabled={!canvasShell || filtersAreDefault}
+                    className="rounded-xl px-3 py-2 text-xs font-semibold text-title-color outline outline-border-color/60 transition hover:outline-accent/70 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2">
                   {CANVAS_BACKGROUND_EFFECT_ORDER.map((effectId) => {
                     const control = CANVAS_BACKGROUND_EFFECT_CONTROLS[effectId];
@@ -401,69 +432,34 @@ export const BoardBackgroundPanel = () => {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-              Presets
-            </p>
-            <p className="mt-1 text-sm text-secondary-text">
-              Solid colors, gradients, and bundled image backgrounds.
-            </p>
-          </div>
-          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
-            {backgroundPresets.length}
-          </span>
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+            Custom Color
+          </p>
+          <p className="mt-1 text-sm text-secondary-text">
+            Pick a solid background color for this canvas.
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          {backgroundPresets.map((backgroundPreset) => (
-            <button
-              key={backgroundPreset.id}
-              type="button"
-              onClick={() => {
-                setDefaultBackgroundPresetId(backgroundPreset.id);
-                applyBackgroundToCanvas(backgroundPreset.id);
-              }}
-              className={clsx(
-                "rounded-xl p-2 text-left outline transition hover:outline-accent/70",
-                backgroundPreset.id === activeBackgroundPreset?.id
-                  ? "outline-accent"
-                  : "outline-border-color/60",
-              )}
-            >
-              <BoardBackgroundPreview
-                background={backgroundPreset.value}
-                imageSrc={
-                  backgroundPreset.value.kind === "image"
-                    ? backgroundPreset.value.previewSrc ??
-                      backgroundPreset.value.src ??
-                      null
-                    : null
-                }
-                imageWidth={
-                  backgroundPreset.value.kind === "image"
-                    ? backgroundPreset.value.width ?? null
-                    : null
-                }
-                imageHeight={
-                  backgroundPreset.value.kind === "image"
-                    ? backgroundPreset.value.height ?? null
-                    : null
-                }
-                className="h-12 rounded-md outline outline-border-color/60"
-              />
-              <span className="mt-2 block text-xs font-semibold text-title-color">
-                {backgroundPreset.label}
-              </span>
-            </button>
-          ))}
+        <div className="flex items-center gap-3 rounded-xl border border-border-color/70 bg-card-bg px-3 py-2">
+          <input
+            type="color"
+            value={customColorValue}
+            onChange={(event) =>
+              applySolidColorBackground(event.target.value)
+            }
+            className="h-10 w-12 rounded-md border-0 bg-transparent p-0"
+          />
+          <span className="text-sm font-semibold text-title-color">
+            {customColorValue.toUpperCase()}
+          </span>
         </div>
       </section>
 
       <section className="space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-            Upload background
+            Upload Background
           </p>
           <p className="mt-1 text-sm text-secondary-text">
             Add a local image and apply it to the current canvas background.
@@ -491,72 +487,67 @@ export const BoardBackgroundPanel = () => {
         </button>
       </section>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-              Image library
-            </p>
-            <p className="mt-1 text-sm text-secondary-text">
-              Click any library image to use it as the canvas background.
-            </p>
+      {backgroundPresetGroups.map((group) => (
+        <section key={group.id} className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+                {group.label}
+              </p>
+              <p className="mt-1 text-sm text-secondary-text">
+                {group.presets.length} curated {group.label.toLowerCase()} backgrounds.
+              </p>
+            </div>
+            <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
+              {group.presets.length}
+            </span>
           </div>
-          <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
-            {assetOrder.length}
-          </span>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {assetOrder.map((assetId) => {
-            const asset = assetMetaById[assetId];
-            const media = resolvedMediaByAssetId[assetId]?.preview;
-            const isActive = activeBackgroundAssetId === assetId;
-
-            if (!asset) {
-              return null;
-            }
-
-            return (
+          <div className="grid grid-cols-2 gap-3">
+            {group.presets.map((backgroundPreset) => (
               <button
-                key={assetId}
+                key={backgroundPreset.id}
                 type="button"
-                onClick={() => applyAssetBackgroundToCanvas(assetId)}
+                onClick={() => {
+                  setDefaultBackgroundPresetId(backgroundPreset.id);
+                  applyBackgroundToCanvas(backgroundPreset.id);
+                }}
                 className={clsx(
-                  "overflow-hidden rounded-2xl text-left outline transition hover:-translate-y-0.5 hover:outline-accent/70",
-                  isActive ? "outline-accent" : "outline-border-color/60",
+                  "rounded-xl p-2 text-left outline transition hover:outline-accent/70",
+                  backgroundPreset.id === activeBackgroundPreset?.id
+                    ? "outline-accent"
+                    : "outline-border-color/60",
                 )}
               >
-                <div className="aspect-[4/3] overflow-hidden bg-surface-3/40 p-2">
-                  {media ? (
-                    <img
-                      src={media.src}
-                      alt={asset.name}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="h-full w-full rounded-xl bg-surface-3/70" />
-                  )}
-                </div>
-                <div className="space-y-1 px-3 py-3">
-                  <p className="truncate text-sm font-semibold text-title-color">
-                    {asset.name}
-                  </p>
-                  <p className="text-xs text-secondary-text">
-                    {asset.width} x {asset.height}
-                  </p>
-                </div>
+                <BoardBackgroundPreview
+                  background={backgroundPreset.value}
+                  imageSrc={
+                    backgroundPreset.value.kind === "image"
+                      ? backgroundPreset.value.previewSrc ??
+                        backgroundPreset.value.src ??
+                        null
+                      : null
+                  }
+                  imageWidth={
+                    backgroundPreset.value.kind === "image"
+                      ? backgroundPreset.value.width ?? null
+                      : null
+                  }
+                  imageHeight={
+                    backgroundPreset.value.kind === "image"
+                      ? backgroundPreset.value.height ?? null
+                      : null
+                  }
+                  className="h-16 rounded-md outline outline-border-color/60"
+                />
+                <span className="mt-2 block text-xs font-semibold text-title-color">
+                  {backgroundPreset.label}
+                </span>
               </button>
-            );
-          })}
-        </div>
-
-        {!assetOrder.length ? (
-          <div className="rounded-xl px-4 py-4 text-sm text-secondary-text">
-            Your uploaded and built-in images will appear here.
+            ))}
           </div>
-        ) : null}
-      </section>
+        </section>
+      ))}
     </div>
   );
 };

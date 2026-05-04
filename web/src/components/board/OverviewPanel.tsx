@@ -100,7 +100,7 @@ export const BoardOverviewPanel = () => {
     activeBackgroundPreset?.label ??
     activeBackgroundAsset?.name ??
     (background?.kind === "solid"
-      ? "Solid background"
+      ? "Custom Color"
       : background?.kind === "gradient"
         ? "Gradient background"
         : background?.kind === "image"

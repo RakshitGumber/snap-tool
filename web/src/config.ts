@@ -1,6 +1,6 @@
 import type {
   BoardTextInput,
-  CanvasBackgroundPreset,
+  CanvasBackgroundPresetGroup,
   CanvasPresetGroup,
   CanvasPresetGroupId,
   CanvasPresetId,
@@ -29,7 +29,7 @@ export type BoardConfig = {
   text: BoardTextConfig;
   canvasPresetGroups: CanvasPresetGroup[];
   canvasPresetGroupIcons: Record<CanvasPresetGroupId, string>;
-  canvasBackgroundPresets: CanvasBackgroundPreset[];
+  canvasBackgroundPresetGroups: CanvasBackgroundPresetGroup[];
 };
 
 export const BOARD_CONFIG = {
@@ -40,7 +40,7 @@ export const BOARD_CONFIG = {
   },
   defaults: {
     canvasPresetId: "general-square",
-    backgroundPresetId: "solid-white",
+    backgroundPresetId: "gradient-01",
     canvasTitle: "Canvas",
   },
   text: {
@@ -178,98 +178,336 @@ export const BOARD_CONFIG = {
     pinterest: "mdi:pinterest",
     general: "solar:ruler-angular-linear",
   },
-  canvasBackgroundPresets: [
+  canvasBackgroundPresetGroups: [
     {
-      id: "solid-white",
-      label: "White",
-      value: {
-        kind: "solid",
-        color: "#FFFFFF",
-      },
+      id: "gradients",
+      label: "Gradients",
+      presets: [
+        {
+          id: "gradient-01",
+          label: "Aurora",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(135deg, #F7E8FF 0%, #BCD7FF 48%, #9FF4D5 100%)",
+          },
+        },
+        {
+          id: "gradient-02",
+          label: "Duskline",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(145deg, #1E1F4B 0%, #5A2A7A 46%, #F06C54 100%)",
+          },
+        },
+        {
+          id: "gradient-03",
+          label: "Tropic",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(135deg, #083D77 0%, #2BB3C0 52%, #D9F7A6 100%)",
+          },
+        },
+        {
+          id: "gradient-04",
+          label: "Blush",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(135deg, #FFF1E6 0%, #F8C7D8 44%, #C58CFF 100%)",
+          },
+        },
+        {
+          id: "gradient-05",
+          label: "Cinder",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(135deg, #12131A 0%, #394252 55%, #D0A76F 100%)",
+          },
+        },
+        {
+          id: "gradient-06",
+          label: "Glacier",
+          value: {
+            kind: "gradient",
+            css: "linear-gradient(135deg, #EFF7FF 0%, #A9C6FF 50%, #5B7BE3 100%)",
+          },
+        },
+      ],
     },
     {
-      id: "solid-slate",
-      label: "Soft slate",
-      value: {
-        kind: "solid",
-        color: "#F4F6FF",
-      },
+      id: "vector",
+      label: "Vector",
+      presets: [
+        {
+          id: "vector-01",
+          label: "Orbit",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-01.svg",
+            previewSrc: "/images/bg-vector-01.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "vector-02",
+          label: "Ribbon",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-02.svg",
+            previewSrc: "/images/bg-vector-02.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "vector-03",
+          label: "Summit",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-03.svg",
+            previewSrc: "/images/bg-vector-03.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "vector-04",
+          label: "Signal",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-04.svg",
+            previewSrc: "/images/bg-vector-04.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "vector-05",
+          label: "Facet",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-05.svg",
+            previewSrc: "/images/bg-vector-05.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "vector-06",
+          label: "Canopy",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-vector-06.svg",
+            previewSrc: "/images/bg-vector-06.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+      ],
     },
     {
-      id: "solid-ink",
-      label: "Ink",
-      value: {
-        kind: "solid",
-        color: "#1A1A1E",
-      },
+      id: "abstract",
+      label: "Abstract",
+      presets: [
+        {
+          id: "abstract-01",
+          label: "Pulse",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-01.svg",
+            previewSrc: "/images/bg-abstract-01.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "abstract-02",
+          label: "Drift",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-02.svg",
+            previewSrc: "/images/bg-abstract-02.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "abstract-03",
+          label: "Monsoon",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-03.svg",
+            previewSrc: "/images/bg-abstract-03.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "abstract-04",
+          label: "Prism",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-04.svg",
+            previewSrc: "/images/bg-abstract-04.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "abstract-05",
+          label: "Echo",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-05.svg",
+            previewSrc: "/images/bg-abstract-05.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "abstract-06",
+          label: "Strata",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "/images/bg-abstract-06.svg",
+            previewSrc: "/images/bg-abstract-06.svg",
+            width: 1600,
+            height: 1000,
+          },
+        },
+      ],
     },
     {
-      id: "solid-mint",
-      label: "Mint",
-      value: {
-        kind: "solid",
-        color: "#E8FFF4",
-      },
-    },
-    {
-      id: "gradient-cloud",
-      label: "Cloud",
-      value: {
-        kind: "gradient",
-        css: "linear-gradient(135deg, #FFFFFF 0%, #F4F6FF 100%)",
-      },
-    },
-    {
-      id: "gradient-fresh",
-      label: "Fresh",
-      value: {
-        kind: "gradient",
-        css: "linear-gradient(135deg, #E8FFF4 0%, #BDEED9 100%)",
-      },
-    },
-    {
-      id: "gradient-warm",
-      label: "Warm",
-      value: {
-        kind: "gradient",
-        css: "linear-gradient(135deg, #FFF3E8 0%, #FFD8B5 100%)",
-      },
-    },
-    {
-      id: "gradient-night",
-      label: "Night",
-      value: {
-        kind: "gradient",
-        css: "linear-gradient(135deg, #1A1A1E 0%, #33333C 100%)",
-      },
-    },
-    {
-      id: "image-orbit",
-      label: "Orbit",
-      value: {
-        kind: "image",
-        fit: "contain",
-        offsetX: 0,
-        offsetY: 0,
-        src: "/images/bg-orbit.svg",
-        previewSrc: "/images/bg-orbit.svg",
-        width: 1600,
-        height: 900,
-      },
-    },
-    {
-      id: "image-cascade",
-      label: "Cascade",
-      value: {
-        kind: "image",
-        fit: "contain",
-        offsetX: 0,
-        offsetY: 0,
-        src: "/images/bg-cascade.svg",
-        previewSrc: "/images/bg-cascade.svg",
-        width: 1080,
-        height: 1350,
-      },
+      id: "unsplash",
+      label: "Unsplash",
+      presets: [
+        {
+          id: "unsplash-01",
+          label: "Coast",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "unsplash-02",
+          label: "Canyon",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "unsplash-03",
+          label: "Forest",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "unsplash-04",
+          label: "Desert",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "unsplash-05",
+          label: "Seafoam",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+        {
+          id: "unsplash-06",
+          label: "Range",
+          value: {
+            kind: "image",
+            fit: "cover",
+            offsetX: 0,
+            offsetY: 0,
+            src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&h=1000&q=80",
+            previewSrc:
+              "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&h=500&q=70",
+            width: 1600,
+            height: 1000,
+          },
+        },
+      ],
     },
   ],
 } satisfies BoardConfig;

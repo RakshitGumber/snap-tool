@@ -9,6 +9,7 @@ import { BOARD_CONFIG, type BoardLayoutConfig, type BoardTextConfig } from "@/co
 import type {
   BoardTextInput,
   CanvasBackgroundPreset,
+  CanvasBackgroundPresetGroup,
   CanvasBackgroundValue,
   CanvasFrame,
   CanvasPreset,
@@ -27,6 +28,7 @@ type ConfigState = {
   canvasPresetGroups: CanvasPresetGroup[];
   canvasPresets: CanvasPreset[];
   canvasPresetGroupIcons: Record<CanvasPresetGroupId, string>;
+  canvasBackgroundPresetGroups: CanvasBackgroundPresetGroup[];
   canvasBackgroundPresets: CanvasBackgroundPreset[];
 };
 
@@ -39,11 +41,23 @@ type ConfigActions = {
 const normalizePresets = (groups: CanvasPresetGroup[]) =>
   groups.flatMap((group) => group.presets);
 
-const normalizeBackgroundPresets = (presets: CanvasBackgroundPreset[]) =>
-  presets.map((preset) => ({
-    ...preset,
-    value: normalizeCanvasBackgroundPresetValue(preset.value),
+const normalizeBackgroundPresetGroups = (
+  groups: CanvasBackgroundPresetGroup[],
+) =>
+  groups.map((group) => ({
+    ...group,
+    presets: group.presets.map((preset) => ({
+      ...preset,
+      value: normalizeCanvasBackgroundPresetValue(preset.value),
+    })),
   }));
+
+const flattenBackgroundPresetGroups = (groups: CanvasBackgroundPresetGroup[]) =>
+  groups.flatMap((group) => group.presets);
+
+const NORMALIZED_BACKGROUND_PRESET_GROUPS = normalizeBackgroundPresetGroups(
+  BOARD_CONFIG.canvasBackgroundPresetGroups,
+);
 
 const createDefaultTextInput = (): BoardTextInput => ({
   ...BOARD_CONFIG.text.defaultInput,
@@ -63,8 +77,9 @@ export const useConfigStore = create<ConfigState & ConfigActions>((set) => ({
   canvasPresetGroups: BOARD_CONFIG.canvasPresetGroups,
   canvasPresets: normalizePresets(BOARD_CONFIG.canvasPresetGroups),
   canvasPresetGroupIcons: BOARD_CONFIG.canvasPresetGroupIcons,
-  canvasBackgroundPresets: normalizeBackgroundPresets(
-    BOARD_CONFIG.canvasBackgroundPresets,
+  canvasBackgroundPresetGroups: NORMALIZED_BACKGROUND_PRESET_GROUPS,
+  canvasBackgroundPresets: flattenBackgroundPresetGroups(
+    NORMALIZED_BACKGROUND_PRESET_GROUPS,
   ),
 
   setDefaultCanvasPresetId: (presetId) => set({ defaultCanvasPresetId: presetId }),
@@ -91,6 +106,9 @@ export const useCanvasPresetGroups = () =>
 
 export const useCanvasBackgroundPresets = () =>
   useConfigStore((state) => state.canvasBackgroundPresets);
+
+export const useCanvasBackgroundPresetGroups = () =>
+  useConfigStore((state) => state.canvasBackgroundPresetGroups);
 
 export const findCanvasPresetById = (
   presetId: CanvasPresetId | null | undefined,

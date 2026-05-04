@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 
 import {
   areCanvasBackgroundEffectsEqual,
+  DEFAULT_CANVAS_BACKGROUND_EFFECTS,
   normalizeCanvasBackgroundEffects,
 } from "@/canvas/backgroundEffects";
 import {
@@ -53,6 +54,7 @@ type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
+  applySolidColorBackground: (color: string) => void;
   applyAssetBackgroundToCanvas: (assetId: string) => void;
   updateCanvasBackgroundImage: (
     updates: Partial<
@@ -65,6 +67,7 @@ type CanvasActions = {
   updateCanvasBackgroundEffects: (
     updates: Partial<CanvasBackgroundEffects>,
   ) => void;
+  resetCanvasBackgroundEffects: () => void;
   clearCanvas: () => void;
   undo: () => void;
   redo: () => void;
@@ -610,6 +613,26 @@ export const useCanvasStore = create<CanvasStore>()(
         });
       },
 
+      applySolidColorBackground: (color) =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
+
+          disableBackgroundMoveMode();
+
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              backgroundPresetId: null,
+              background: {
+                kind: "solid",
+                color,
+              },
+            },
+          };
+        }),
+
       applyAssetBackgroundToCanvas: (assetId) =>
         applyCanvasStateChange(set, (state) => {
           if (!state.canvasMeta) {
@@ -697,6 +720,31 @@ export const useCanvasStore = create<CanvasStore>()(
             canvasMeta: {
               ...state.canvasMeta,
               backgroundEffects: nextEffects,
+            },
+          };
+        }),
+
+      resetCanvasBackgroundEffects: () =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
+
+          if (
+            areCanvasBackgroundEffectsEqual(
+              state.canvasMeta.backgroundEffects,
+              DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+            )
+          ) {
+            return state;
+          }
+
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              backgroundEffects: {
+                ...DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+              },
             },
           };
         }),

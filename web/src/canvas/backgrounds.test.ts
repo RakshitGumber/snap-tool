@@ -17,7 +17,7 @@ describe("backgrounds", () => {
       label: "Orbit",
       value: {
         kind: "image",
-        fit: "contain",
+        fit: "cover",
         offsetX: 0,
         offsetY: 0,
         src: "/images/bg-orbit.svg",
@@ -29,7 +29,7 @@ describe("backgrounds", () => {
 
     expect(background).toEqual({
       kind: "image",
-      fit: "contain",
+      fit: "cover",
       offsetX: 0,
       offsetY: 0,
       assetId: null,
@@ -65,7 +65,7 @@ describe("backgrounds", () => {
           label: "Cascade",
           value: {
             kind: "image",
-            fit: "contain",
+            fit: "cover",
             offsetX: 0,
             offsetY: 0,
             src: "/images/bg-cascade.svg",
@@ -77,7 +77,7 @@ describe("backgrounds", () => {
       }),
     ).toEqual({
       kind: "image",
-      fit: "contain",
+      fit: "cover",
       offsetX: 0,
       offsetY: 0,
       assetId: null,
@@ -164,8 +164,7 @@ describe("backgrounds", () => {
         css: "linear-gradient(90deg, #000 0%, #fff 100%)",
       }),
     ).toBe("linear-gradient(90deg, #000 0%, #fff 100%)");
-    expect(getCanvasBackgroundCssValue(createCanvasAssetImageBackground("a1"))).toBe(
-      null,
-    );
+    expect(createCanvasAssetImageBackground("a1").fit).toBe("cover");
+    expect(getCanvasBackgroundCssValue(createCanvasAssetImageBackground("a1"))).toBe(null);
   });
 });

@@ -71,24 +71,13 @@ export const normalizeBoardTextFamily = (value: string) =>
 
 export const getDefaultBoardTextInput = () => createDefaultTextInput();
 
-export const useLayoutConfig = () => useConfigStore((state) => state.layout);
-
 export const useTextConfig = () => useConfigStore((state) => state.text);
-
-export const useConfigDefaults = () =>
-  useConfigStore((state) => ({
-    defaultCanvasPresetId: state.defaultCanvasPresetId,
-    defaultBackgroundPresetId: state.defaultBackgroundPresetId,
-  }));
 
 export const useCanvasPresetGroups = () =>
   useConfigStore((state) => state.canvasPresetGroups);
 
 export const useCanvasBackgroundPresets = () =>
   useConfigStore((state) => state.canvasBackgroundPresets);
-
-export const useCanvasPresetGroupIcons = () =>
-  useConfigStore((state) => state.canvasPresetGroupIcons);
 
 export const findCanvasPresetById = (
   presetId: CanvasPresetId | null | undefined,

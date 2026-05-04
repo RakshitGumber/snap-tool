@@ -979,9 +979,6 @@ export const useCanvasStore = create<CanvasStore>()(
 
 export const useCanvasShell = () => useCanvasStore((state) => state.canvasMeta);
 
-export const useCanvasImage = (imageId: string) =>
-  useCanvasStore((state) => state.imagesById[imageId] ?? null);
-
 export const useCanvasText = (textId: string) =>
   useCanvasStore((state) => state.textsById[textId] ?? null);
 
@@ -1015,8 +1012,3 @@ export const useActiveCanvasBackground = () => {
     ? getCanvasBackgroundById(canvasMeta.backgroundPresetId)
     : null;
 };
-
-export const useCanvasBackgroundEffects = () =>
-  useCanvasStore((state) =>
-    normalizeCanvasBackgroundEffects(state.canvasMeta?.backgroundEffects),
-  );

@@ -233,39 +233,42 @@ export const Canvas = memo(function BoardCanvas() {
     );
   });
 
+  const handleGlobalPointerMove = useEffectEvent((event: PointerEvent) => {
+    if (!dragStateRef.current) {
+      return;
+    }
+
+    pointerSnapshotRef.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
+
+    if (frameRequestRef.current !== null) {
+      return;
+    }
+
+    frameRequestRef.current = window.requestAnimationFrame(flushPointerMove);
+  });
+
+  const handleGlobalPointerUp = useEffectEvent(() => {
+    const hadDragState = dragStateRef.current !== null;
+    dragStateRef.current = null;
+    pointerSnapshotRef.current = null;
+
+    if (frameRequestRef.current !== null) {
+      window.cancelAnimationFrame(frameRequestRef.current);
+      frameRequestRef.current = null;
+    }
+
+    if (hadDragState) {
+      endHistoryTransaction();
+    }
+  });
+
   useEffect(() => {
-    const schedulePointerMove = (clientX: number, clientY: number) => {
-      pointerSnapshotRef.current = { clientX, clientY };
-
-      if (frameRequestRef.current !== null) {
-        return;
-      }
-
-      frameRequestRef.current = window.requestAnimationFrame(flushPointerMove);
-    };
-
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!dragStateRef.current) {
-        return;
-      }
-
-      schedulePointerMove(event.clientX, event.clientY);
-    };
-
-    const handlePointerUp = () => {
-      const hadDragState = dragStateRef.current !== null;
-      dragStateRef.current = null;
-      pointerSnapshotRef.current = null;
-
-      if (frameRequestRef.current !== null) {
-        window.cancelAnimationFrame(frameRequestRef.current);
-        frameRequestRef.current = null;
-      }
-
-      if (hadDragState) {
-        endHistoryTransaction();
-      }
-    };
+    const handlePointerMove = (event: PointerEvent) =>
+      handleGlobalPointerMove(event);
+    const handlePointerUp = () => handleGlobalPointerUp();
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
@@ -428,7 +431,7 @@ export const Canvas = memo(function BoardCanvas() {
           onDragLeave={handleCanvasDragLeave}
           onDrop={handleCanvasDrop}
           className={clsx(
-            "absolute left-1/2 top-1/2 overflow-visible border border-border-color/70 bg-white shadow-[0_18px_40px_rgba(51,51,60,0.14)] transition",
+            "absolute left-1/2 top-1/2 overflow-visible border border-border-color/70 bg-white shadow-lg transition",
             dropTargetActive && "outline-2 outline-accent -outline-offset-4",
           )}
           style={{

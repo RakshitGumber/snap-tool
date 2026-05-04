@@ -2,6 +2,15 @@ import type { CanvasBackgroundEffects } from "@/types/canvas";
 
 export type CanvasBackgroundEffectKey = keyof CanvasBackgroundEffects;
 
+export const CANVAS_BACKGROUND_EFFECT_ORDER: CanvasBackgroundEffectKey[] = [
+  "hue",
+  "saturation",
+  "blur",
+  "brightness",
+  "contrast",
+  "opacity",
+];
+
 type CanvasBackgroundEffectControl = {
   label: string;
   min: number;

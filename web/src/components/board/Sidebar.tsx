@@ -63,7 +63,6 @@ export const BoardSidebar = () => {
     );
   }, [sections, openSectionId]);
 
-  // 4. Memoize event handlers
   const handleClosePanel = useCallback(() => {
     setSidebarOpen(false);
   }, [setSidebarOpen]);

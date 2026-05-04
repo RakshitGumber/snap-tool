@@ -16,7 +16,38 @@ import {
   useCanvasStore,
 } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
-import type { CanvasPresetGroupId } from "@/types/canvas";
+
+const PRESET_PREVIEW_FRAME = {
+  width: 104,
+  height: 64,
+};
+
+const PresetRatioPreview = ({
+  width,
+  height,
+}: {
+  width: number;
+  height: number;
+}) => {
+  const scale = Math.min(
+    PRESET_PREVIEW_FRAME.width / width,
+    PRESET_PREVIEW_FRAME.height / height,
+  );
+  const previewWidth = Math.max(Math.round(width * scale), 18);
+  const previewHeight = Math.max(Math.round(height * scale), 18);
+
+  return (
+    <div className="flex h-24 items-center justify-center rounded-xl bg-surface-3/60 p-3">
+      <div
+        className="shrink-0 rounded-md bg-white shadow-[0_1px_2px_rgba(15,23,42,0.08)] outline outline-border-color/60"
+        style={{
+          width: `${previewWidth}px`,
+          height: `${previewHeight}px`,
+        }}
+      />
+    </div>
+  );
+};
 
 export const PresetControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -25,17 +56,10 @@ export const PresetControl = () => {
   const activePreset = useActiveCanvasPreset();
   const canvasShell = useCanvasShell();
 
-  const {
-    isPresetMenuOpen,
-    setPresetMenuOpen,
-    activeGroupId,
-    setActivePresetGroupId,
-  } = useEditorUiStore(
+  const { isPresetMenuOpen, setPresetMenuOpen } = useEditorUiStore(
     useShallow((state) => ({
       isPresetMenuOpen: state.isPresetMenuOpen,
       setPresetMenuOpen: state.setPresetMenuOpen,
-      activeGroupId: state.activePresetGroupId,
-      setActivePresetGroupId: state.setActivePresetGroupId,
     })),
   );
 
@@ -49,40 +73,24 @@ export const PresetControl = () => {
     })),
   );
 
-  // -- Memoized Derived State --
   const { activeLabel, activeIcon } = useMemo(() => {
     const isPreset = activePreset.kind === "preset";
-    const width = isPreset
-      ? activePreset.preset.size.width
-      : activePreset.size.width;
-    const height = isPreset
-      ? activePreset.preset.size.height
-      : activePreset.size.height;
 
     return {
       activeLabel: isPreset ? activePreset.preset.label : "Custom",
-      activeDetail: `${width} x ${height}`,
       activeIcon: getCanvasPresetGroupIcon(
         isPreset ? activePreset.group.id : "general",
       ),
     };
   }, [activePreset]);
 
-  const activeGroup = useMemo(
-    () => presetGroups.find((group) => group.id === activeGroupId) ?? null,
-    [presetGroups, activeGroupId],
-  );
-
-  // -- Memoized Handlers --
   const handleDismiss = useCallback(() => {
-    setActivePresetGroupId(null);
     setPresetMenuOpen(false);
-  }, [setActivePresetGroupId, setPresetMenuOpen]);
+  }, [setPresetMenuOpen]);
 
   const handleToggleMenu = useCallback(() => {
-    if (isPresetMenuOpen) setActivePresetGroupId(null);
     setPresetMenuOpen(!isPresetMenuOpen);
-  }, [isPresetMenuOpen, setActivePresetGroupId, setPresetMenuOpen]);
+  }, [isPresetMenuOpen, setPresetMenuOpen]);
 
   const handleSelectPreset = useCallback(
     (presetId: Parameters<typeof getCanvasPresetById>[0]) => {
@@ -94,7 +102,7 @@ export const PresetControl = () => {
 
       resizeCanvas(preset.size, preset.id);
       setDefaultCanvasPresetId(preset.id);
-      handleDismiss(); // Reusing the dismiss logic
+      handleDismiss();
     },
     [
       canvasShell,
@@ -105,87 +113,11 @@ export const PresetControl = () => {
     ],
   );
 
-  // -- Effects / Hooks --
   useDismissibleLayer({
     containerRef,
     isOpen: isPresetMenuOpen,
     onDismiss: handleDismiss,
   });
-
-  // -- Render Helpers --
-  const renderPresetList = () => (
-    <div className="space-y-1">
-      <button
-        type="button"
-        onClick={() => setActivePresetGroupId(null)}
-        className="flex items-center w-full gap-2 justify-start rounded-xl px-3 text-left text-base font-sans py-1 font-semibold cursor-pointer"
-      >
-        <Icon icon="solar:alt-arrow-left-linear" className="text-base" />
-        <span>{activeGroup!.label}</span>
-      </button>
-
-      {activeGroup!.presets.map((preset) => {
-        const isActive =
-          activePreset.kind === "preset" &&
-          preset.id === activePreset.preset.id;
-
-        return (
-          <button
-            key={preset.id}
-            type="button"
-            onClick={() => handleSelectPreset(preset.id)}
-            className={clsx(
-              "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition font-sans",
-              isActive
-                ? "bg-accent-light/70 text-title-color"
-                : "text-title-color hover:bg-surface-3/90",
-            )}
-          >
-            <span className="text-sm font-semibold">{preset.label}</span>
-            <span className="text-xs text-secondary-text">
-              {preset.size.width} x {preset.size.height}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  const renderGroupList = () => (
-    <div className="space-y-1">
-      {presetGroups.map((group) => {
-        const isActive =
-          activePreset.kind === "preset" && group.id === activePreset.group.id;
-
-        return (
-          <button
-            key={group.id}
-            type="button"
-            onClick={() =>
-              setActivePresetGroupId(group.id as CanvasPresetGroupId)
-            }
-            className={clsx(
-              "flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition font-sans",
-              isActive
-                ? "bg-accent-light/70 text-title-color"
-                : "text-title-color hover:bg-surface-3/90",
-            )}
-          >
-            <span className="flex items-center gap-3 cursor-pointer text-sm font-semibold font-sans">
-              <Icon
-                icon={getCanvasPresetGroupIcon(group.id)}
-                className="text-xl mb-px"
-              />
-              <span>{group.label}</span>
-            </span>
-            <span className="text-xs text-secondary-text">
-              {group.presets.length} presets
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
 
   return (
     <div ref={containerRef} className="relative">
@@ -203,8 +135,77 @@ export const PresetControl = () => {
       </button>
 
       {isPresetMenuOpen && (
-        <div className="bg-card-bg absolute right-0 top-full mt-2 z-50 w-72 overflow-y-auto p-2 rounded-lg border border-border-color">
-          {activeGroup ? renderPresetList() : renderGroupList()}
+        <div
+          className={clsx(
+            "z-50 overflow-y-auto rounded-2xl border-2 border-border-color bg-card-bg shadow-[0_18px_40px_rgba(15,23,42,0.12)]",
+            "fixed inset-x-3 bottom-3 top-20 p-3 sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-[70vh] sm:w-[34rem] sm:p-4",
+          )}
+        >
+          <div className="space-y-4 sm:space-y-5">
+            {presetGroups.map((group) => {
+              const isActiveGroup =
+                activePreset.kind === "preset" && group.id === activePreset.group.id;
+
+              return (
+                <section key={group.id} className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <Icon
+                        icon={getCanvasPresetGroupIcon(group.id)}
+                        className={clsx(
+                          "text-lg",
+                          isActiveGroup ? "text-accent" : "text-title-color",
+                        )}
+                      />
+                      <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+                        {group.label}
+                      </p>
+                    </div>
+                    <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
+                      {group.presets.length}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {group.presets.map((preset) => {
+                      const isActive =
+                        activePreset.kind === "preset" &&
+                        preset.id === activePreset.preset.id;
+
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => handleSelectPreset(preset.id)}
+                          className={clsx(
+                            "overflow-hidden rounded-2xl text-left outline transition hover:-translate-y-0.5 hover:outline-accent/70",
+                            isActive
+                              ? "bg-accent-light/45 outline-accent"
+                              : "bg-card-bg outline-border-color/60",
+                          )}
+                        >
+                          <div className="p-2">
+                            <PresetRatioPreview
+                              width={preset.size.width}
+                              height={preset.size.height}
+                            />
+                          </div>
+                          <div className="space-y-1 px-3 pb-3">
+                            <p className="text-sm font-semibold text-title-color">
+                              {preset.label}
+                            </p>
+                            <p className="text-xs text-secondary-text">
+                              {preset.size.width} x {preset.size.height}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

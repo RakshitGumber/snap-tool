@@ -2,18 +2,13 @@ import { create } from "zustand";
 
 import type { BoardSidebarSectionId } from "@/types/board";
 import { getDefaultBoardTextInput } from "@/stores/useConfigStore";
-import type {
-  BoardTextInput,
-  BoardTextItem,
-  CanvasPresetGroupId,
-} from "@/types/canvas";
+import type { BoardTextInput, BoardTextItem } from "@/types/canvas";
 
 type EditorUiState = {
   openSectionId: BoardSidebarSectionId;
   isSidebarOpen: boolean;
   isFileMenuOpen: boolean;
   isPresetMenuOpen: boolean;
-  activePresetGroupId: CanvasPresetGroupId | null;
   selectedImageId: string | null;
   selectedTextId: string | null;
   isBackgroundMoveMode: boolean;
@@ -26,7 +21,6 @@ type EditorUiActions = {
   toggleSection: (sectionId: BoardSidebarSectionId) => void;
   setFileMenuOpen: (isOpen: boolean) => void;
   setPresetMenuOpen: (isOpen: boolean) => void;
-  setActivePresetGroupId: (groupId: CanvasPresetGroupId | null) => void;
   setBackgroundMoveMode: (isActive: boolean) => void;
   selectImage: (imageId: string | null) => void;
   selectText: (text: BoardTextItem | null) => void;
@@ -53,7 +47,6 @@ export const useEditorUiStore = create<EditorUiState & EditorUiActions>((set) =>
   isSidebarOpen: true,
   isFileMenuOpen: false,
   isPresetMenuOpen: false,
-  activePresetGroupId: null,
   selectedImageId: null,
   selectedTextId: null,
   isBackgroundMoveMode: false,
@@ -69,7 +62,6 @@ export const useEditorUiStore = create<EditorUiState & EditorUiActions>((set) =>
     })),
   setFileMenuOpen: (isFileMenuOpen) => set({ isFileMenuOpen }),
   setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
-  setActivePresetGroupId: (activePresetGroupId) => set({ activePresetGroupId }),
   setBackgroundMoveMode: (isBackgroundMoveMode) => set({ isBackgroundMoveMode }),
   selectImage: (selectedImageId) =>
     set({

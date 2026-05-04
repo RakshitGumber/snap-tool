@@ -1,4 +1,7 @@
+import { Icon } from "@iconify/react";
+
 import { useCanvasStore } from "@/stores/useCanvasStore";
+import { useEditorUiStore } from "@/stores/useEditorUiStore";
 
 const controlClassName =
   "flex h-10 w-10 items-center justify-center rounded-lg text-title-color transition hover:bg-text-color/20 disabled:cursor-not-allowed disabled:text-secondary-text/70 disabled:hover:bg-transparent";
@@ -6,8 +9,13 @@ const controlClassName =
 export const HistoryControls = () => {
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
+  const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
+  const removeSelectedText = useCanvasStore((state) => state.removeSelectedText);
   const canUndo = useCanvasStore((state) => state.historyPast.length > 0);
   const canRedo = useCanvasStore((state) => state.historyFuture.length > 0);
+  const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
+  const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
+  const hasSelection = Boolean(selectedImageId || selectedTextId);
 
   return (
     <div className="flex items-center">
@@ -75,6 +83,24 @@ export const HistoryControls = () => {
             strokeLinejoin="round"
           />
         </svg>
+      </button>
+
+      <button
+        type="button"
+        aria-label="Delete selected object"
+        title="Delete selected object"
+        onClick={() => {
+          if (selectedTextId) {
+            removeSelectedText();
+            return;
+          }
+
+          removeSelectedImage();
+        }}
+        disabled={!hasSelection}
+        className={controlClassName}
+      >
+        <Icon icon="solar:trash-bin-minimalistic-linear" className="text-xl" />
       </button>
     </div>
   );

@@ -98,6 +98,8 @@ export const Canvas = memo(function BoardCanvas() {
     (state) => state.updateCanvasBackgroundImage,
   );
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
+  const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
+  const removeSelectedText = useCanvasStore((state) => state.removeSelectedText);
   const beginHistoryTransaction = useCanvasStore(
     (state) => state.beginHistoryTransaction,
   );
@@ -180,6 +182,43 @@ export const Canvas = memo(function BoardCanvas() {
       }
     }
   }, [canvasShell, isBackgroundMoveMode, setBackgroundMoveMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete" && event.key !== "Backspace") {
+        return;
+      }
+
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (selectedTextId) {
+        event.preventDefault();
+        removeSelectedText();
+        return;
+      }
+
+      if (selectedImageId) {
+        event.preventDefault();
+        removeSelectedImage();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    removeSelectedImage,
+    removeSelectedText,
+    selectedImageId,
+    selectedTextId,
+  ]);
 
   useEffect(() => {
     for (const text of texts) {

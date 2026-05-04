@@ -368,27 +368,49 @@ export const BoardBackgroundPanel = () => {
                   {CANVAS_BACKGROUND_EFFECT_ORDER.map((effectId) => {
                     const control = CANVAS_BACKGROUND_EFFECT_CONTROLS[effectId];
                     const isActive = activeBackgroundEffect === effectId;
+                    const isDirty =
+                      backgroundEffects[effectId] !==
+                      DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId];
 
                     return (
-                      <button
+                      <div
                         key={effectId}
-                        type="button"
-                        onClick={() => setActiveBackgroundEffect(effectId)}
                         className={clsx(
-                          "rounded-xl border px-3 py-2 text-left transition",
+                          "rounded-xl border px-3 py-2 transition",
                           isActive
                             ? "border-accent/70 bg-accent/10 text-accent"
                             : "border-border-color/50 text-title-color hover:border-accent/60 hover:text-accent",
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          <Icon
-                            icon={BACKGROUND_EFFECT_ICONS[effectId]}
-                            className="text-base"
-                          />
-                          <span className="text-sm font-semibold">
-                            {control.label}
-                          </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveBackgroundEffect(effectId)}
+                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                          >
+                            <Icon
+                              icon={BACKGROUND_EFFECT_ICONS[effectId]}
+                              className="text-base"
+                            />
+                            <span className="text-sm font-semibold">
+                              {control.label}
+                            </span>
+                          </button>
+
+                          {isDirty ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateCanvasBackgroundEffects({
+                                  [effectId]:
+                                    DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId],
+                                })
+                              }
+                              className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-semibold outline outline-border-color/60 transition hover:outline-accent/70"
+                            >
+                              Reset
+                            </button>
+                          ) : null}
                         </div>
                         <p
                           className={clsx(
@@ -401,7 +423,7 @@ export const BoardBackgroundPanel = () => {
                             backgroundEffects[effectId],
                           )}
                         </p>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

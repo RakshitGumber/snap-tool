@@ -14,7 +14,7 @@ const parentVariants = {
 const navItems = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
-  { label: "Feedback", to: "/feedback" },
+  { label: "Roadmap", to: "/roadmap" },
 ];
 
 export const Navbar = () => {

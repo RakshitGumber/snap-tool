@@ -96,7 +96,7 @@ export const About = () => {
                 </p>
               </div>
 
-              <div className="rounded-[2rem] border border-border-color bg-card-bg/90 p-6 shadow-sm backdrop-blur-xl">
+              <div className="rounded-4xl border border-border-color bg-card-bg/90 p-6 shadow-sm backdrop-blur-xl">
                 <p className="font-sans text-sm font-bold uppercase tracking-[0.28em] text-accent">
                   Why it exists
                 </p>
@@ -141,7 +141,7 @@ export const About = () => {
             whileInView="visible"
             viewport={{ once: true, amount: 0.25 }}
             variants={sectionReveal}
-            className="rounded-[2rem] border border-border-color bg-card-bg p-8 shadow-sm"
+            className="rounded-4xl border border-border-color bg-card-bg p-8 shadow-sm"
           >
             <p className="font-sans text-sm font-bold uppercase tracking-[0.28em] text-accent">
               The approach
@@ -173,7 +173,7 @@ export const About = () => {
             {valueCards.map((card) => (
               <article
                 key={card.title}
-                className="rounded-[2rem] border border-border-color bg-card-bg/95 p-6 shadow-sm"
+                className="rounded-4xl border border-border-color bg-card-bg/95 p-6 shadow-sm"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-light/60 text-3xl text-accent">
                   <Icon icon={card.icon} />
@@ -221,7 +221,7 @@ export const About = () => {
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
                 variants={sectionReveal}
-                className="rounded-[2rem] border border-border-color bg-card-bg p-7 shadow-sm"
+                className="rounded-4xl border border-border-color bg-card-bg p-7 shadow-sm"
               >
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-sans text-sm font-bold uppercase tracking-[0.3em] text-accent">

@@ -38,6 +38,11 @@ const AboutRoute = lazy(async () => {
   return { default: mod.About };
 });
 
+const RoadmapRoute = lazy(async () => {
+  const mod = await import("./roadmap");
+  return { default: mod.Roadmap };
+});
+
 const PageNotFound = lazy(async () => {
   const mod = await import("./not-found");
   return { default: mod.NotFound };
@@ -47,6 +52,7 @@ const ROUTES: RouteConfig[] = [
   { path: "/", element: RootRoute },
   { path: "/create", element: CreateRoute },
   { path: "/about", element: AboutRoute },
+  { path: "/roadmap", element: RoadmapRoute },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {

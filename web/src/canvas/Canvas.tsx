@@ -119,24 +119,24 @@ export const Canvas = memo(function BoardCanvas() {
   );
   const backgroundAssetId =
     canvasShell?.background.kind === "image"
-      ? canvasShell.background.assetId ?? null
+      ? (canvasShell.background.assetId ?? null)
       : null;
   const backgroundAssetMeta = backgroundAssetId
-    ? assetMetaById[backgroundAssetId] ?? null
+    ? (assetMetaById[backgroundAssetId] ?? null)
     : null;
   const backgroundImageSrc =
     canvasShell?.background.kind === "image"
       ? backgroundAssetId
-        ? resolvedMediaByAssetId[backgroundAssetId]?.full?.src ?? null
-        : canvasShell.background.src ?? null
+        ? (resolvedMediaByAssetId[backgroundAssetId]?.full?.src ?? null)
+        : (canvasShell.background.src ?? null)
       : null;
   const backgroundImageWidth =
     canvasShell?.background.kind === "image"
-      ? backgroundAssetMeta?.width ?? canvasShell.background.width ?? null
+      ? (backgroundAssetMeta?.width ?? canvasShell.background.width ?? null)
       : null;
   const backgroundImageHeight =
     canvasShell?.background.kind === "image"
-      ? backgroundAssetMeta?.height ?? canvasShell.background.height ?? null
+      ? (backgroundAssetMeta?.height ?? canvasShell.background.height ?? null)
       : null;
 
   const images = useMemo(
@@ -548,7 +548,7 @@ export const Canvas = memo(function BoardCanvas() {
           onDragLeave={handleCanvasDragLeave}
           onDrop={handleCanvasDrop}
           className={clsx(
-            "absolute left-1/2 top-1/2 overflow-visible border border-border-color/70 bg-white shadow-lg transition",
+            "absolute left-1/2 top-1/2 overflow-visible bg-white shadow-lg transition",
             dropTargetActive && "outline-2 outline-accent -outline-offset-4",
           )}
           style={{

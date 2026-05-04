@@ -102,29 +102,31 @@ export const BoardBackgroundPanel = () => {
     CANVAS_BACKGROUND_EFFECT_CONTROLS[activeBackgroundEffect];
   const activeEffectValue = backgroundEffects[activeBackgroundEffect];
   const activeBackgroundAssetId =
-    background?.kind === "image" ? background.assetId ?? null : null;
+    background?.kind === "image" ? (background.assetId ?? null) : null;
   const activeBackgroundAsset = activeBackgroundAssetId
-    ? assetMetaById[activeBackgroundAssetId] ?? null
+    ? (assetMetaById[activeBackgroundAssetId] ?? null)
     : null;
   const activeBackgroundImageSrc =
     background?.kind === "image"
       ? activeBackgroundAssetId
-        ? resolvedMediaByAssetId[activeBackgroundAssetId]?.preview?.src ?? null
-        : background.previewSrc ?? background.src ?? null
+        ? (resolvedMediaByAssetId[activeBackgroundAssetId]?.preview?.src ??
+          null)
+        : (background.previewSrc ?? background.src ?? null)
       : null;
   const activeBackgroundImageWidth =
     background?.kind === "image"
-      ? activeBackgroundAsset?.width ?? background.width ?? null
+      ? (activeBackgroundAsset?.width ?? background.width ?? null)
       : null;
   const activeBackgroundImageHeight =
     background?.kind === "image"
-      ? activeBackgroundAsset?.height ?? background.height ?? null
+      ? (activeBackgroundAsset?.height ?? background.height ?? null)
       : null;
   const customColorValue =
     background?.kind === "solid" ? background.color : "#FFFFFF";
   const filtersAreDefault = CANVAS_BACKGROUND_EFFECT_ORDER.every(
     (effectId) =>
-      backgroundEffects[effectId] === DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId],
+      backgroundEffects[effectId] ===
+      DEFAULT_CANVAS_BACKGROUND_EFFECTS[effectId],
   );
 
   const activeBackgroundTitle = useMemo(() => {
@@ -295,10 +297,10 @@ export const BoardBackgroundPanel = () => {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setBackgroundMoveMode(!isBackgroundMoveMode)
+                  onClick={() => setBackgroundMoveMode(!isBackgroundMoveMode)}
+                  disabled={
+                    !canvasShell || !isCanvasBackgroundImageMovable(background)
                   }
-                  disabled={!canvasShell || !isCanvasBackgroundImageMovable(background)}
                   className={clsx(
                     "flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition",
                     isBackgroundMoveMode
@@ -309,7 +311,9 @@ export const BoardBackgroundPanel = () => {
                       : "cursor-not-allowed opacity-50",
                   )}
                 >
-                  {isBackgroundMoveMode ? "Moving background" : "Move background"}
+                  {isBackgroundMoveMode
+                    ? "Moving background"
+                    : "Move background"}
                 </button>
               </div>
             ) : null}
@@ -329,9 +333,6 @@ export const BoardBackgroundPanel = () => {
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
                       Filters
-                    </p>
-                    <p className="mt-1 text-sm text-secondary-text">
-                      Tune color, blur, brightness, contrast, and opacity.
                     </p>
                   </div>
                   <button
@@ -436,18 +437,13 @@ export const BoardBackgroundPanel = () => {
           <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
             Custom Color
           </p>
-          <p className="mt-1 text-sm text-secondary-text">
-            Pick a solid background color for this canvas.
-          </p>
         </div>
 
         <div className="flex items-center gap-3 rounded-xl border border-border-color/70 bg-card-bg px-3 py-2">
           <input
             type="color"
             value={customColorValue}
-            onChange={(event) =>
-              applySolidColorBackground(event.target.value)
-            }
+            onChange={(event) => applySolidColorBackground(event.target.value)}
             className="h-10 w-12 rounded-md border-0 bg-transparent p-0"
           />
           <span className="text-sm font-semibold text-title-color">
@@ -460,9 +456,6 @@ export const BoardBackgroundPanel = () => {
         <div>
           <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
             Upload Background
-          </p>
-          <p className="mt-1 text-sm text-secondary-text">
-            Add a local image and apply it to the current canvas background.
           </p>
         </div>
 
@@ -494,9 +487,6 @@ export const BoardBackgroundPanel = () => {
               <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
                 {group.label}
               </p>
-              <p className="mt-1 text-sm text-secondary-text">
-                {group.presets.length} curated {group.label.toLowerCase()} backgrounds.
-              </p>
             </div>
             <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
               {group.presets.length}
@@ -523,19 +513,19 @@ export const BoardBackgroundPanel = () => {
                   background={backgroundPreset.value}
                   imageSrc={
                     backgroundPreset.value.kind === "image"
-                      ? backgroundPreset.value.previewSrc ??
+                      ? (backgroundPreset.value.previewSrc ??
                         backgroundPreset.value.src ??
-                        null
+                        null)
                       : null
                   }
                   imageWidth={
                     backgroundPreset.value.kind === "image"
-                      ? backgroundPreset.value.width ?? null
+                      ? (backgroundPreset.value.width ?? null)
                       : null
                   }
                   imageHeight={
                     backgroundPreset.value.kind === "image"
-                      ? backgroundPreset.value.height ?? null
+                      ? (backgroundPreset.value.height ?? null)
                       : null
                   }
                   className="h-16 rounded-md outline outline-border-color/60"

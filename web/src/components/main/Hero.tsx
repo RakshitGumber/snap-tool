@@ -25,7 +25,7 @@ export const Hero = () => {
         animate="visible"
         className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-16 px-7 py-20 sm:text-center text-left lg:text-left"
       >
-        <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold mx-auto lg:mx-0">
+        <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold lg:mx-0">
           Releasing a new version everyday.
         </div>
         <div className="flex flex-col gap-10">
@@ -33,8 +33,8 @@ export const Hero = () => {
             Minimalist solution to creating your next post
           </h1>
           <span className="text-lg lg:text-2xl text px-1 w-full md:w-4/5 lg:w-3/4 mx-auto lg:mx-0">
-            Make professional grade posts in simple click. Making post wasn't
-            this easy.
+            The most simple tool to create professional post. <br /> In just few
+            click.
           </span>
           <div className="flex flex-wrap justify-start sm:justify-center lg:justify-start items-center lg:items-start gap-4 my-4 px-1 font-sans">
             <Link to="/create">
@@ -54,7 +54,7 @@ export const Hero = () => {
           </div>
         </div>
       </motion.div>
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <HeroAnimation />
       </div>
     </main>

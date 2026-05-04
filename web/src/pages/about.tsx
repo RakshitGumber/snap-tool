@@ -190,6 +190,7 @@ export const About = () => {
         </div>
       </section>
 
+
       <section className="relative flex w-full justify-center px-6 py-10 sm:px-8 lg:px-10">
         <div className="w-full max-w-7xl">
           <motion.div

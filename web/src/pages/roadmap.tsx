@@ -88,12 +88,6 @@ const statusToneMap: Record<string, string> = {
 export const Roadmap = () => {
   return (
     <main className="relative flex min-h-screen flex-col items-center overflow-hidden bg-bg">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-7rem] top-24 h-64 w-64 rounded-full bg-accent-light/30 blur-3xl" />
-        <div className="absolute right-[-5rem] top-[28rem] h-80 w-80 rounded-full bg-title-color/8 blur-3xl" />
-        <div className="absolute bottom-12 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-accent-light/20 blur-3xl" />
-      </div>
-
       <Navbar />
 
       <section className="relative flex w-full justify-center px-6 pt-32 pb-16 sm:px-8 lg:px-10">
@@ -106,9 +100,6 @@ export const Roadmap = () => {
             className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] lg:items-end"
           >
             <div className="flex flex-col gap-6">
-              <div className="w-fit rounded-2xl border-2 border-accent bg-accent-light/70 px-4 py-1 text-md font-semibold text-title-color">
-                Product Roadmap
-              </div>
               <h1 className="max-w-4xl font-sans text-4xl font-bold tracking-wider text-title-color leading-snug sm:text-5xl md:text-6xl">
                 The next phases for turning Single Filter into a sharper, faster
                 post-making tool.

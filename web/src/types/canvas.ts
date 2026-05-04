@@ -36,14 +36,41 @@ export type ResolvedCanvasPreset =
       size: CanvasSize;
     };
 
-export type CanvasBackgroundKind = "solid" | "gradient";
+export type CanvasBackgroundKind = "solid" | "gradient" | "image";
+
+export type CanvasBackgroundImageFit = "contain" | "cover" | "fill";
+
+export type CanvasSolidBackground = {
+  kind: "solid";
+  color: string;
+};
+
+export type CanvasGradientBackground = {
+  kind: "gradient";
+  css: string;
+};
+
+export type CanvasImageBackground = {
+  kind: "image";
+  fit: CanvasBackgroundImageFit;
+  offsetX: number;
+  offsetY: number;
+  assetId?: string | null;
+  src?: string | null;
+  previewSrc?: string | null;
+  width?: number | null;
+  height?: number | null;
+};
+
+export type CanvasBackgroundValue =
+  | CanvasSolidBackground
+  | CanvasGradientBackground
+  | CanvasImageBackground;
 
 export type CanvasBackgroundPreset = {
   id: string;
   label: string;
-  kind: CanvasBackgroundKind;
-  value: string;
-  preview: string;
+  value: CanvasBackgroundValue;
 };
 
 export type CanvasBackgroundEffects = {
@@ -70,8 +97,8 @@ export type CanvasFrame = {
   width: number;
   height: number;
   presetId?: CanvasPresetId | null;
-  background: string;
-  backgroundPresetId: string;
+  background: CanvasBackgroundValue;
+  backgroundPresetId: string | null;
   backgroundEffects: CanvasBackgroundEffects;
   images: BoardImageItem[];
   texts: BoardTextItem[];

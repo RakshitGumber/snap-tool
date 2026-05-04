@@ -12,17 +12,21 @@ import {
 
 import clsx from "clsx";
 
+import { CanvasBackgroundLayer } from "@/canvas/CanvasBackgroundLayer";
 import {
-  buildCanvasBackgroundFilter,
-  getCanvasBackgroundBlurPadding,
-  getCanvasBackgroundOpacity,
-} from "@/canvas/backgroundEffects";
+  getCanvasBackgroundImageLayout,
+  isCanvasBackgroundImageMovable,
+} from "@/canvas/backgrounds";
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
 import { useCanvasShell, useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { clearDraggedAssetId, getDraggedAssetId } from "@/uploads/drag";
-import type { BoardImageItem, BoardTextItem } from "@/types/canvas";
+import type {
+  BoardImageItem,
+  BoardTextItem,
+  CanvasBackgroundImageFit,
+} from "@/types/canvas";
 
 type CanvasDragState =
   | {
@@ -38,6 +42,16 @@ type CanvasDragState =
       startPointerY: number;
       startWidth: number;
       startHeight: number;
+    }
+  | {
+      kind: "background";
+      startPointerX: number;
+      startPointerY: number;
+      startOffsetX: number;
+      startOffsetY: number;
+      imageWidth: number;
+      imageHeight: number;
+      fit: CanvasBackgroundImageFit;
     }
   | {
       kind: "text";
@@ -70,9 +84,18 @@ export const Canvas = memo(function BoardCanvas() {
   const textsById = useCanvasStore((state) => state.textsById);
   const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
   const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
+  const isBackgroundMoveMode = useEditorUiStore(
+    (state) => state.isBackgroundMoveMode,
+  );
+  const setBackgroundMoveMode = useEditorUiStore(
+    (state) => state.setBackgroundMoveMode,
+  );
   const moveImageOnCanvas = useCanvasStore((state) => state.moveImageOnCanvas);
   const resizeImageOnCanvas = useCanvasStore(
     (state) => state.resizeImageOnCanvas,
+  );
+  const updateCanvasBackgroundImage = useCanvasStore(
+    (state) => state.updateCanvasBackgroundImage,
   );
   const moveTextOnCanvas = useCanvasStore((state) => state.moveTextOnCanvas);
   const beginHistoryTransaction = useCanvasStore(
@@ -94,6 +117,27 @@ export const Canvas = memo(function BoardCanvas() {
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
+  const backgroundAssetId =
+    canvasShell?.background.kind === "image"
+      ? canvasShell.background.assetId ?? null
+      : null;
+  const backgroundAssetMeta = backgroundAssetId
+    ? assetMetaById[backgroundAssetId] ?? null
+    : null;
+  const backgroundImageSrc =
+    canvasShell?.background.kind === "image"
+      ? backgroundAssetId
+        ? resolvedMediaByAssetId[backgroundAssetId]?.full?.src ?? null
+        : canvasShell.background.src ?? null
+      : null;
+  const backgroundImageWidth =
+    canvasShell?.background.kind === "image"
+      ? backgroundAssetMeta?.width ?? canvasShell.background.width ?? null
+      : null;
+  const backgroundImageHeight =
+    canvasShell?.background.kind === "image"
+      ? backgroundAssetMeta?.height ?? canvasShell.background.height ?? null
+      : null;
 
   const images = useMemo(
     () =>
@@ -118,6 +162,24 @@ export const Canvas = memo(function BoardCanvas() {
       }
     }
   }, [images, resolveAssetMedia, resolvedMediaByAssetId]);
+
+  useEffect(() => {
+    if (backgroundAssetId && !resolvedMediaByAssetId[backgroundAssetId]?.full) {
+      void resolveAssetMedia(backgroundAssetId, "full");
+    }
+  }, [backgroundAssetId, resolveAssetMedia, resolvedMediaByAssetId]);
+
+  useEffect(() => {
+    if (
+      !canvasShell ||
+      !isCanvasBackgroundImageMovable(canvasShell.background) ||
+      !isBackgroundMoveMode
+    ) {
+      if (isBackgroundMoveMode) {
+        setBackgroundMoveMode(false);
+      }
+    }
+  }, [canvasShell, isBackgroundMoveMode, setBackgroundMoveMode]);
 
   useEffect(() => {
     for (const text of texts) {
@@ -219,6 +281,30 @@ export const Canvas = memo(function BoardCanvas() {
         dragState.startWidth * nextScale,
         dragState.startHeight * nextScale,
       );
+      return;
+    }
+
+    if (dragState.kind === "background") {
+      if (!canvasShell) {
+        return;
+      }
+
+      const layout = getCanvasBackgroundImageLayout({
+        canvasWidth: canvasShell.width,
+        canvasHeight: canvasShell.height,
+        imageWidth: dragState.imageWidth,
+        imageHeight: dragState.imageHeight,
+        fit: dragState.fit,
+        offsetX:
+          dragState.startOffsetX + (localPoint.x - dragState.startPointerX),
+        offsetY:
+          dragState.startOffsetY + (localPoint.y - dragState.startPointerY),
+      });
+
+      updateCanvasBackgroundImage({
+        offsetX: layout.offsetX,
+        offsetY: layout.offsetY,
+      });
       return;
     }
 
@@ -354,6 +440,41 @@ export const Canvas = memo(function BoardCanvas() {
       };
     };
 
+  const handleBackgroundPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.button !== 0 || !canvasShell) {
+      return;
+    }
+
+    event.stopPropagation();
+
+    const background = canvasShell.background;
+    const canMoveBackground =
+      background.kind === "image" &&
+      background.fit !== "fill" &&
+      backgroundImageWidth &&
+      backgroundImageHeight;
+
+    if (!isBackgroundMoveMode || !canMoveBackground) {
+      clearSelection();
+      return;
+    }
+
+    beginHistoryTransaction();
+    const localPoint = getCanvasPoint(event.clientX, event.clientY);
+    dragStateRef.current = {
+      kind: "background",
+      startPointerX: localPoint.x,
+      startPointerY: localPoint.y,
+      startOffsetX: background.offsetX,
+      startOffsetY: background.offsetY,
+      imageWidth: backgroundImageWidth,
+      imageHeight: backgroundImageHeight,
+      fit: background.fit,
+    };
+  };
+
   const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
     const assetId = getDraggedAssetId(event.dataTransfer);
     if (!assetId) {
@@ -405,10 +526,6 @@ export const Canvas = memo(function BoardCanvas() {
     return null;
   }
 
-  const backgroundBlurPadding = getCanvasBackgroundBlurPadding(
-    canvasShell.backgroundEffects,
-  );
-
   return (
     <div
       ref={viewportRef}
@@ -442,24 +559,28 @@ export const Canvas = memo(function BoardCanvas() {
             transformOrigin: "center center",
           }}
         >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div
-              className="absolute"
-              style={{
-                top: -backgroundBlurPadding,
-                right: -backgroundBlurPadding,
-                bottom: -backgroundBlurPadding,
-                left: -backgroundBlurPadding,
-                background: canvasShell.background,
-                filter: buildCanvasBackgroundFilter(
-                  canvasShell.backgroundEffects,
-                ),
-                opacity: getCanvasBackgroundOpacity(
-                  canvasShell.backgroundEffects,
-                ),
-              }}
-            />
-          </div>
+          <CanvasBackgroundLayer
+            width={canvasShell.width}
+            height={canvasShell.height}
+            background={canvasShell.background}
+            effects={canvasShell.backgroundEffects}
+            imageSrc={backgroundImageSrc}
+            imageWidth={backgroundImageWidth}
+            imageHeight={backgroundImageHeight}
+            className="pointer-events-none"
+          />
+
+          <div
+            onPointerDown={handleBackgroundPointerDown}
+            className={clsx(
+              "absolute inset-0",
+              isBackgroundMoveMode &&
+                isCanvasBackgroundImageMovable(canvasShell.background)
+                ? "cursor-grab"
+                : "cursor-default",
+            )}
+            style={{ zIndex: 0, touchAction: "none" }}
+          />
 
           {images.map((image) => {
             const media = resolvedMediaByAssetId[image.assetId]?.full;

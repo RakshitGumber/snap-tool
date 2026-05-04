@@ -1,8 +1,16 @@
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
+import {
+  getCanvasBackgroundCssValue,
+  getCanvasBackgroundImageLayout,
+} from "@/canvas/backgrounds";
 import { normalizeBoardTextFamily } from "@/stores/useConfigStore";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
-import type { BoardImageItem, BoardTextItem } from "@/types/canvas";
+import type {
+  BoardImageItem,
+  BoardTextItem,
+  CanvasBackgroundValue,
+} from "@/types/canvas";
 import {
   buildCanvasBackgroundFilter,
   getCanvasBackgroundBlurPadding,
@@ -141,11 +149,16 @@ const fillCanvasBackground = (
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  background: string,
+  background: CanvasBackgroundValue,
 ) => {
-  const gradient = parseLinearGradient(background);
+  const backgroundCss = getCanvasBackgroundCssValue(background);
+  if (!backgroundCss) {
+    return;
+  }
+
+  const gradient = parseLinearGradient(backgroundCss);
   if (!gradient) {
-    context.fillStyle = background;
+    context.fillStyle = backgroundCss;
     context.fillRect(0, 0, width, height);
     return;
   }
@@ -175,12 +188,56 @@ const fillCanvasBackground = (
   context.fillRect(0, 0, width, height);
 };
 
-const drawCanvasBackgroundWithEffects = (
+const drawCanvasBackgroundImage = async ({
+  context,
+  width,
+  height,
+  background,
+  src,
+  imageWidth,
+  imageHeight,
+  blurPadding,
+}: {
+  context: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  background: Extract<CanvasBackgroundValue, { kind: "image" }>;
+  src: string;
+  imageWidth: number;
+  imageHeight: number;
+  blurPadding: number;
+}) => {
+  const element = await loadImage(src);
+  const layout = getCanvasBackgroundImageLayout({
+    canvasWidth: width,
+    canvasHeight: height,
+    imageWidth,
+    imageHeight,
+    fit: background.fit,
+    offsetX: background.offsetX,
+    offsetY: background.offsetY,
+  });
+
+  context.drawImage(
+    element,
+    layout.x + blurPadding,
+    layout.y + blurPadding,
+    layout.width,
+    layout.height,
+  );
+};
+
+const drawCanvasBackgroundWithEffects = async (
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  background: string,
+  background: CanvasBackgroundValue,
   effects: ReturnType<typeof normalizeCanvasBackgroundEffects>,
+  imageBackgroundSource?: {
+    src: string;
+    width: number;
+    height: number;
+  } | null,
 ) => {
   context.save();
   context.fillStyle = "#ffffff";
@@ -203,12 +260,25 @@ const drawCanvasBackgroundWithEffects = (
   backgroundContext.save();
   backgroundContext.filter = buildCanvasBackgroundFilter(effects);
   backgroundContext.globalAlpha = getCanvasBackgroundOpacity(effects);
-  fillCanvasBackground(
-    backgroundContext,
-    backgroundCanvas.width,
-    backgroundCanvas.height,
-    background,
-  );
+  if (background.kind === "image" && imageBackgroundSource) {
+    await drawCanvasBackgroundImage({
+      context: backgroundContext,
+      width,
+      height,
+      background,
+      src: imageBackgroundSource.src,
+      imageWidth: imageBackgroundSource.width,
+      imageHeight: imageBackgroundSource.height,
+      blurPadding,
+    });
+  } else {
+    fillCanvasBackground(
+      backgroundContext,
+      backgroundCanvas.width,
+      backgroundCanvas.height,
+      background,
+    );
+  }
   backgroundContext.restore();
 
   context.drawImage(backgroundCanvas, -blurPadding, -blurPadding);
@@ -442,8 +512,15 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
     throw new Error("There is no canvas to save yet.");
   }
 
-  const { resolveAssetMedia } = useUploadLibraryStore.getState();
+  const { assetMetaById, resolveAssetMedia } = useUploadLibraryStore.getState();
   const imageSources = new Map<string, string>();
+  let backgroundImageSource:
+    | {
+        src: string;
+        width: number;
+        height: number;
+      }
+    | null = null;
 
   for (const image of canvasFrame.images) {
     const media = await resolveAssetMedia(image.assetId, "full");
@@ -452,6 +529,38 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
     }
 
     imageSources.set(image.id, media.src);
+  }
+
+  if (canvasFrame.background.kind === "image") {
+    if (canvasFrame.background.assetId) {
+      const asset = assetMetaById[canvasFrame.background.assetId];
+      const media = await resolveAssetMedia(
+        canvasFrame.background.assetId,
+        "full",
+      );
+
+      if (!asset || !media?.src) {
+        throw new Error("The background image is not ready to save yet.");
+      }
+
+      backgroundImageSource = {
+        src: media.src,
+        width: asset.width,
+        height: asset.height,
+      };
+    } else if (
+      canvasFrame.background.src &&
+      canvasFrame.background.width &&
+      canvasFrame.background.height
+    ) {
+      backgroundImageSource = {
+        src: canvasFrame.background.src,
+        width: canvasFrame.background.width,
+        height: canvasFrame.background.height,
+      };
+    } else {
+      throw new Error("The background image is not ready to save yet.");
+    }
   }
 
   await waitForFonts(canvasFrame.texts);
@@ -468,12 +577,13 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
 
-  drawCanvasBackgroundWithEffects(
+  await drawCanvasBackgroundWithEffects(
     context,
     canvasFrame.width,
     canvasFrame.height,
     canvasFrame.background,
     normalizeCanvasBackgroundEffects(canvasFrame.backgroundEffects),
+    backgroundImageSource,
   );
 
   for (const image of canvasFrame.images) {

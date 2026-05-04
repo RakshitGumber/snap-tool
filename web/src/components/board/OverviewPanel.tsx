@@ -8,6 +8,7 @@ import {
   DEFAULT_CANVAS_BACKGROUND_EFFECTS,
   formatCanvasBackgroundEffectValue,
 } from "@/canvas/backgroundEffects";
+import { formatCanvasBackgroundKind } from "@/canvas/backgrounds";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import {
   useActiveCanvasBackground,
@@ -42,7 +43,7 @@ const IMAGE_POSITION_PRESETS: Array<{
 
 export const BoardOverviewPanel = () => {
   const canvasShell = useCanvasShell();
-  const activeBackground = useActiveCanvasBackground();
+  const activeBackgroundPreset = useActiveCanvasBackground();
   const imageOrder = useCanvasStore((state) => state.imageOrder);
   const imagesById = useCanvasStore((state) => state.imagesById);
   const textOrder = useCanvasStore((state) => state.textOrder);
@@ -75,6 +76,36 @@ export const BoardOverviewPanel = () => {
   );
   const backgroundEffects =
     canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS;
+  const background = canvasShell?.background ?? activeBackgroundPreset?.value ?? null;
+  const activeBackgroundAssetId =
+    background?.kind === "image" ? background.assetId ?? null : null;
+  const activeBackgroundAsset = activeBackgroundAssetId
+    ? assetMetaById[activeBackgroundAssetId] ?? null
+    : null;
+  const backgroundPreviewSrc =
+    background?.kind === "image"
+      ? activeBackgroundAssetId
+        ? resolvedMediaByAssetId[activeBackgroundAssetId]?.preview?.src ?? null
+        : background.previewSrc ?? background.src ?? null
+      : null;
+  const backgroundPreviewWidth =
+    background?.kind === "image"
+      ? activeBackgroundAsset?.width ?? background.width ?? null
+      : null;
+  const backgroundPreviewHeight =
+    background?.kind === "image"
+      ? activeBackgroundAsset?.height ?? background.height ?? null
+      : null;
+  const backgroundLabel =
+    activeBackgroundPreset?.label ??
+    activeBackgroundAsset?.name ??
+    (background?.kind === "solid"
+      ? "Solid background"
+      : background?.kind === "gradient"
+        ? "Gradient background"
+        : background?.kind === "image"
+          ? "Image background"
+          : "White");
 
   const activeBackgroundEffectSummary = CANVAS_BACKGROUND_EFFECT_ORDER.filter(
     (effectId) =>
@@ -96,22 +127,34 @@ export const BoardOverviewPanel = () => {
     }
   }, [images, resolvedMediaByAssetId, resolveAssetMedia]);
 
+  useEffect(() => {
+    if (
+      activeBackgroundAssetId &&
+      !resolvedMediaByAssetId[activeBackgroundAssetId]?.preview
+    ) {
+      void resolveAssetMedia(activeBackgroundAssetId, "preview");
+    }
+  }, [activeBackgroundAssetId, resolveAssetMedia, resolvedMediaByAssetId]);
+
   return (
     <div className="space-y-8 font-sans">
       <section className="space-y-3">
         <h3 className="text-lg font-bold text-title-color">Background</h3>
         <div className="overflow-hidden rounded-xl border border-border-color/40">
           <BoardBackgroundPreview
-            background={canvasShell?.background ?? activeBackground?.preview}
+            background={background}
             effects={backgroundEffects}
+            imageSrc={backgroundPreviewSrc}
+            imageWidth={backgroundPreviewWidth}
+            imageHeight={backgroundPreviewHeight}
             className="h-24 w-full border-b border-border-color/20"
           />
           <div className="space-y-1 px-4 py-3">
             <p className="text-sm font-semibold text-title-color">
-              {activeBackground?.label ?? "White"}
+              {backgroundLabel}
             </p>
             <p className="text-sm capitalize text-secondary-text">
-              {activeBackground?.kind ?? "custom"}
+              {formatCanvasBackgroundKind(background)}
             </p>
             <p className="text-sm text-secondary-text">
               {activeBackgroundEffectSummary.length

@@ -16,6 +16,7 @@ type EditorUiState = {
   activePresetGroupId: CanvasPresetGroupId | null;
   selectedImageId: string | null;
   selectedTextId: string | null;
+  isBackgroundMoveMode: boolean;
   textDraft: BoardTextInput;
 };
 
@@ -26,6 +27,7 @@ type EditorUiActions = {
   setFileMenuOpen: (isOpen: boolean) => void;
   setPresetMenuOpen: (isOpen: boolean) => void;
   setActivePresetGroupId: (groupId: CanvasPresetGroupId | null) => void;
+  setBackgroundMoveMode: (isActive: boolean) => void;
   selectImage: (imageId: string | null) => void;
   selectText: (text: BoardTextItem | null) => void;
   clearSelection: () => void;
@@ -54,6 +56,7 @@ export const useEditorUiStore = create<EditorUiState & EditorUiActions>((set) =>
   activePresetGroupId: null,
   selectedImageId: null,
   selectedTextId: null,
+  isBackgroundMoveMode: false,
   textDraft: getDefaultBoardTextInput(),
 
   setOpenSectionId: (openSectionId) => set({ openSectionId }),
@@ -67,21 +70,25 @@ export const useEditorUiStore = create<EditorUiState & EditorUiActions>((set) =>
   setFileMenuOpen: (isFileMenuOpen) => set({ isFileMenuOpen }),
   setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
   setActivePresetGroupId: (activePresetGroupId) => set({ activePresetGroupId }),
+  setBackgroundMoveMode: (isBackgroundMoveMode) => set({ isBackgroundMoveMode }),
   selectImage: (selectedImageId) =>
     set({
       selectedImageId,
       selectedTextId: null,
+      isBackgroundMoveMode: false,
     }),
   selectText: (text) =>
     set({
       selectedImageId: null,
       selectedTextId: text?.id ?? null,
+      isBackgroundMoveMode: false,
       textDraft: mapTextToDraft(text),
     }),
   clearSelection: () =>
     set({
       selectedImageId: null,
       selectedTextId: null,
+      isBackgroundMoveMode: false,
     }),
   updateTextDraft: (updates) =>
     set((state) => ({

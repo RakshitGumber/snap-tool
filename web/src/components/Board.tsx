@@ -4,15 +4,26 @@ import { BoardSidebar } from "@/components/board/Sidebar";
 import { TopRibbon } from "@/components/board/TopRibbon";
 import { Canvas } from "@/canvas/Canvas";
 import { useCanvasStore } from "@/stores/useCanvasStore";
+import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 
 export const Board = () => {
   const initializeDefaultCanvas = useCanvasStore(
     (state) => state.initializeDefaultCanvas,
   );
+  const hydrateLibrary = useUploadLibraryStore((state) => state.hydrateLibrary);
+  const uploadLibraryStatus = useUploadLibraryStore((state) => state.status);
 
   useEffect(() => {
     initializeDefaultCanvas();
   }, [initializeDefaultCanvas]);
+
+  useEffect(() => {
+    if (uploadLibraryStatus !== "idle") {
+      return;
+    }
+
+    void hydrateLibrary();
+  }, [hydrateLibrary, uploadLibraryStatus]);
 
   return (
     <main className="flex h-screen flex-col">

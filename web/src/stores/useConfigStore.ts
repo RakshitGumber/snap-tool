@@ -1,10 +1,15 @@
 import { create } from "zustand";
 
 import { DEFAULT_CANVAS_BACKGROUND_EFFECTS } from "@/canvas/backgroundEffects";
+import {
+  createCanvasBackgroundFromPreset,
+  normalizeCanvasBackgroundPresetValue,
+} from "@/canvas/backgrounds";
 import { BOARD_CONFIG, type BoardLayoutConfig, type BoardTextConfig } from "@/config";
 import type {
   BoardTextInput,
   CanvasBackgroundPreset,
+  CanvasBackgroundValue,
   CanvasFrame,
   CanvasPreset,
   CanvasPresetGroup,
@@ -34,6 +39,12 @@ type ConfigActions = {
 const normalizePresets = (groups: CanvasPresetGroup[]) =>
   groups.flatMap((group) => group.presets);
 
+const normalizeBackgroundPresets = (presets: CanvasBackgroundPreset[]) =>
+  presets.map((preset) => ({
+    ...preset,
+    value: normalizeCanvasBackgroundPresetValue(preset.value),
+  }));
+
 const createDefaultTextInput = (): BoardTextInput => ({
   ...BOARD_CONFIG.text.defaultInput,
 });
@@ -52,7 +63,9 @@ export const useConfigStore = create<ConfigState & ConfigActions>((set) => ({
   canvasPresetGroups: BOARD_CONFIG.canvasPresetGroups,
   canvasPresets: normalizePresets(BOARD_CONFIG.canvasPresetGroups),
   canvasPresetGroupIcons: BOARD_CONFIG.canvasPresetGroupIcons,
-  canvasBackgroundPresets: BOARD_CONFIG.canvasBackgroundPresets,
+  canvasBackgroundPresets: normalizeBackgroundPresets(
+    BOARD_CONFIG.canvasBackgroundPresets,
+  ),
 
   setDefaultCanvasPresetId: (presetId) => set({ defaultCanvasPresetId: presetId }),
   setDefaultBackgroundPresetId: (presetId) =>
@@ -132,6 +145,23 @@ export const getCanvasBackgroundById = (presetId: string) =>
   getConfigState().canvasBackgroundPresets.find((preset) => preset.id === presetId) ??
   getConfigState().canvasBackgroundPresets[0];
 
+export const findCanvasBackgroundById = (
+  presetId: string | null | undefined,
+) =>
+  presetId
+    ? (getConfigState().canvasBackgroundPresets.find(
+        (preset) => preset.id === presetId,
+      ) ?? null)
+    : null;
+
+export const getCanvasBackgroundValueById = (
+  presetId: string | null | undefined,
+): CanvasBackgroundValue | null => {
+  const preset = findCanvasBackgroundById(presetId);
+
+  return preset ? createCanvasBackgroundFromPreset(preset) : null;
+};
+
 export const createCanvasFrame = (
   size: CanvasSize,
   backgroundPresetId: string = getConfigState().defaultBackgroundPresetId,
@@ -146,7 +176,7 @@ export const createCanvasFrame = (
     width: size.width,
     height: size.height,
     presetId,
-    background: backgroundPreset.value,
+    background: createCanvasBackgroundFromPreset(backgroundPreset),
     backgroundPresetId: backgroundPreset.id,
     backgroundEffects: { ...DEFAULT_CANVAS_BACKGROUND_EFFECTS },
     images: [],

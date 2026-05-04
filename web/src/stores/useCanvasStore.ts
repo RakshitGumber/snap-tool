@@ -6,8 +6,13 @@ import {
   normalizeCanvasBackgroundEffects,
 } from "@/canvas/backgroundEffects";
 import {
+  createCanvasAssetImageBackground,
+  createCanvasBackgroundFromPreset,
+  normalizeCanvasBackgroundValue,
+} from "@/canvas/backgrounds";
+import {
   createCanvasFrame,
-  getCanvasBackgroundById,
+  findCanvasBackgroundById,
   getCanvasPresetById,
   getCanvasPresetBySize,
   getCanvasPresetGroupById,
@@ -22,6 +27,7 @@ import type {
   BoardTextInput,
   BoardTextItem,
   CanvasBackgroundEffects,
+  CanvasBackgroundValue,
   CanvasFrame,
   CanvasPresetId,
   CanvasShell,
@@ -47,6 +53,15 @@ type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
+  applyAssetBackgroundToCanvas: (assetId: string) => void;
+  updateCanvasBackgroundImage: (
+    updates: Partial<
+      Pick<
+        Extract<CanvasBackgroundValue, { kind: "image" }>,
+        "fit" | "offsetX" | "offsetY"
+      >
+    >,
+  ) => void;
   updateCanvasBackgroundEffects: (
     updates: Partial<CanvasBackgroundEffects>,
   ) => void;
@@ -121,12 +136,26 @@ const EMPTY_CANVAS_IMAGES: Record<string, BoardImageItem> = {};
 const EMPTY_CANVAS_TEXT: Record<string, BoardTextItem> = {};
 
 const getDefaultTextInput = () => useConfigStore.getState().text.defaultInput;
+const disableBackgroundMoveMode = () =>
+  useEditorUiStore.getState().setBackgroundMoveMode(false);
 
 const areCanvasFramesEqual = (left: CanvasFrame, right: CanvasFrame) =>
   JSON.stringify(left) === JSON.stringify(right);
 
-const normalizeCanvasFrame = (canvas: CanvasFrame) => {
+type LegacyCanvasFrame = Omit<CanvasFrame, "background" | "backgroundPresetId"> & {
+  background: CanvasBackgroundValue | string;
+  backgroundPresetId?: string | null;
+};
+
+const normalizeCanvasFrame = (canvas: LegacyCanvasFrame) => {
   const texts = canvas.texts ?? [];
+  const backgroundPreset = findCanvasBackgroundById(
+    canvas.backgroundPresetId ?? null,
+  );
+  const background = normalizeCanvasBackgroundValue({
+    background: canvas.background,
+    preset: backgroundPreset,
+  });
 
   return {
     canvasMeta: {
@@ -135,8 +164,8 @@ const normalizeCanvasFrame = (canvas: CanvasFrame) => {
       width: canvas.width,
       height: canvas.height,
       presetId: canvas.presetId ?? null,
-      background: canvas.background,
-      backgroundPresetId: canvas.backgroundPresetId,
+      background,
+      backgroundPresetId: backgroundPreset?.id ?? canvas.backgroundPresetId ?? null,
       backgroundEffects: normalizeCanvasBackgroundEffects(
         canvas.backgroundEffects,
       ),
@@ -443,6 +472,10 @@ const createDefaultCanvas = () => {
 const syncEditorUiWithCanvasFrame = (frame: CanvasFrame | null) => {
   const editorUiState = useEditorUiStore.getState();
 
+  if (!frame || frame.background.kind !== "image" || frame.background.fit === "fill") {
+    editorUiState.setBackgroundMoveMode(false);
+  }
+
   if (!frame) {
     editorUiState.clearSelection();
     editorUiState.resetTextDraft();
@@ -555,22 +588,90 @@ export const useCanvasStore = create<CanvasStore>()(
         }),
 
       applyBackgroundToCanvas: (backgroundPresetId) => {
-        const backgroundPreset = getCanvasBackgroundById(backgroundPresetId);
+        const backgroundPreset = findCanvasBackgroundById(backgroundPresetId);
+        if (!backgroundPreset) {
+          return;
+        }
 
         applyCanvasStateChange(set, (state) => {
           if (!state.canvasMeta) {
             return state;
           }
 
+          disableBackgroundMoveMode();
+
           return {
             canvasMeta: {
               ...state.canvasMeta,
               backgroundPresetId: backgroundPreset.id,
-              background: backgroundPreset.value,
+              background: createCanvasBackgroundFromPreset(backgroundPreset),
             },
           };
         });
       },
+
+      applyAssetBackgroundToCanvas: (assetId) =>
+        applyCanvasStateChange(set, (state) => {
+          if (!state.canvasMeta) {
+            return state;
+          }
+
+          disableBackgroundMoveMode();
+
+          return {
+            canvasMeta: {
+              ...state.canvasMeta,
+              backgroundPresetId: null,
+              background: createCanvasAssetImageBackground(assetId),
+            },
+          };
+        }),
+
+      updateCanvasBackgroundImage: (updates) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          if (!canvasMeta) {
+            return state;
+          }
+
+          const background = canvasMeta.background;
+          if (background.kind !== "image") {
+            return state;
+          }
+
+          const nextFit = updates.fit ?? background.fit;
+          const nextBackground = {
+            ...background,
+            fit: nextFit,
+            offsetX:
+              nextFit === "fill"
+                ? 0
+                : Math.round(updates.offsetX ?? background.offsetX),
+            offsetY:
+              nextFit === "fill"
+                ? 0
+                : Math.round(updates.offsetY ?? background.offsetY),
+          } satisfies Extract<CanvasBackgroundValue, { kind: "image" }>;
+
+          if (
+            background.fit === nextBackground.fit &&
+            background.offsetX === nextBackground.offsetX &&
+            background.offsetY === nextBackground.offsetY
+          ) {
+            return state;
+          }
+
+          if (nextBackground.fit === "fill") {
+            disableBackgroundMoveMode();
+          }
+
+          return {
+            canvasMeta: {
+              ...canvasMeta,
+              background: nextBackground,
+            },
+          };
+        }),
 
       updateCanvasBackgroundEffects: (updates) =>
         applyCanvasStateChange(set, (state) => {
@@ -1008,7 +1109,5 @@ export const useActiveCanvasPreset = () => {
 export const useActiveCanvasBackground = () => {
   const canvasMeta = useCanvasShell();
 
-  return canvasMeta
-    ? getCanvasBackgroundById(canvasMeta.backgroundPresetId)
-    : null;
+  return findCanvasBackgroundById(canvasMeta?.backgroundPresetId);
 };

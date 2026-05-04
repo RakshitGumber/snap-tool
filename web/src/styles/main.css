@@ -71,6 +71,10 @@
         scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
 
+    button {
+        @apply cursor-pointer;
+    }
+
     body {
         @apply bg-bg text-text-color font-serif;
     }

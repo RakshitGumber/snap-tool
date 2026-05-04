@@ -9,6 +9,7 @@ import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import type {
   BoardImageItem,
   BoardTextItem,
+  CanvasFrame,
   CanvasBackgroundValue,
 } from "@/types/canvas";
 import {
@@ -19,10 +20,29 @@ import {
 } from "@/canvas/backgroundEffects";
 
 export type CanvasExportFormat = "png" | "jpg";
+export type CanvasExportOptions = {
+  format: CanvasExportFormat;
+  filenameBase?: string;
+  width?: number;
+  height?: number;
+  quality?: number;
+};
+
+export type CanvasExportResult = {
+  blob: Blob;
+  file: File;
+  filename: string;
+  format: CanvasExportFormat;
+  width: number;
+  height: number;
+};
 
 const IMAGE_CORNER_RADIUS = 8;
 const TEXT_PADDING_X = 8;
 const TEXT_PADDING_Y = 4;
+const MIN_EXPORT_EDGE = 64;
+const MAX_EXPORT_EDGE = 4096;
+const DEFAULT_JPEG_QUALITY = 92;
 
 const MIME_TYPE_BY_FORMAT: Record<CanvasExportFormat, string> = {
   png: "image/png",
@@ -325,10 +345,13 @@ const drawImageItem = async (
   context: CanvasRenderingContext2D,
   image: BoardImageItem,
   src: string,
+  scaleX = 1,
+  scaleY = 1,
 ) => {
   const element = await loadImage(src);
 
   context.save();
+  context.scale(scaleX, scaleY);
   buildRoundedRectPath(
     context,
     image.x,
@@ -418,11 +441,14 @@ const wrapTextLines = (
 const drawTextItem = (
   context: CanvasRenderingContext2D,
   text: BoardTextItem,
+  scaleX = 1,
+  scaleY = 1,
 ) => {
   const fontFamily = normalizeBoardTextFamily(text.fontFamily) || "sans-serif";
   const availableWidth = Math.max(text.maxWidth - TEXT_PADDING_X * 2, 1);
 
   context.save();
+  context.scale(scaleX, scaleY);
   context.fillStyle = text.color;
   context.font = `${text.fontWeight} ${text.fontSize}px "${fontFamily}", sans-serif`;
   context.textBaseline = "alphabetic";
@@ -506,12 +532,21 @@ const downloadBlob = (blob: Blob, filename: string) => {
   }, 0);
 };
 
-export const exportCanvasImage = async (format: CanvasExportFormat) => {
-  const canvasFrame = useCanvasStore.getState().serializeCanvas();
-  if (!canvasFrame) {
-    throw new Error("There is no canvas to save yet.");
+const clampExportDimension = (value: number, fallback: number) => {
+  if (!Number.isFinite(value)) {
+    return fallback;
   }
 
+  return Math.min(
+    MAX_EXPORT_EDGE,
+    Math.max(MIN_EXPORT_EDGE, Math.round(value)),
+  );
+};
+
+const normalizeExportQuality = (quality?: number) =>
+  Math.min(1, Math.max(0.1, Math.round(quality ?? DEFAULT_JPEG_QUALITY) / 100));
+
+const resolveCanvasExportAssets = async (canvasFrame: CanvasFrame) => {
   const { assetMetaById, resolveAssetMedia } = useUploadLibraryStore.getState();
   const imageSources = new Map<string, string>();
   let backgroundImageSource:
@@ -563,11 +598,37 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
     }
   }
 
+  return {
+    canvasFrame,
+    imageSources,
+    backgroundImageSource,
+  };
+};
+
+const renderCanvasExport = async ({
+  canvasFrame,
+  imageSources,
+  backgroundImageSource,
+  outputWidth,
+  outputHeight,
+}: {
+  canvasFrame: CanvasFrame;
+  imageSources: Map<string, string>;
+  backgroundImageSource:
+    | {
+        src: string;
+        width: number;
+        height: number;
+      }
+    | null;
+  outputWidth: number;
+  outputHeight: number;
+}) => {
   await waitForFonts(canvasFrame.texts);
 
   const exportCanvas = document.createElement("canvas");
-  exportCanvas.width = canvasFrame.width;
-  exportCanvas.height = canvasFrame.height;
+  exportCanvas.width = outputWidth;
+  exportCanvas.height = outputHeight;
 
   const context = exportCanvas.getContext("2d");
   if (!context) {
@@ -576,12 +637,22 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
 
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
+  const scaleX = outputWidth / canvasFrame.width;
+  const scaleY = outputHeight / canvasFrame.height;
+  const background =
+    canvasFrame.background.kind === "image"
+      ? {
+          ...canvasFrame.background,
+          offsetX: Math.round(canvasFrame.background.offsetX * scaleX),
+          offsetY: Math.round(canvasFrame.background.offsetY * scaleY),
+        }
+      : canvasFrame.background;
 
   await drawCanvasBackgroundWithEffects(
     context,
-    canvasFrame.width,
-    canvasFrame.height,
-    canvasFrame.background,
+    outputWidth,
+    outputHeight,
+    background,
     normalizeCanvasBackgroundEffects(canvasFrame.backgroundEffects),
     backgroundImageSource,
   );
@@ -592,20 +663,33 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
       continue;
     }
 
-    await drawImageItem(context, image, src);
+    await drawImageItem(context, image, src, scaleX, scaleY);
   }
 
   for (const text of canvasFrame.texts) {
-    drawTextItem(context, text);
+    drawTextItem(context, text, scaleX, scaleY);
   }
 
+  return exportCanvas;
+};
+
+const encodeExportCanvas = async ({
+  canvas,
+  format,
+  quality,
+}: {
+  canvas: HTMLCanvasElement;
+  format: CanvasExportFormat;
+  quality?: number;
+}) => {
   let blob: Blob | null = null;
+
   try {
     blob = await new Promise<Blob | null>((resolve) => {
-      exportCanvas.toBlob(
+      canvas.toBlob(
         resolve,
         MIME_TYPE_BY_FORMAT[format],
-        format === "jpg" ? 0.92 : undefined,
+        format === "jpg" ? normalizeExportQuality(quality) : undefined,
       );
     });
   } catch {
@@ -618,5 +702,63 @@ export const exportCanvasImage = async (format: CanvasExportFormat) => {
     throw new Error("Saving failed while encoding the image.");
   }
 
-  downloadBlob(blob, buildFilename(canvasFrame.title, format));
+  return blob;
+};
+
+export const createCanvasExport = async ({
+  format,
+  filenameBase,
+  width,
+  height,
+  quality,
+}: CanvasExportOptions): Promise<CanvasExportResult> => {
+  const resolvedCanvasFrame = useCanvasStore.getState().serializeCanvas();
+  if (!resolvedCanvasFrame) {
+    throw new Error("There is no canvas to save yet.");
+  }
+
+  const outputWidth = clampExportDimension(width ?? resolvedCanvasFrame.width, resolvedCanvasFrame.width);
+  const outputHeight = clampExportDimension(
+    height ?? resolvedCanvasFrame.height,
+    resolvedCanvasFrame.height,
+  );
+  const { imageSources, backgroundImageSource } =
+    await resolveCanvasExportAssets(resolvedCanvasFrame);
+  const canvas = await renderCanvasExport({
+    canvasFrame: resolvedCanvasFrame,
+    imageSources,
+    backgroundImageSource,
+    outputWidth,
+    outputHeight,
+  });
+  const blob = await encodeExportCanvas({
+    canvas,
+    format,
+    quality,
+  });
+  const filename = buildFilename(filenameBase ?? resolvedCanvasFrame.title, format);
+  const file = new File([blob], filename, {
+    type: MIME_TYPE_BY_FORMAT[format],
+  });
+
+  return {
+    blob,
+    file,
+    filename,
+    format,
+    width: outputWidth,
+    height: outputHeight,
+  };
+};
+
+export const downloadCanvasExport = ({
+  blob,
+  filename,
+}: Pick<CanvasExportResult, "blob" | "filename">) => {
+  downloadBlob(blob, filename);
+};
+
+export const exportCanvasImage = async (format: CanvasExportFormat) => {
+  const exportResult = await createCanvasExport({ format });
+  downloadCanvasExport(exportResult);
 };

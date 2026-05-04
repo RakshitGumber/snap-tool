@@ -751,7 +751,8 @@ export const useCanvasStore = create<CanvasStore>()(
 
       clearCanvas: () =>
         applyCanvasStateChange(set, (state) => {
-          if (!state.canvasMeta) {
+          const canvasMeta = state.canvasMeta;
+          if (!canvasMeta) {
             return state;
           }
 
@@ -759,6 +760,17 @@ export const useCanvasStore = create<CanvasStore>()(
           useEditorUiStore.getState().resetTextDraft();
 
           return {
+            canvasMeta: {
+              ...canvasMeta,
+              backgroundPresetId: null,
+              background: {
+                kind: "solid",
+                color: "#ffffff",
+              },
+              backgroundEffects: {
+                ...DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+              },
+            },
             imageOrder: [],
             imagesById: EMPTY_CANVAS_IMAGES,
             textOrder: [],

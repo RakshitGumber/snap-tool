@@ -217,17 +217,22 @@ export const BoardBackgroundPanel = () => {
     }
   };
 
+  const handleResetBackground = () => {
+    applySolidColorBackground("#ffffff");
+    setBackgroundMoveMode(false);
+  };
+
   return (
     <div className="space-y-5 font-sans select-none">
       <section className="space-y-3">
-        <div className="w-full overflow-hidden rounded-xl border border-border-color shadow-lg transition-all hover:shadow-xl">
+        <div className="w-full overflow-hidden rounded-xl bg-card-foreground border border-border-color shadow-lg transition-all hover:shadow-xl">
           <BoardBackgroundPreview
             background={background}
             effects={backgroundEffects}
             imageSrc={activeBackgroundImageSrc}
             imageWidth={activeBackgroundImageWidth}
             imageHeight={activeBackgroundImageHeight}
-            className="h-28 w-full border-b border-border-color/20"
+            className="h-28 w-full border-b border-border-color/20 bg-card-foreground"
           />
           <div className="space-y-3 p-3 sm:p-4">
             <div className="flex items-start justify-between gap-3">
@@ -270,6 +275,20 @@ export const BoardBackgroundPanel = () => {
                 />
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleResetBackground}
+              disabled={!canvasShell}
+              className={clsx(
+                "w-full rounded-xl border border-border-color/60 px-3 py-2 text-sm font-semibold text-title-color transition",
+                canvasShell
+                  ? "hover:border-accent/70 hover:text-accent"
+                  : "cursor-not-allowed opacity-50",
+              )}
+            >
+              Reset to white
+            </button>
 
             {isCanvasBackgroundImage(background) ? (
               <div className="flex gap-2">
@@ -387,7 +406,7 @@ export const BoardBackgroundPanel = () => {
                   })}
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-border-color/50 bg-card-bg/70 p-4">
+                <div className="mt-4 rounded-2xl border border-border-color/50 bg-card-foreground/70 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Icon
@@ -439,7 +458,7 @@ export const BoardBackgroundPanel = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border-color/70 bg-card-bg px-3 py-2">
+        <div className="flex items-center gap-3 rounded-xl border border-border-color/70 bg-card-foreground px-3 py-2">
           <input
             type="color"
             value={customColorValue}

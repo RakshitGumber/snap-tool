@@ -41,7 +41,7 @@ export const BOARD_CONFIG = {
   defaults: {
     canvasPresetId: "general-square",
     backgroundPresetId: "gradient-01",
-    canvasTitle: "Canvas",
+    canvasTitle: "untitled",
   },
   text: {
     defaultInput: {

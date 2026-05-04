@@ -76,25 +76,27 @@ export const BoardOverviewPanel = () => {
   );
   const backgroundEffects =
     canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS;
-  const background = canvasShell?.background ?? activeBackgroundPreset?.value ?? null;
+  const background =
+    canvasShell?.background ?? activeBackgroundPreset?.value ?? null;
   const activeBackgroundAssetId =
-    background?.kind === "image" ? background.assetId ?? null : null;
+    background?.kind === "image" ? (background.assetId ?? null) : null;
   const activeBackgroundAsset = activeBackgroundAssetId
-    ? assetMetaById[activeBackgroundAssetId] ?? null
+    ? (assetMetaById[activeBackgroundAssetId] ?? null)
     : null;
   const backgroundPreviewSrc =
     background?.kind === "image"
       ? activeBackgroundAssetId
-        ? resolvedMediaByAssetId[activeBackgroundAssetId]?.preview?.src ?? null
-        : background.previewSrc ?? background.src ?? null
+        ? (resolvedMediaByAssetId[activeBackgroundAssetId]?.preview?.src ??
+          null)
+        : (background.previewSrc ?? background.src ?? null)
       : null;
   const backgroundPreviewWidth =
     background?.kind === "image"
-      ? activeBackgroundAsset?.width ?? background.width ?? null
+      ? (activeBackgroundAsset?.width ?? background.width ?? null)
       : null;
   const backgroundPreviewHeight =
     background?.kind === "image"
-      ? activeBackgroundAsset?.height ?? background.height ?? null
+      ? (activeBackgroundAsset?.height ?? background.height ?? null)
       : null;
   const backgroundLabel =
     activeBackgroundPreset?.label ??
@@ -140,7 +142,7 @@ export const BoardOverviewPanel = () => {
     <div className="space-y-8 font-sans">
       <section className="space-y-3">
         <h3 className="text-lg font-bold text-title-color">Background</h3>
-        <div className="overflow-hidden rounded-xl border border-border-color/40">
+        <div className="overflow-hidden rounded-xl border border-border-color/40 bg-card-foreground">
           <BoardBackgroundPreview
             background={background}
             effects={backgroundEffects}
@@ -260,11 +262,7 @@ export const BoardOverviewPanel = () => {
         <h3 className="text-lg font-bold text-title-color">
           Effects / Filters
         </h3>
-        <p className="text-sm text-secondary-text">
-          {activeBackgroundEffectSummary.length
-            ? activeBackgroundEffectSummary.join(" · ")
-            : "No background effects applied."}
-        </p>
+        <p className="text-sm text-secondary-text"></p>
       </section>
     </div>
   );

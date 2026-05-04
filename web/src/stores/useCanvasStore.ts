@@ -52,6 +52,7 @@ type CanvasHistoryState = {
 
 type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
+  updateCanvasTitle: (title: string) => void;
   resizeCanvas: (size: CanvasSize, presetId?: CanvasPresetId | null) => void;
   applyBackgroundToCanvas: (backgroundPresetId: string) => void;
   applySolidColorBackground: (color: string) => void;
@@ -573,6 +574,26 @@ export const useCanvasStore = create<CanvasStore>()(
 
         return canvas;
       },
+
+      updateCanvasTitle: (title) =>
+        applyCanvasStateChange(set, (state) => {
+          const canvasMeta = state.canvasMeta;
+          if (!canvasMeta) {
+            return state;
+          }
+
+          const nextTitle = title.trim() || "untitled";
+          if (canvasMeta.title === nextTitle) {
+            return state;
+          }
+
+          return {
+            canvasMeta: {
+              ...canvasMeta,
+              title: nextTitle,
+            },
+          };
+        }),
 
       resizeCanvas: (size, presetId = null) =>
         applyCanvasStateChange(set, (state) => {

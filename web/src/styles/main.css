@@ -20,6 +20,7 @@
 
 :root {
     --bg-color: #f4f5f6;
+    --bg-panel-color: #ffffff;
     --bg-card-color: #ffffff;
     --text-heading: #25252a;
     --text-color: #4B4D63;
@@ -34,7 +35,8 @@
 
 .dark {
     --bg-color: #1a1a1e;
-    --bg-card-color: #292936;
+    --bg-panel-color: #292936;
+    --bg-card-color: #39394a;
     --text-heading: #F4F6FF;
     --text-color: #8A8CA8;
     --accent-color: #68dc98;
@@ -51,7 +53,8 @@
     --font-sans: "Nunito Variable", sans-serif;
 
     --color-bg: var(--bg-color);
-    --color-card-bg: var(--bg-card-color);
+    --color-card-bg: var(--bg-panel-color);
+    --color-card-foreground: var(--bg-card-color);
     --color-title-color: var(--text-heading);
     --color-text-color: var(--text-color);
     --color-accent: var(--accent-color);

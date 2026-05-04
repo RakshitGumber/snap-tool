@@ -20,6 +20,14 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   uploads: "solar:gallery-add-linear",
 };
 
+const SECTION_NAV_LABELS: Record<BoardSidebarSectionId, string> = {
+  overview: "Overview",
+  background: "BG",
+  elements: "Elements",
+  text: "Text",
+  uploads: "Images",
+};
+
 export const BoardSidebar = () => {
   const { openSectionId, isOpen, toggleSection, setSidebarOpen } =
     useEditorUiStore(
@@ -89,11 +97,14 @@ export const BoardSidebar = () => {
                   type="button"
                   onClick={() => toggleSection(section.id)}
                   className={clsx(
-                    "flex w-12 flex-col items-center justify-center gap-1 rounded-lg px-2 py-3 text-center transition hover:bg-secondary-text/20",
+                    "flex w-12 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-center transition hover:bg-secondary-text/20",
                     isActive ? "text-title-color" : "text-secondary-text",
                   )}
                 >
                   <Icon icon={SECTION_ICONS[section.id]} className="text-2xl" />
+                  <span className="max-w-full text-[10px] font-semibold leading-[1.05]">
+                    {SECTION_NAV_LABELS[section.id]}
+                  </span>
                 </button>
               );
             })}

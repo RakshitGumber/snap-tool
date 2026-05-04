@@ -86,7 +86,7 @@ export const HeroAnimation = () => {
     >
       <motion.div
         animate={cardControls}
-        className="relative border-12 md:border-16 border-white border-b-56 md:border-b-72 lg:border-b-80 -rotate-6 shadow-[6px_6px_15px_#0008]"
+        className="relative border-12 md:border-16 border-white border-b-56 md:border-b-72 lg:border-b-80 -rotate-6 shadow-xl"
       >
         <div className={`relative overflow-hidden bg-white ${PANEL_SIZE}`}>
           <motion.div

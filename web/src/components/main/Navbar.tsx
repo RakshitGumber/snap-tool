@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 
 import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useState } from "react";
+import { useRouter } from "@/stores/useRouter";
 
 const parentVariants = {
   visible: { opacity: 1, y: 0 },
@@ -19,6 +20,7 @@ const navItems = [
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
+  const route = useRouter((state) => state.route);
   const [hidden, setHidden] = useState(false);
   const [prevScroll, setPrevScroll] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,11 +78,11 @@ export const Navbar = () => {
             </svg>
           </button>
           <Link
-            className="hidden md:flex rounded-lg items-center cursor-pointer"
+            className="hidden md:flex px-3 py-2 rounded-lg items-center cursor-pointer text-title-color  hover:bg-secondary-text/20"
             to="/"
             onClick={() => setMenuOpen(false)}
           >
-            <h1 className="font-sans font-bold px-2 text-2xl text-title-color hover:text-accent tracking-wider capitalize select-none">
+            <h1 className="font-sans font-bold px-2 text-2xl text-current tracking-wider capitalize select-none">
               Single Filter
             </h1>
           </Link>
@@ -89,9 +91,18 @@ export const Navbar = () => {
           {navItems.map((item) => (
             <li
               key={item.to}
-              className="flex px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-medium"
+              className="flex rounded-lg"
             >
-              <Link to={item.to}>{item.label}</Link>
+              <Link
+                to={item.to}
+                className={
+                  route === item.to
+                    ? "px-4 py-2 cursor-pointer rounded-lg text-title-color font-bold"
+                    : "px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-medium"
+                }
+              >
+                {item.label}
+              </Link>
             </li>
           ))}
         </ul>
@@ -136,7 +147,11 @@ export const Navbar = () => {
                   <li key={item.to}>
                     <Link
                       to={item.to}
-                      className="flex rounded-lg px-4 py-3 text-title-color transition hover:bg-text-color/20 font-medium"
+                      className={
+                        route === item.to
+                          ? "flex rounded-lg px-4 py-3 text-title-color font-bold"
+                          : "flex rounded-lg px-4 py-3 text-secondary-text transition hover:bg-text-color/20 hover:text-title-color font-medium"
+                      }
                       onClick={() => setMenuOpen(false)}
                     >
                       {item.label}

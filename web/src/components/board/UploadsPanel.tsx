@@ -103,7 +103,9 @@ export const BoardUploadsPanel = () => {
         variant: "error",
         title: "Import failed",
         message:
-          error instanceof Error ? error.message : "Unable to import those files.",
+          error instanceof Error
+            ? error.message
+            : "Unable to import those files.",
       });
       return;
     }
@@ -159,16 +161,6 @@ export const BoardUploadsPanel = () => {
     <div className="space-y-4 font-sans">
       <div className="rounded-2xl p-4">
         <div className="space-y-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-              Local uploads
-            </p>
-            <p className="mt-1 text-sm text-secondary-text">
-              Drop image files here. They stay on this device and are restored
-              in this browser.
-            </p>
-          </div>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -203,13 +195,6 @@ export const BoardUploadsPanel = () => {
       </div>
 
       <div className="rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-          Import from URL
-        </p>
-        <p className="mt-1 text-sm text-secondary-text">
-          Paste a YouTube link, GitHub repository URL, or a direct image URL.
-        </p>
-
         <div className="mt-3 flex gap-2">
           <input
             type="url"
@@ -246,9 +231,6 @@ export const BoardUploadsPanel = () => {
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
               Library
-            </p>
-            <p className="mt-1 text-sm text-secondary-text">
-              Click to insert, or drag an image onto the canvas.
             </p>
           </div>
           <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">

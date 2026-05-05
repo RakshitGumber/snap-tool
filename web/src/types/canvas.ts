@@ -89,6 +89,22 @@ export type CanvasBackgroundEffects = {
 };
 
 export type BoardTextAlign = "left" | "center" | "right";
+export type CanvasLayoutAxisMode = "none" | "vertical" | "horizontal";
+export type BoardObjectKind = "image" | "text";
+export type BoardObjectLayoutMode = "free" | "axis-bound";
+
+export type BoardObjectRef = {
+  kind: BoardObjectKind;
+  id: string;
+};
+
+export type BoardObjectBase = {
+  id: string;
+  x: number;
+  y: number;
+  layoutMode: BoardObjectLayoutMode;
+  layoutGap: number;
+};
 
 export type BoardImagePositionPreset =
   | "center"
@@ -103,28 +119,24 @@ export type CanvasFrame = {
   width: number;
   height: number;
   presetId?: CanvasPresetId | null;
+  layoutAxisMode: CanvasLayoutAxisMode;
   background: CanvasBackgroundValue;
   backgroundPresetId: string | null;
   backgroundEffects: CanvasBackgroundEffects;
+  objectOrder: BoardObjectRef[];
   images: BoardImageItem[];
   texts: BoardTextItem[];
 };
 
-export type BoardImageItem = {
-  id: string;
+export type BoardImageItem = BoardObjectBase & {
   assetId: string;
-  x: number;
-  y: number;
   width: number;
   height: number;
   alt: string;
 };
 
-export type BoardTextItem = {
-  id: string;
+export type BoardTextItem = BoardObjectBase & {
   text: string;
-  x: number;
-  y: number;
   fontFamily: string;
   fontSize: number;
   fontWeight: number;
@@ -133,7 +145,10 @@ export type BoardTextItem = {
   maxWidth: number;
 };
 
-export type BoardTextInput = Omit<BoardTextItem, "id" | "x" | "y"> &
+export type BoardTextInput = Omit<
+  BoardTextItem,
+  "id" | "x" | "y" | "layoutMode" | "layoutGap"
+> &
   Partial<Pick<BoardTextItem, "x" | "y">>;
 
 export type CanvasShell = Omit<

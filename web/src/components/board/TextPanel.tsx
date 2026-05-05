@@ -37,9 +37,7 @@ export const BoardTextPanel = () => {
   const updateTextOnCanvas = useCanvasStore(
     (state) => state.updateTextOnCanvas,
   );
-  const clearSelection = useEditorUiStore((state) => state.clearSelection);
   const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
-  const resetTextDraft = useEditorUiStore((state) => state.resetTextDraft);
   const fontCatalog = useGoogleFontsCatalog();
 
   useEffect(() => {
@@ -81,11 +79,6 @@ export const BoardTextPanel = () => {
       fontFamily,
       maxWidth: Math.min(draft.maxWidth, canvasShell.width),
     });
-  };
-
-  const handleResetDraft = () => {
-    clearSelection();
-    resetTextDraft();
   };
 
   return (

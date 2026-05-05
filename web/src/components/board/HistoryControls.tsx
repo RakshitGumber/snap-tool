@@ -1,4 +1,5 @@
 import { Icon } from "@iconify/react";
+import clsx from "clsx";
 
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
@@ -9,16 +10,23 @@ const controlClassName =
 export const HistoryControls = () => {
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
-  const removeSelectedImage = useCanvasStore((state) => state.removeSelectedImage);
-  const removeSelectedText = useCanvasStore((state) => state.removeSelectedText);
+  const updateLayoutAxisMode = useCanvasStore(
+    (state) => state.updateLayoutAxisMode,
+  );
+  const removeSelectedObjects = useCanvasStore(
+    (state) => state.removeSelectedObjects,
+  );
   const canUndo = useCanvasStore((state) => state.historyPast.length > 0);
   const canRedo = useCanvasStore((state) => state.historyFuture.length > 0);
-  const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
-  const selectedTextId = useEditorUiStore((state) => state.selectedTextId);
-  const hasSelection = Boolean(selectedImageId || selectedTextId);
+  const layoutAxisMode = useCanvasStore(
+    (state) => state.canvasMeta?.layoutAxisMode ?? "none",
+  );
+  const hasSelection = useEditorUiStore(
+    (state) => state.selectedObjects.length > 0,
+  );
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center gap-1">
       <button
         type="button"
         aria-label="Undo"
@@ -87,16 +95,43 @@ export const HistoryControls = () => {
 
       <button
         type="button"
+        aria-label="Vertical axis layout"
+        title="Vertical axis layout"
+        onClick={() =>
+          updateLayoutAxisMode(
+            layoutAxisMode === "vertical" ? "none" : "vertical",
+          )
+        }
+        className={clsx(
+          controlClassName,
+          layoutAxisMode === "vertical" && "bg-accent/10 text-accent",
+        )}
+      >
+        <span className="text-xs font-bold">V</span>
+      </button>
+
+      <button
+        type="button"
+        aria-label="Horizontal axis layout"
+        title="Horizontal axis layout"
+        onClick={() =>
+          updateLayoutAxisMode(
+            layoutAxisMode === "horizontal" ? "none" : "horizontal",
+          )
+        }
+        className={clsx(
+          controlClassName,
+          layoutAxisMode === "horizontal" && "bg-accent/10 text-accent",
+        )}
+      >
+        <span className="text-xs font-bold">H</span>
+      </button>
+
+      <button
+        type="button"
         aria-label="Delete selected object"
         title="Delete selected object"
-        onClick={() => {
-          if (selectedTextId) {
-            removeSelectedText();
-            return;
-          }
-
-          removeSelectedImage();
-        }}
+        onClick={removeSelectedObjects}
         disabled={!hasSelection}
         className={controlClassName}
       >

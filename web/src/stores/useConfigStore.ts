@@ -194,9 +194,11 @@ export const createCanvasFrame = (
     width: size.width,
     height: size.height,
     presetId,
+    layoutAxisMode: "none",
     background: createCanvasBackgroundFromPreset(backgroundPreset),
     backgroundPresetId: backgroundPreset.id,
     backgroundEffects: { ...DEFAULT_CANVAS_BACKGROUND_EFFECTS },
+    objectOrder: [],
     images: [],
     texts: [],
   };

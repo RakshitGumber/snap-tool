@@ -3,6 +3,7 @@ import {
   getCanvasBackgroundCssValue,
   getCanvasBackgroundImageLayout,
 } from "@/canvas/backgrounds";
+import { getOrderedCanvasObjectsFromFrame } from "@/canvas/objects";
 import { normalizeBoardTextFamily } from "@/stores/useConfigStore";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
@@ -657,17 +658,18 @@ const renderCanvasExport = async ({
     backgroundImageSource,
   );
 
-  for (const image of canvasFrame.images) {
-    const src = imageSources.get(image.id);
-    if (!src) {
+  for (const object of getOrderedCanvasObjectsFromFrame(canvasFrame)) {
+    if (object.kind === "image") {
+      const src = imageSources.get(object.item.id);
+      if (!src) {
+        continue;
+      }
+
+      await drawImageItem(context, object.item, src, scaleX, scaleY);
       continue;
     }
 
-    await drawImageItem(context, image, src, scaleX, scaleY);
-  }
-
-  for (const text of canvasFrame.texts) {
-    drawTextItem(context, text, scaleX, scaleY);
+    drawTextItem(context, object.item, scaleX, scaleY);
   }
 
   return exportCanvas;

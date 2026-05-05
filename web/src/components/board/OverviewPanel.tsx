@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import clsx from "clsx";
 
@@ -9,26 +9,21 @@ import {
   formatCanvasBackgroundEffectValue,
 } from "@/canvas/backgroundEffects";
 import { formatCanvasBackgroundKind } from "@/canvas/backgrounds";
+import { getObjectLabel, getObjectRefKey } from "@/canvas/objects";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 import {
   useActiveCanvasBackground,
   useCanvasShell,
   useCanvasStore,
+  useOrderedCanvasObjects,
 } from "@/stores/useCanvasStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import type {
-  BoardImageItem,
   BoardImagePositionPreset,
-  BoardTextItem,
+  BoardObjectRef,
 } from "@/types/canvas";
 
 import { BoardBackgroundPreview } from "./BackgroundPreview";
-
-const formatImageDimensions = (image: BoardImageItem) =>
-  `${image.width} x ${image.height}`;
-
-const truncateText = (value: string) =>
-  value.length > 48 ? `${value.slice(0, 45).trimEnd()}...` : value;
 
 const IMAGE_POSITION_PRESETS: Array<{
   id: BoardImagePositionPreset;
@@ -41,13 +36,26 @@ const IMAGE_POSITION_PRESETS: Array<{
   { id: "right", label: "Right" },
 ];
 
+const truncateText = (value: string) =>
+  value.length > 48 ? `${value.slice(0, 45).trimEnd()}...` : value;
+
+const isSelectionModifier = (event: ReactMouseEvent) =>
+  event.shiftKey || event.ctrlKey || event.metaKey;
+
 export const BoardOverviewPanel = () => {
+  const [openHierarchyKey, setOpenHierarchyKey] = useState<string | null>(null);
+
   const canvasShell = useCanvasShell();
   const activeBackgroundPreset = useActiveCanvasBackground();
-  const imageOrder = useCanvasStore((state) => state.imageOrder);
-  const imagesById = useCanvasStore((state) => state.imagesById);
-  const textOrder = useCanvasStore((state) => state.textOrder);
-  const textsById = useCanvasStore((state) => state.textsById);
+  const orderedObjects = useOrderedCanvasObjects();
+  const positionImageOnCanvas = useCanvasStore(
+    (state) => state.positionImageOnCanvas,
+  );
+  const moveObjectUp = useCanvasStore((state) => state.moveObjectUp);
+  const moveObjectDown = useCanvasStore((state) => state.moveObjectDown);
+  const setSelectedObjectDistance = useCanvasStore(
+    (state) => state.setSelectedObjectDistance,
+  );
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
@@ -55,25 +63,9 @@ export const BoardOverviewPanel = () => {
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
-  const selectedImageId = useEditorUiStore((state) => state.selectedImageId);
+  const selectedObjects = useEditorUiStore((state) => state.selectedObjects);
   const selectImage = useEditorUiStore((state) => state.selectImage);
-  const positionImageOnCanvas = useCanvasStore(
-    (state) => state.positionImageOnCanvas,
-  );
-  const images = useMemo(
-    () =>
-      imageOrder
-        .map((imageId) => imagesById[imageId])
-        .filter((image): image is BoardImageItem => image !== undefined),
-    [imageOrder, imagesById],
-  );
-  const texts = useMemo(
-    () =>
-      textOrder
-        .map((textId) => textsById[textId])
-        .filter((text): text is BoardTextItem => text !== undefined),
-    [textOrder, textsById],
-  );
+  const selectText = useEditorUiStore((state) => state.selectText);
   const backgroundEffects =
     canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS;
   const background =
@@ -108,6 +100,23 @@ export const BoardOverviewPanel = () => {
         : background?.kind === "image"
           ? "Image background"
           : "White");
+  const selectedKeySet = useMemo(
+    () => new Set(selectedObjects.map((ref) => getObjectRefKey(ref))),
+    [selectedObjects],
+  );
+  const orderedSelectedObjects = useMemo(
+    () =>
+      orderedObjects.filter((object) =>
+        selectedObjects.some(
+          (selected) =>
+            selected.kind === object.ref.kind && selected.id === object.ref.id,
+        ),
+      ),
+    [orderedObjects, selectedObjects],
+  );
+  const lowerHierarchyObject =
+    orderedSelectedObjects.length === 2 ? orderedSelectedObjects[1] : null;
+  const activeAxisLabel = canvasShell?.layoutAxisMode ?? "none";
 
   const activeBackgroundEffectSummary = CANVAS_BACKGROUND_EFFECT_ORDER.filter(
     (effectId) =>
@@ -122,12 +131,15 @@ export const BoardOverviewPanel = () => {
   );
 
   useEffect(() => {
-    for (const image of images) {
-      if (!resolvedMediaByAssetId[image.assetId]?.preview) {
-        void resolveAssetMedia(image.assetId, "preview");
+    orderedObjects.forEach((object) => {
+      if (
+        object.kind === "image" &&
+        !resolvedMediaByAssetId[object.item.assetId]?.preview
+      ) {
+        void resolveAssetMedia(object.item.assetId, "preview");
       }
-    }
-  }, [images, resolvedMediaByAssetId, resolveAssetMedia]);
+    });
+  }, [orderedObjects, resolvedMediaByAssetId, resolveAssetMedia]);
 
   useEffect(() => {
     if (
@@ -137,6 +149,31 @@ export const BoardOverviewPanel = () => {
       void resolveAssetMedia(activeBackgroundAssetId, "preview");
     }
   }, [activeBackgroundAssetId, resolveAssetMedia, resolvedMediaByAssetId]);
+
+  const handleSelectObject =
+    (ref: BoardObjectRef) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+      const additive = isSelectionModifier(event);
+      const object = orderedObjects.find(
+        (candidate) =>
+          candidate.ref.kind === ref.kind && candidate.ref.id === ref.id,
+      );
+      if (!object) {
+        return;
+      }
+
+      if (object.kind === "image") {
+        selectImage(object.item.id, {
+          additive,
+          toggle: additive,
+        });
+        return;
+      }
+
+      selectText(object.item, {
+        additive,
+        toggle: additive,
+      });
+    };
 
   return (
     <div className="space-y-8 font-sans">
@@ -168,95 +205,155 @@ export const BoardOverviewPanel = () => {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-bold text-title-color">Images</h3>
-        {images.length ? (
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-lg font-bold text-title-color">Objects</h3>
+          <span className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+            {orderedObjects.length} total
+          </span>
+        </div>
+
+        {orderedObjects.length ? (
           <div className="space-y-3">
-            {images.map((image) => {
-              const asset = assetMetaById[image.assetId];
-              const media = resolvedMediaByAssetId[image.assetId]?.preview;
+            {orderedObjects.map((object, index) => {
+              const key = getObjectRefKey(object.ref);
+              const isSelected = selectedKeySet.has(key);
+              const preview =
+                object.kind === "image"
+                  ? resolvedMediaByAssetId[object.item.assetId]?.preview
+                  : null;
 
               return (
                 <div
-                  key={image.id}
+                  key={key}
                   className={clsx(
                     "space-y-3 rounded-xl border px-3 py-3",
-                    selectedImageId === image.id
+                    isSelected
                       ? "border-accent/70 bg-accent/5"
                       : "border-border-color/40",
                   )}
                 >
-                  <button
-                    type="button"
-                    onClick={() => selectImage(image.id)}
-                    className="flex w-full items-center gap-3 text-left"
-                  >
-                    {media ? (
-                      <img
-                        src={media.src}
-                        alt={image.alt}
-                        className="h-10 w-10 shrink-0 rounded-md object-cover"
-                        draggable={false}
-                      />
-                    ) : null}
+                  <div className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSelectObject(object.ref)}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      {object.kind === "image" && preview ? (
+                        <img
+                          src={preview.src}
+                          alt={object.item.alt}
+                          className="h-10 w-10 shrink-0 rounded-md object-cover"
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-3 text-xs font-bold uppercase text-secondary-text">
+                          {object.kind}
+                        </div>
+                      )}
 
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-title-color">
-                        {asset?.name ?? image.alt ?? "Image"}
-                      </p>
-                      <p className="text-sm text-secondary-text">
-                        {formatImageDimensions(image)}
-                      </p>
-                    </div>
-                  </button>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-title-color">
+                          {truncateText(getObjectLabel(object))}
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
+                          #{index + 1} · {object.kind} · {object.item.layoutMode}
+                        </p>
+                        <p className="mt-1 text-sm text-secondary-text">
+                          {object.kind === "image"
+                            ? `${object.item.width} x ${object.item.height}`
+                            : `${object.item.fontFamily} · ${object.item.fontSize}px · ${object.item.align}`}
+                        </p>
+                      </div>
+                    </button>
 
-                  <div className="flex flex-wrap gap-2">
-                    {IMAGE_POSITION_PRESETS.map((preset) => (
+                    <div className="relative shrink-0">
                       <button
-                        key={preset.id}
                         type="button"
-                        onClick={() => {
-                          selectImage(image.id);
-                          positionImageOnCanvas(image.id, preset.id);
-                        }}
+                        onClick={() =>
+                          setOpenHierarchyKey((current) =>
+                            current === key ? null : key,
+                          )
+                        }
                         className="rounded-full border border-border-color/60 px-3 py-1 text-xs font-semibold text-title-color transition hover:border-accent/70 hover:text-accent"
                       >
-                        {preset.label}
+                        Hierarchy
                       </button>
-                    ))}
+
+                      {openHierarchyKey === key ? (
+                        <div className="absolute right-0 top-10 z-10 grid min-w-[8rem] gap-2 rounded-xl border border-border-color/50 bg-card-bg p-2 shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              moveObjectUp(object.ref);
+                              setOpenHierarchyKey(null);
+                            }}
+                            className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-accent/10 hover:text-accent"
+                          >
+                            Move up
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              moveObjectDown(object.ref);
+                              setOpenHierarchyKey(null);
+                            }}
+                            className="rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-accent/10 hover:text-accent"
+                          >
+                            Move down
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
+
+                  {object.kind === "image" ? (
+                    <div className="flex flex-wrap gap-2">
+                      {IMAGE_POSITION_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            selectImage(object.item.id);
+                            positionImageOnCanvas(object.item.id, preset.id);
+                          }}
+                          className="rounded-full border border-border-color/60 px-3 py-1 text-xs font-semibold text-title-color transition hover:border-accent/70 hover:text-accent"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
           </div>
         ) : (
           <p className="text-sm text-secondary-text">
-            No images on this canvas.
+            No objects on this canvas.
           </p>
         )}
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-lg font-bold text-title-color">Text</h3>
-        {texts.length ? (
-          <div className="space-y-3">
-            {texts.map((text) => (
-              <div
-                key={text.id}
-                className="rounded-xl border border-border-color/40 px-3 py-3"
-              >
-                <p className="text-sm font-semibold text-title-color">
-                  {truncateText(text.text)}
-                </p>
-                <p className="mt-1 text-sm text-secondary-text">
-                  {text.fontFamily} · {text.fontSize}px · {text.align}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-secondary-text">No text on this canvas.</p>
-        )}
-      </section>
+      {canvasShell?.layoutAxisMode !== "none" &&
+      orderedSelectedObjects.length === 2 &&
+      lowerHierarchyObject ? (
+        <section className="space-y-3">
+          <h3 className="text-lg font-bold text-title-color">Distance</h3>
+          <label className="block rounded-xl border border-border-color/40 px-4 py-3">
+            <span className="block text-xs uppercase tracking-[0.14em] text-secondary-text">
+              Edge Gap ({activeAxisLabel})
+            </span>
+            <input
+              type="number"
+              value={lowerHierarchyObject.item.layoutGap}
+              onChange={(event) =>
+                setSelectedObjectDistance(Number(event.target.value))
+              }
+              className="mt-3 w-full rounded-xl border border-border-color/70 bg-card-bg px-3 py-2 text-sm text-title-color outline-none transition focus:border-accent"
+            />
+          </label>
+        </section>
+      ) : null}
 
       <section className="space-y-2">
         <h3 className="text-lg font-bold text-title-color">

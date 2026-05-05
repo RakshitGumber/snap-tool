@@ -105,6 +105,7 @@ type CanvasActions = {
     imageId: string,
     preset: BoardImagePositionPreset,
   ) => void;
+  toggleObjectMovementLock: (ref: BoardObjectRef) => void;
   updateTextOnCanvas: (
     textId: string,
     updates: Partial<BoardTextInput>,
@@ -159,10 +160,10 @@ const disableBackgroundMoveMode = () =>
 const areCanvasFramesEqual = (left: CanvasFrame, right: CanvasFrame) =>
   JSON.stringify(left) === JSON.stringify(right);
 
-type LegacyImageItem = Omit<BoardImageItem, "layoutMode" | "layoutGap"> &
-  Partial<Pick<BoardImageItem, "layoutMode" | "layoutGap">>;
-type LegacyTextItem = Omit<BoardTextItem, "layoutMode" | "layoutGap"> &
-  Partial<Pick<BoardTextItem, "layoutMode" | "layoutGap">>;
+type LegacyImageItem = Omit<BoardImageItem, "layoutMode" | "layoutGap" | "isMovementLocked"> &
+  Partial<Pick<BoardImageItem, "layoutMode" | "layoutGap" | "isMovementLocked">>;
+type LegacyTextItem = Omit<BoardTextItem, "layoutMode" | "layoutGap" | "isMovementLocked"> &
+  Partial<Pick<BoardTextItem, "layoutMode" | "layoutGap" | "isMovementLocked">>;
 type LegacyCanvasFrame = Omit<
   CanvasFrame,
   "background" | "backgroundPresetId" | "layoutAxisMode" | "objectOrder" | "images" | "texts"
@@ -186,6 +187,7 @@ type PersistedCanvasState = Partial<
 const normalizeImageItem = (image: LegacyImageItem): BoardImageItem => ({
   ...image,
   layoutMode: image.layoutMode ?? "free",
+  isMovementLocked: image.isMovementLocked ?? false,
   layoutGap:
     typeof image.layoutGap === "number" && Number.isFinite(image.layoutGap)
       ? Math.round(image.layoutGap)
@@ -195,6 +197,7 @@ const normalizeImageItem = (image: LegacyImageItem): BoardImageItem => ({
 const normalizeTextItem = (text: LegacyTextItem): BoardTextItem => ({
   ...text,
   layoutMode: text.layoutMode ?? "free",
+  isMovementLocked: text.isMovementLocked ?? false,
   layoutGap:
     typeof text.layoutGap === "number" && Number.isFinite(text.layoutGap)
       ? Math.round(text.layoutGap)
@@ -339,6 +342,7 @@ const createCanvasImageItem = (
     layoutMode:
       state.canvasMeta.layoutAxisMode === "none" ? "free" : "axis-bound",
     layoutGap: DEFAULT_LAYOUT_GAP,
+    isMovementLocked: false,
   };
 };
 
@@ -373,7 +377,7 @@ const normalizeTextInput = (
     ),
   } satisfies Omit<
     BoardTextItem,
-    "id" | "x" | "y" | "layoutMode" | "layoutGap"
+    "id" | "x" | "y" | "layoutMode" | "layoutGap" | "isMovementLocked"
   >;
 };
 
@@ -400,6 +404,7 @@ const createCanvasTextItem = (
     layoutMode:
       state.canvasMeta.layoutAxisMode === "none" ? "free" : "axis-bound",
     layoutGap: DEFAULT_LAYOUT_GAP,
+    isMovementLocked: false,
   };
   const textBounds = measureTextItemBounds(draftItem);
   const offset = TEXT_INSERT_OFFSET_STEP;
@@ -1136,7 +1141,7 @@ export const useCanvasStore = create<CanvasStore>()(
           for (const move of moves) {
             if (move.ref.kind === "image") {
               const image = nextImagesById[move.ref.id];
-              if (!image) {
+              if (!image || image.isMovementLocked) {
                 continue;
               }
 
@@ -1162,7 +1167,7 @@ export const useCanvasStore = create<CanvasStore>()(
             }
 
             const text = nextTextsById[move.ref.id];
-            if (!text) {
+            if (!text || text.isMovementLocked) {
               continue;
             }
 
@@ -1237,7 +1242,7 @@ export const useCanvasStore = create<CanvasStore>()(
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
           const image = state.imagesById[imageId];
-          if (!canvasMeta || !image) {
+          if (!canvasMeta || !image || image.isMovementLocked) {
             return state;
           }
 
@@ -1259,6 +1264,43 @@ export const useCanvasStore = create<CanvasStore>()(
                 ...image,
                 ...nextPosition,
                 layoutMode: "free",
+              },
+            },
+          };
+        }),
+
+      toggleObjectMovementLock: (ref) =>
+        applyCanvasStateChange(set, (state) => {
+          if (ref.kind === "image") {
+            const image = state.imagesById[ref.id];
+            if (!image) {
+              return state;
+            }
+
+            return {
+              ...state,
+              imagesById: {
+                ...state.imagesById,
+                [ref.id]: {
+                  ...image,
+                  isMovementLocked: !image.isMovementLocked,
+                },
+              },
+            };
+          }
+
+          const text = state.textsById[ref.id];
+          if (!text) {
+            return state;
+          }
+
+          return {
+            ...state,
+            textsById: {
+              ...state.textsById,
+              [ref.id]: {
+                ...text,
+                isMovementLocked: !text.isMovementLocked,
               },
             },
           };

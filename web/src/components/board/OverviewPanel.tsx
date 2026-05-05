@@ -53,6 +53,9 @@ export const BoardOverviewPanel = () => {
   );
   const moveObjectUp = useCanvasStore((state) => state.moveObjectUp);
   const moveObjectDown = useCanvasStore((state) => state.moveObjectDown);
+  const toggleObjectMovementLock = useCanvasStore(
+    (state) => state.toggleObjectMovementLock,
+  );
   const setSelectedObjectDistance = useCanvasStore(
     (state) => state.setSelectedObjectDistance,
   );
@@ -257,6 +260,7 @@ export const BoardOverviewPanel = () => {
                         </p>
                         <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
                           #{index + 1} · {object.kind} · {object.item.layoutMode}
+                          {object.item.isMovementLocked ? " · locked" : ""}
                         </p>
                         <p className="mt-1 text-sm text-secondary-text">
                           {object.kind === "image"
@@ -266,7 +270,23 @@ export const BoardOverviewPanel = () => {
                       </div>
                     </button>
 
-                    <div className="relative shrink-0">
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleObjectMovementLock(object.ref)}
+                        className={clsx(
+                          "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                          object.item.isMovementLocked
+                            ? "border-accent/70 bg-accent/10 text-accent"
+                            : "border-border-color/60 text-title-color hover:border-accent/70 hover:text-accent",
+                        )}
+                      >
+                        {object.item.isMovementLocked
+                          ? "Unlock movement"
+                          : "Lock movement"}
+                      </button>
+
+                      <div className="relative">
                       <button
                         type="button"
                         onClick={() =>
@@ -303,6 +323,7 @@ export const BoardOverviewPanel = () => {
                           </button>
                         </div>
                       ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -316,7 +337,8 @@ export const BoardOverviewPanel = () => {
                             selectImage(object.item.id);
                             positionImageOnCanvas(object.item.id, preset.id);
                           }}
-                          className="rounded-full border border-border-color/60 px-3 py-1 text-xs font-semibold text-title-color transition hover:border-accent/70 hover:text-accent"
+                          disabled={object.item.isMovementLocked}
+                          className="rounded-full border border-border-color/60 px-3 py-1 text-xs font-semibold text-title-color transition hover:border-accent/70 hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {preset.label}
                         </button>

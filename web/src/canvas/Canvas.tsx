@@ -23,6 +23,13 @@ import {
   type OrderedCanvasObject,
 } from "@/canvas/objects";
 import {
+  createObjectDragSession,
+  EMPTY_GUIDES,
+  resolveObjectDragUpdate,
+  type GuideState,
+  type ObjectDragSession,
+} from "@/canvas/objectDrag";
+import {
   getCanvasBackgroundImageLayout,
   isCanvasBackgroundImageMovable,
 } from "@/canvas/backgrounds";
@@ -47,28 +54,13 @@ import type {
 } from "@/types/canvas";
 
 type PointerSnapshot = {
+  pointerId: number;
   clientX: number;
   clientY: number;
   shiftKey: boolean;
 };
 
-type GuideState = {
-  vertical: number[];
-  horizontal: number[];
-};
-
-type SelectionDragState = {
-  kind: "selection";
-  primaryRef: BoardObjectRef;
-  selection: BoardObjectRef[];
-  startPointerX: number;
-  startPointerY: number;
-  startPositions: Record<string, { x: number; y: number }>;
-  primaryBounds: CanvasObjectBounds;
-};
-
 type CanvasDragState =
-  | SelectionDragState
   | {
       kind: "image-resize";
       itemId: string;
@@ -88,21 +80,13 @@ type CanvasDragState =
       fit: CanvasBackgroundImageFit;
     };
 
-const SNAP_THRESHOLD = 8;
+type PointerCaptureTarget = HTMLButtonElement | HTMLDivElement;
 
 const isSelectionModifier = (event: {
   shiftKey: boolean;
   ctrlKey: boolean;
   metaKey: boolean;
 }) => event.shiftKey || event.ctrlKey || event.metaKey;
-
-const getAxisLock = (deltaX: number, deltaY: number, isShiftPressed: boolean) => {
-  if (!isShiftPressed) {
-    return null;
-  }
-
-  return Math.abs(deltaX) >= Math.abs(deltaY) ? "horizontal" : "vertical";
-};
 
 const getObjectGuideBounds = (
   object: OrderedCanvasObject,
@@ -112,98 +96,21 @@ const getObjectGuideBounds = (
     ? getObjectBounds(object, measuredBounds ?? measureTextItemBounds(object.item))
     : getObjectBounds(object, measuredBounds);
 
-const buildAlignmentResult = ({
-  movedBounds,
-  otherBounds,
-  canvasWidth,
-  canvasHeight,
-}: {
-  movedBounds: CanvasObjectBounds;
-  otherBounds: CanvasObjectBounds[];
-  canvasWidth: number;
-  canvasHeight: number;
-}) => {
-  const sourceX = [
-    movedBounds.x,
-    movedBounds.x + movedBounds.width / 2,
-    movedBounds.x + movedBounds.width,
-  ];
-  const sourceY = [
-    movedBounds.y,
-    movedBounds.y + movedBounds.height / 2,
-    movedBounds.y + movedBounds.height,
-  ];
-  const candidateX = [
-    canvasWidth / 2,
-    ...otherBounds.flatMap((bounds) => [
-      bounds.x,
-      bounds.x + bounds.width / 2,
-      bounds.x + bounds.width,
-    ]),
-  ];
-  const candidateY = [
-    canvasHeight / 2,
-    ...otherBounds.flatMap((bounds) => [
-      bounds.y,
-      bounds.y + bounds.height / 2,
-      bounds.y + bounds.height,
-    ]),
-  ];
-
-  let bestX: { delta: number; guide: number } | undefined;
-  let bestY: { delta: number; guide: number } | undefined;
-
-  sourceX.forEach((source) => {
-    candidateX.forEach((candidate) => {
-      const delta = candidate - source;
-      if (Math.abs(delta) > SNAP_THRESHOLD) {
-        return;
-      }
-
-      if (!bestX || Math.abs(delta) < Math.abs(bestX.delta)) {
-        bestX = { delta, guide: candidate };
-      }
-    });
-  });
-
-  sourceY.forEach((source) => {
-    candidateY.forEach((candidate) => {
-      const delta = candidate - source;
-      if (Math.abs(delta) > SNAP_THRESHOLD) {
-        return;
-      }
-
-      if (!bestY || Math.abs(delta) < Math.abs(bestY.delta)) {
-        bestY = { delta, guide: candidate };
-      }
-    });
-  });
-
-  return {
-    deltaX: bestX?.delta ?? 0,
-    deltaY: bestY?.delta ?? 0,
-    guides: {
-      vertical: bestX ? [bestX.guide] : [],
-      horizontal: bestY ? [bestY.guide] : [],
-    } satisfies GuideState,
-  };
-};
-
 export const Canvas = memo(function BoardCanvas() {
   const viewportInnerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const inlineEditorRef = useRef<HTMLTextAreaElement | null>(null);
+  const objectDragSessionRef = useRef<ObjectDragSession | null>(null);
   const dragStateRef = useRef<CanvasDragState | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
+  const capturedPointerTargetRef = useRef<PointerCaptureTarget | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
   const objectElementRefs = useRef<Record<string, HTMLDivElement | HTMLButtonElement | null>>({});
   const textEditSnapshotRef = useRef<{ id: string; text: string } | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
   const [canvasScale, setCanvasScale] = useState(1);
-  const [guideState, setGuideState] = useState<GuideState>({
-    vertical: [],
-    horizontal: [],
-  });
+  const [guideState, setGuideState] = useState<GuideState>(EMPTY_GUIDES);
 
   const canvasShell = useCanvasShell();
   const orderedObjects = useOrderedCanvasObjects();
@@ -438,72 +345,108 @@ export const Canvas = memo(function BoardCanvas() {
     return getObjectGuideBounds(object);
   });
 
+  const beginPointerInteraction = useEffectEvent(
+    (target: PointerCaptureTarget, pointerId: number) => {
+      activePointerIdRef.current = pointerId;
+      capturedPointerTargetRef.current = target;
+
+      if (typeof target.setPointerCapture !== "function") {
+        return;
+      }
+
+      try {
+        target.setPointerCapture(pointerId);
+      } catch {
+        // Ignore browsers that reject capture during edge cases.
+      }
+    },
+  );
+
+  const finishActiveDrag = useEffectEvent(
+    ({ releasePointerCapture = true }: { releasePointerCapture?: boolean } = {}) => {
+      const pointerId = activePointerIdRef.current;
+      const pointerTarget = capturedPointerTargetRef.current;
+      const hadDragState =
+        objectDragSessionRef.current !== null || dragStateRef.current !== null;
+
+      objectDragSessionRef.current = null;
+      dragStateRef.current = null;
+      activePointerIdRef.current = null;
+      capturedPointerTargetRef.current = null;
+      pointerSnapshotRef.current = null;
+      setGuideState(EMPTY_GUIDES);
+
+      if (frameRequestRef.current !== null) {
+        window.cancelAnimationFrame(frameRequestRef.current);
+        frameRequestRef.current = null;
+      }
+
+      if (
+        releasePointerCapture &&
+        pointerTarget &&
+        pointerId !== null &&
+        typeof pointerTarget.hasPointerCapture === "function" &&
+        pointerTarget.hasPointerCapture(pointerId)
+      ) {
+        try {
+          pointerTarget.releasePointerCapture(pointerId);
+        } catch {
+          // Ignore stale capture state during teardown.
+        }
+      }
+
+      if (hadDragState) {
+        endHistoryTransaction();
+      }
+    },
+  );
+
   const flushPointerMove = useEffectEvent(() => {
     frameRequestRef.current = null;
 
     const pointer = pointerSnapshotRef.current;
+    const objectDragSession = objectDragSessionRef.current;
     const dragState = dragStateRef.current;
 
-    if (!pointer || !dragState) {
+    if (!pointer) {
       return;
     }
 
     const localPoint = getCanvasPoint(pointer.clientX, pointer.clientY);
 
-    if (dragState.kind === "selection") {
+    if (objectDragSession) {
       if (!canvasShell) {
         return;
-      }
-
-      let deltaX = localPoint.x - dragState.startPointerX;
-      let deltaY = localPoint.y - dragState.startPointerY;
-      const axisLock = getAxisLock(deltaX, deltaY, pointer.shiftKey);
-
-      if (axisLock === "horizontal") {
-        deltaY = 0;
-      } else if (axisLock === "vertical") {
-        deltaX = 0;
       }
 
       const otherBounds = orderedObjects
         .filter(
           (object) =>
-            !dragState.selection.some((selected) =>
+            !objectDragSession.selection.some((selected) =>
               isSameObjectRef(selected, object.ref),
             ),
         )
         .map((object) => getRenderedBounds(object));
-      const movedPrimaryBounds = {
-        ...dragState.primaryBounds,
-        x: dragState.primaryBounds.x + deltaX,
-        y: dragState.primaryBounds.y + deltaY,
-      };
-      const alignment = buildAlignmentResult({
-        movedBounds: movedPrimaryBounds,
+      const result = resolveObjectDragUpdate({
+        session: objectDragSession,
+        pointer: {
+          x: localPoint.x,
+          y: localPoint.y,
+          shiftKey: pointer.shiftKey,
+        },
         otherBounds,
         canvasWidth: canvasShell.width,
         canvasHeight: canvasShell.height,
       });
 
-      const nextDeltaX = deltaX + alignment.deltaX;
-      const nextDeltaY = deltaY + alignment.deltaY;
+      moveObjectsOnCanvas(result.moves, {
+        releaseFromAxis: true,
+      });
+      setGuideState(result.guides);
+      return;
+    }
 
-      moveObjectsOnCanvas(
-        dragState.selection.map((ref) => {
-          const startPosition =
-            dragState.startPositions[getObjectRefKey(ref)] ?? { x: 0, y: 0 };
-
-          return {
-            ref,
-            x: startPosition.x + nextDeltaX,
-            y: startPosition.y + nextDeltaY,
-          };
-        }),
-        {
-          releaseFromAxis: true,
-        },
-      );
-      setGuideState(alignment.guides);
+    if (!dragState) {
       return;
     }
 
@@ -547,11 +490,16 @@ export const Canvas = memo(function BoardCanvas() {
   });
 
   const handleGlobalPointerMove = useEffectEvent((event: PointerEvent) => {
-    if (!dragStateRef.current) {
+    if (
+      activePointerIdRef.current === null ||
+      event.pointerId !== activePointerIdRef.current ||
+      (objectDragSessionRef.current === null && dragStateRef.current === null)
+    ) {
       return;
     }
 
     pointerSnapshotRef.current = {
+      pointerId: event.pointerId,
       clientX: event.clientX,
       clientY: event.clientY,
       shiftKey: event.shiftKey,
@@ -564,36 +512,53 @@ export const Canvas = memo(function BoardCanvas() {
     frameRequestRef.current = window.requestAnimationFrame(flushPointerMove);
   });
 
-  const handleGlobalPointerUp = useEffectEvent(() => {
-    const hadDragState = dragStateRef.current !== null;
-    dragStateRef.current = null;
-    pointerSnapshotRef.current = null;
-    setGuideState({
-      vertical: [],
-      horizontal: [],
-    });
-
-    if (frameRequestRef.current !== null) {
-      window.cancelAnimationFrame(frameRequestRef.current);
-      frameRequestRef.current = null;
+  const handleGlobalPointerFinish = useEffectEvent((event?: PointerEvent) => {
+    if (
+      event &&
+      activePointerIdRef.current !== null &&
+      event.pointerId !== activePointerIdRef.current
+    ) {
+      return;
     }
 
-    if (hadDragState) {
-      endHistoryTransaction();
-    }
+    finishActiveDrag();
+  });
+
+  const handlePointerCaptureLost = useEffectEvent(
+    (event: ReactPointerEvent<HTMLButtonElement | HTMLDivElement>) => {
+      if (
+        activePointerIdRef.current === null ||
+        event.pointerId !== activePointerIdRef.current
+      ) {
+        return;
+      }
+
+      finishActiveDrag({ releasePointerCapture: false });
+    },
+  );
+
+  const handleWindowBlur = useEffectEvent(() => {
+    finishActiveDrag();
   });
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) =>
       handleGlobalPointerMove(event);
-    const handlePointerUp = () => handleGlobalPointerUp();
+    const handlePointerUp = (event: PointerEvent) => handleGlobalPointerFinish(event);
+    const handlePointerCancel = (event: PointerEvent) =>
+      handleGlobalPointerFinish(event);
+    const handleBlur = () => handleWindowBlur();
 
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    window.addEventListener("blur", handleBlur);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+      window.removeEventListener("blur", handleBlur);
 
       if (frameRequestRef.current !== null) {
         window.cancelAnimationFrame(frameRequestRef.current);
@@ -607,7 +572,9 @@ export const Canvas = memo(function BoardCanvas() {
       event: ReactPointerEvent<HTMLButtonElement | HTMLDivElement>,
       selection: BoardObjectRef[],
     ) => {
+      event.preventDefault();
       beginHistoryTransaction();
+      beginPointerInteraction(event.currentTarget, event.pointerId);
       const localPoint = getCanvasPoint(event.clientX, event.clientY);
       const startPositions = Object.fromEntries(
         selection.map((ref) => {
@@ -619,15 +586,17 @@ export const Canvas = memo(function BoardCanvas() {
         }),
       );
 
-      dragStateRef.current = {
-        kind: "selection",
+      objectDragSessionRef.current = createObjectDragSession({
+        pointerId: event.pointerId,
         primaryRef: object.ref,
         selection,
-        startPointerX: localPoint.x,
-        startPointerY: localPoint.y,
+        startPointer: {
+          x: localPoint.x,
+          y: localPoint.y,
+        },
         startPositions,
         primaryBounds: getRenderedBounds(object),
-      };
+      });
     },
   );
 
@@ -664,7 +633,20 @@ export const Canvas = memo(function BoardCanvas() {
         }
       }
 
-      beginSelectionDrag(object, event, activeSelection);
+      if (object.item.isMovementLocked) {
+        return;
+      }
+
+      const draggableSelection = activeSelection.filter((ref) => {
+        const candidate = objectByKey[getObjectRefKey(ref)];
+        return candidate ? !candidate.item.isMovementLocked : false;
+      });
+
+      if (!draggableSelection.length) {
+        return;
+      }
+
+      beginSelectionDrag(object, event, draggableSelection);
     };
 
   const handleImageResizePointerDown =
@@ -678,6 +660,7 @@ export const Canvas = memo(function BoardCanvas() {
       event.preventDefault();
       selectImage(image.id);
       beginHistoryTransaction();
+      beginPointerInteraction(event.currentTarget, event.pointerId);
       const localPoint = getCanvasPoint(event.clientX, event.clientY);
       dragStateRef.current = {
         kind: "image-resize",
@@ -711,6 +694,7 @@ export const Canvas = memo(function BoardCanvas() {
     }
 
     beginHistoryTransaction();
+    beginPointerInteraction(event.currentTarget, event.pointerId);
     const localPoint = getCanvasPoint(event.clientX, event.clientY);
     dragStateRef.current = {
       kind: "background",
@@ -841,6 +825,7 @@ export const Canvas = memo(function BoardCanvas() {
 
             <div
               onPointerDown={handleBackgroundPointerDown}
+              onLostPointerCapture={handlePointerCaptureLost}
               className={clsx(
                 "absolute inset-0",
                 isBackgroundMoveMode &&
@@ -894,8 +879,10 @@ export const Canvas = memo(function BoardCanvas() {
                     <button
                       type="button"
                       onPointerDown={handleObjectPointerDown(object)}
+                      onLostPointerCapture={handlePointerCaptureLost}
                       className={clsx(
                         "h-full w-full overflow-hidden rounded-lg shadow-md outline-2 outline-transparent",
+                        object.item.isMovementLocked ? "cursor-default" : "cursor-grab",
                         isSelected && "outline-accent",
                       )}
                       style={{ touchAction: "none" }}
@@ -913,6 +900,7 @@ export const Canvas = memo(function BoardCanvas() {
                         type="button"
                         aria-label="Resize image"
                         onPointerDown={handleImageResizePointerDown(object.item)}
+                        onLostPointerCapture={handlePointerCaptureLost}
                         className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
                         style={{
                           right: 0,
@@ -970,9 +958,11 @@ export const Canvas = memo(function BoardCanvas() {
                     <button
                       type="button"
                       onPointerDown={handleObjectPointerDown(object)}
+                      onLostPointerCapture={handlePointerCaptureLost}
                       onDoubleClick={() => handleStartTextEditing(object.item)}
                       className={clsx(
                         "rounded-xl bg-transparent px-2 py-1 text-left outline-2 outline-transparent",
+                        object.item.isMovementLocked ? "cursor-default" : "cursor-grab",
                         isSelected && "outline-accent",
                       )}
                       style={{

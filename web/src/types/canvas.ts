@@ -104,6 +104,7 @@ export type BoardObjectBase = {
   y: number;
   layoutMode: BoardObjectLayoutMode;
   layoutGap: number;
+  isMovementLocked: boolean;
 };
 
 export type BoardImagePositionPreset =
@@ -147,7 +148,7 @@ export type BoardTextItem = BoardObjectBase & {
 
 export type BoardTextInput = Omit<
   BoardTextItem,
-  "id" | "x" | "y" | "layoutMode" | "layoutGap"
+  "id" | "x" | "y" | "layoutMode" | "layoutGap" | "isMovementLocked"
 > &
   Partial<Pick<BoardTextItem, "x" | "y">>;
 

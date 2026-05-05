@@ -10,6 +10,7 @@ import {
 } from "@/canvas/exportCanvasImage";
 import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import { useCanvasShell } from "@/stores/useCanvasStore";
+import { pushToast } from "@/stores/useToastStore";
 
 const MIN_EXPORT_EDGE = 64;
 const MAX_EXPORT_EDGE = 4096;
@@ -258,11 +259,21 @@ export const SaveControl = () => {
     try {
       const exportResult = await createCanvasExport(buildExportOptions());
       downloadCanvasExport(exportResult);
+      pushToast({
+        variant: "success",
+        title: "Image downloaded",
+        message: `${exportResult.filename} was saved to your device.`,
+      });
       setIsOpen(false);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to save the board.",
-      );
+      const message =
+        error instanceof Error ? error.message : "Unable to save the board.";
+      setErrorMessage(message);
+      pushToast({
+        variant: "error",
+        title: "Export failed",
+        message,
+      });
     } finally {
       setIsBusy(false);
     }
@@ -293,14 +304,24 @@ export const SaveControl = () => {
 
         openPopup(fallbackState.url);
         setStatusMessage(fallbackState.statusMessage);
+        pushToast({
+          variant: "info",
+          title: "Continue sharing",
+          message: fallbackState.statusMessage,
+        });
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
 
-        setErrorMessage(
-          error instanceof Error ? error.message : "Unable to prepare the share.",
-        );
+        const message =
+          error instanceof Error ? error.message : "Unable to prepare the share.";
+        setErrorMessage(message);
+        pushToast({
+          variant: "error",
+          title: "Share failed",
+          message,
+        });
       } finally {
         setIsBusy(false);
       }

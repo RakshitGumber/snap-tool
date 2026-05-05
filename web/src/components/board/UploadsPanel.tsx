@@ -9,6 +9,7 @@ import {
 import clsx from "clsx";
 
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
+import { pushToast } from "@/stores/useToastStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { clearDraggedAssetId, setDraggedAssetId } from "@/uploads/drag";
 
@@ -89,7 +90,21 @@ export const BoardUploadsPanel = () => {
     try {
       const addedAssets = await addLocalFiles(files);
       insertAssets(addedAssets.map((asset) => asset.id));
-    } catch {
+      pushToast({
+        variant: "success",
+        title: addedAssets.length === 1 ? "Image added" : "Images added",
+        message:
+          addedAssets.length === 1
+            ? "Added 1 image to your library and canvas."
+            : `Added ${addedAssets.length} images to your library and canvas.`,
+      });
+    } catch (error) {
+      pushToast({
+        variant: "error",
+        title: "Import failed",
+        message:
+          error instanceof Error ? error.message : "Unable to import those files.",
+      });
       return;
     }
   };
@@ -107,7 +122,18 @@ export const BoardUploadsPanel = () => {
       insertAssetOnActiveCanvas(asset.id);
       returnToOverview();
       resetUrlInput();
-    } catch {
+      pushToast({
+        variant: "success",
+        title: "Asset imported",
+        message: `Imported ${asset.name} and added it to the canvas.`,
+      });
+    } catch (error) {
+      pushToast({
+        variant: "error",
+        title: "Import failed",
+        message:
+          error instanceof Error ? error.message : "Unable to import that URL.",
+      });
       return;
     }
   };

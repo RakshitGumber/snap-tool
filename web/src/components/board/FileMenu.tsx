@@ -5,6 +5,7 @@ import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import { useRouter } from "@/stores/useRouter";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
+import { pushToast } from "@/stores/useToastStore";
 
 export const FileMenu = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -20,6 +21,11 @@ export const FileMenu = () => {
 
   const handleClearCanvas = () => {
     clearCanvas();
+    pushToast({
+      variant: "info",
+      title: "Canvas cleared",
+      message: "Your board is empty now. Undo is still available.",
+    });
     setIsOpen(false);
   };
 

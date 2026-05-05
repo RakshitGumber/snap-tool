@@ -858,9 +858,14 @@ export const Canvas = memo(function BoardCanvas() {
 
               if (object.kind === "image") {
                 const media = resolvedMediaByAssetId[object.item.assetId]?.full;
+                const asset = assetMetaById[object.item.assetId];
                 if (!media) {
                   return null;
                 }
+
+                const isPngImage =
+                  asset?.mimeType === "image/png" ||
+                  media.src.toLowerCase().includes(".png");
 
                 return (
                   <div
@@ -881,7 +886,7 @@ export const Canvas = memo(function BoardCanvas() {
                       onPointerDown={handleObjectPointerDown(object)}
                       onLostPointerCapture={handlePointerCaptureLost}
                       className={clsx(
-                        "h-full w-full overflow-hidden rounded-lg shadow-md outline-2 outline-transparent",
+                        "h-full w-full overflow-hidden rounded-lg outline-2 outline-transparent",
                         object.item.isMovementLocked ? "cursor-default" : "cursor-grab",
                         isSelected && "outline-accent",
                       )}
@@ -892,6 +897,11 @@ export const Canvas = memo(function BoardCanvas() {
                         alt={object.item.alt}
                         draggable={false}
                         className="pointer-events-none h-full w-full select-none object-contain"
+                        style={{
+                          filter: isPngImage
+                            ? "drop-shadow(0 14px 18px rgba(15, 23, 42, 0.18))"
+                            : undefined,
+                        }}
                       />
                     </button>
 

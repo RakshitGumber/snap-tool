@@ -1,4 +1,4 @@
-// Deprectated
+// Deprecatated
 import { useEffect, useEffectEvent, type RefObject } from "react";
 
 export const useDismissibleLayer = <TElement extends HTMLElement>({

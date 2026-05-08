@@ -1,0 +1,76 @@
+- .env - No Edit Required
+- .gitignore - No Edit Required
+- bun.lock - No Edit Required
+- eslint.config.js - No Edit Required
+- files.md - No Edit Required
+- index.html - No Review Required
+- package.json - No Review Required
+- README.md - No Review Required
+- tsconfig.app.json - No Review Required
+- tsconfig.json - No Review Required
+- tsconfig.node.json - No Review Required
+- vite.config.ts - No Review Required
+- ferret.png - No Review Required
+- logo.png - No Review Required
+- config.ts - Review Required
+- main.tsx - No Review Required
+- vite-env.d.ts  - No Review Required
+- backgroundEffects.ts  - Review Required
+- backgrounds.ts - Review Required
+- Canvas.tsx - Review Required
+- CanvasBackgroundLayer.tsx - Review Required
+- exportCanvasImage.ts - Review Required
+- objectDrag.test.ts - Review Required
+- objectDrag.ts - Review Required
+- objects.ts - Review Required
+- Board.tsx - Review Required
+- BackgroundPanel.tsx - Review Required
+- BackgroundPreview.tsx - Review Required
+- CanvasTitleField.tsx - Review Required
+- Board/FileMenu.tsx - Deprecated
+- HistoryControls.tsx   - Review Required
+- OverviewPanel.tsx  - Review Required
+- PresetControl.tsx  - Review Required
+- SaveControl.tsx  - Review Required
+- Sidebar.tsx  - Review Required
+- TextPanel.tsx  - Review Required
+- TopRibbon.tsx  - Working
+- types.ts  - Review Required
+- UploadsPanel.tsx  - Review Required
+- Features.tsx  - No Review Required
+- Footer.tsx   - No Review Required
+- Hero.tsx  - No Review Required
+- Navbar.tsx  - No Review Required
+- UI/FileMenu.tsx   - No Review Required
+- HeroAnimation.tsx  - Deprecated
+- Logo.tsx  - No Review Required
+- ThemeButton.tsx - Temp Off
+- usePanelBlur.tsx  - No Review Required
+- googleFonts.ts  - No Review Required
+- useDismissibleLayer.ts - Deprecated
+- about.tsx - Placeholder
+- create.tsx    - No Review Required
+- feedback.tsx - Placeholder
+- not-found.tsx - Placeholder
+- roadmap.tsx - Placeholder - replace name
+- root.tsx -  - No Review Required
+- Router.tsx   - No Review Required
+- theme-context.ts   - No Review Required
+- ThemeProvider.tsx   - No Review Required
+- useCanvasStore.ts - Review Required
+- useConfigStore.ts - Review Required
+- useEditorUiStore.ts- Review Required
+- useRouter.ts - No Review Required
+- useToastStore.test.ts - Deprecated
+- useToastStore.ts - Deprecated
+- useUploadLibraryStore.ts- Review Required
+- main.css - No Review Required
+- board.ts - Review Required
+- canvas.ts - Review Required
+- uploads.ts - Review Required
+- drag.ts - Review Required
+- imports.ts - Review Required
+- media.ts - Review Required
+- storage.ts - Review Required
+
+Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch '\\node_modules\\' -and $_.FullName -notmatch '\\dist\\' -and $_.FullName -notmatch '\\.git\\' } | ForEach-Object { "- $($\_.Name)" } | Out-File -Encoding utf8 files.md

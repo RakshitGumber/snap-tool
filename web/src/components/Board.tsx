@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { BoardSidebar } from "@/components/board/Sidebar";
-import { TopRibbon } from "@/components/board/TopRibbon";
+import { TopPanel } from "@/components/panels/TopPanel";
 import { Canvas } from "@/canvas/Canvas";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { pushToast } from "@/stores/useToastStore";
@@ -36,8 +36,7 @@ export const Board = () => {
       pushToast({
         variant: "error",
         title: "Upload library unavailable",
-        message:
-          uploadLibraryError ?? "Unable to restore your upload library.",
+        message: uploadLibraryError ?? "Unable to restore your upload library.",
       });
     }
 
@@ -46,7 +45,7 @@ export const Board = () => {
 
   return (
     <main className="flex h-screen flex-col">
-      <TopRibbon />
+      <TopPanel />
       <div className="flex min-h-0 flex-1">
         <BoardSidebar />
         <section className="relative min-w-0 flex-1">

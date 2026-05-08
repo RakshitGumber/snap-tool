@@ -29,7 +29,7 @@ export const FileMenu = () => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <Logo />
-        <div className="h-full py-3 text-secondary-text">
+        <div className="h-full py-1 text-secondary-text">
           <Icon icon="mingcute:down-line" fontSize={28}></Icon>
         </div>
       </button>

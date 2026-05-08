@@ -14,8 +14,8 @@
 - logo.png - No Review Required
 - config.ts - Review Required
 - main.tsx - No Review Required
-- vite-env.d.ts  - No Review Required
-- backgroundEffects.ts  - Review Required
+- vite-env.d.ts - No Review Required
+- backgroundEffects.ts - Review Required
 - backgrounds.ts - Review Required
 - Canvas.tsx - Review Required
 - CanvasBackgroundLayer.tsx - Review Required
@@ -26,37 +26,37 @@
 - Board.tsx - Review Required
 - BackgroundPanel.tsx - Review Required
 - BackgroundPreview.tsx - Review Required
-- CanvasTitleField.tsx - Review Required
+- CanvasTitleField.tsx - Deprecated
 - Board/FileMenu.tsx - Deprecated
-- HistoryControls.tsx   - Review Required
-- OverviewPanel.tsx  - Review Required
-- PresetControl.tsx  - Review Required
-- SaveControl.tsx  - Review Required
-- Sidebar.tsx  - Review Required
-- TextPanel.tsx  - Review Required
-- TopRibbon.tsx  - Working
-- types.ts  - Review Required
-- UploadsPanel.tsx  - Review Required
-- Features.tsx  - No Review Required
-- Footer.tsx   - No Review Required
-- Hero.tsx  - No Review Required
-- Navbar.tsx  - No Review Required
-- UI/FileMenu.tsx   - No Review Required
-- HeroAnimation.tsx  - Deprecated
-- Logo.tsx  - No Review Required
+- HistoryControls.tsx - Review Required
+- OverviewPanel.tsx - Review Required
+- PresetControl.tsx - Review Required
+- SaveControl.tsx - Review Required
+- Sidebar.tsx - Review Required
+- TextPanel.tsx - Review Required
+- TopRibbon.tsx - Working
+- types.ts - Review Required
+- UploadsPanel.tsx - Review Required
+- Features.tsx - No Review Required
+- Footer.tsx - No Review Required
+- Hero.tsx - No Review Required
+- Navbar.tsx - No Review Required
+- UI/FileMenu.tsx - No Review Required
+- HeroAnimation.tsx - Deprecated
+- Logo.tsx - No Review Required
 - ThemeButton.tsx - Temp Off
-- usePanelBlur.tsx  - No Review Required
-- googleFonts.ts  - No Review Required
+- usePanelBlur.tsx - No Review Required
+- googleFonts.ts - No Review Required
 - useDismissibleLayer.ts - Deprecated
 - about.tsx - Placeholder
-- create.tsx    - No Review Required
+- create.tsx - No Review Required
 - feedback.tsx - Placeholder
 - not-found.tsx - Placeholder
 - roadmap.tsx - Placeholder - replace name
-- root.tsx -  - No Review Required
-- Router.tsx   - No Review Required
-- theme-context.ts   - No Review Required
-- ThemeProvider.tsx   - No Review Required
+- root.tsx - - No Review Required
+- Router.tsx - No Review Required
+- theme-context.ts - No Review Required
+- ThemeProvider.tsx - No Review Required
 - useCanvasStore.ts - Review Required
 - useConfigStore.ts - Review Required
 - useEditorUiStore.ts- Review Required

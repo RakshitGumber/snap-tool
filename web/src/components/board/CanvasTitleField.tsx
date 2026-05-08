@@ -1,3 +1,5 @@
+// Deprecated
+
 import { useCallback, useEffect, useRef } from "react";
 
 import { useCanvasShell, useCanvasStore } from "@/stores/useCanvasStore";

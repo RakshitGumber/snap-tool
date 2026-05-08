@@ -25,7 +25,7 @@ export const FileMenu = () => {
   return (
     <div ref={containerRef} className="relative">
       <button
-        className="flex items-center justify-center gap-2 w-fit transition ease-in hover:bg-text-color/8 px-2 rounded-lg outline-none"
+        className="flex items-center justify-center gap-2 w-fit transition ease-in hover:bg-text-color/8 px-1 rounded-lg outline-none"
         onClick={() => setIsOpen(!isOpen)}
       >
         <Logo />

@@ -1,3 +1,4 @@
+// Deprecated
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
@@ -12,127 +13,133 @@ import { useDismissibleLayer } from "@/libs/useDismissibleLayer";
 import { useCanvasShell } from "@/stores/useCanvasStore";
 import { pushToast } from "@/stores/useToastStore";
 
-const MIN_EXPORT_EDGE = 64;
-const MAX_EXPORT_EDGE = 4096;
-const DEFAULT_JPEG_QUALITY = 92;
+// const MIN_EXPORT_EDGE = 64;
+// const MAX_EXPORT_EDGE = 4096;
+// const DEFAULT_JPEG_QUALITY = 92;
 
-const EXPORT_FORMAT_OPTIONS: Array<{
-  format: CanvasExportFormat;
-  label: string;
-  detail: string;
-  icon: string;
-}> = [
-  {
-    format: "jpg",
-    label: "JPG",
-    detail: "Smaller file size",
-    icon: "solar:camera-minimalistic-linear",
-  },
-  {
-    format: "png",
-    label: "PNG",
-    detail: "Lossless quality",
-    icon: "solar:gallery-circle-linear",
-  },
-];
+// const EXPORT_FORMAT_OPTIONS: Array<{
+//   format: CanvasExportFormat;
+//   label: string;
+//   detail: string;
+//   icon: string;
+// }> = [
+//   {
+//     format: "jpg",
+//     label: "JPG",
+//     detail: "Smaller file size",
+//     icon: "solar:camera-minimalistic-linear",
+//   },
+//   {
+//     format: "png",
+//     label: "PNG",
+//     detail: "Lossless quality",
+//     icon: "solar:gallery-circle-linear",
+//   },
+// ];
 
-const SHARE_TARGETS = [
-  {
-    id: "whatsapp",
-    label: "WhatsApp",
-    detail: "Download plus chat share",
-    icon: "ic:baseline-whatsapp",
-    iconClassName: "text-[#25D366]",
-  },
-  {
-    id: "twitter",
-    label: "X / Twitter",
-    detail: "Download plus composer",
-    icon: "ri:twitter-x-fill",
-    iconClassName: "text-title-color",
-  },
-  {
-    id: "pinterest",
-    label: "Pinterest",
-    detail: "Download plus manual upload",
-    icon: "mdi:pinterest",
-    iconClassName: "text-[#E60023]",
-  },
-  {
-    id: "instagram",
-    label: "Instagram",
-    detail: "Download plus manual upload",
-    icon: "mdi:instagram",
-    iconClassName: "text-[#E4405F]",
-  },
-] as const;
+// const SHARE_TARGETS = [
+//   {
+//     id: "whatsapp",
+//     label: "WhatsApp",
+//     detail: "Download plus chat share",
+//     icon: "ic:baseline-whatsapp",
+//     iconClassName: "text-[#25D366]",
+//   },
+//   {
+//     id: "twitter",
+//     label: "X / Twitter",
+//     detail: "Download plus composer",
+//     icon: "ri:twitter-x-fill",
+//     iconClassName: "text-title-color",
+//   },
+//   {
+//     id: "pinterest",
+//     label: "Pinterest",
+//     detail: "Download plus manual upload",
+//     icon: "mdi:pinterest",
+//     iconClassName: "text-[#E60023]",
+//   },
+//   {
+//     id: "instagram",
+//     label: "Instagram",
+//     detail: "Download plus manual upload",
+//     icon: "mdi:instagram",
+//     iconClassName: "text-[#E4405F]",
+//   },
+// ] as const;
 
-type ShareTargetId = (typeof SHARE_TARGETS)[number]["id"];
+// type ShareTargetId = (typeof SHARE_TARGETS)[number]["id"];
 
-const clampDimension = (value: number, fallback: number) => {
-  if (!Number.isFinite(value)) {
-    return fallback;
-  }
+// const clampDimension = (value: number, fallback: number) => {
+//   if (!Number.isFinite(value)) {
+//     return fallback;
+//   }
 
-  return Math.min(
-    MAX_EXPORT_EDGE,
-    Math.max(MIN_EXPORT_EDGE, Math.round(value)),
-  );
-};
+//   return Math.min(
+//     MAX_EXPORT_EDGE,
+//     Math.max(MIN_EXPORT_EDGE, Math.round(value)),
+//   );
+// };
 
-const openPopup = (url: string) => {
-  window.open(url, "_blank", "noopener,noreferrer");
-};
+// const openPopup = (url: string) => {
+//   window.open(url, "_blank", "noopener,noreferrer");
+// };
 
-const getFallbackShareState = (
-  targetId: ShareTargetId,
-  shareText: string,
-  filename: string,
-) => {
-  const encodedText = encodeURIComponent(shareText);
+// const getFallbackShareState = (
+//   targetId: ShareTargetId,
+//   shareText: string,
+//   filename: string,
+// ) => {
+//   const encodedText = encodeURIComponent(shareText);
 
-  switch (targetId) {
-    case "whatsapp":
-      return {
-        url: `https://wa.me/?text=${encodedText}`,
-        statusMessage: `Downloaded ${filename}. Attach it in WhatsApp after the chat opens.`,
-      };
-    case "twitter":
-      return {
-        url: `https://twitter.com/intent/tweet?text=${encodedText}`,
-        statusMessage: `Downloaded ${filename}. Add the image manually in the X composer that opens.`,
-      };
-    case "pinterest":
-      return {
-        url: "https://www.pinterest.com/pin-builder/",
-        statusMessage: `Downloaded ${filename}. Upload it manually in Pinterest after the page opens.`,
-      };
-    case "instagram":
-      return {
-        url: "https://www.instagram.com/",
-        statusMessage: `Downloaded ${filename}. Upload it manually from your downloads in Instagram.`,
-      };
-  }
-};
+//   switch (targetId) {
+//     case "whatsapp":
+//       return {
+//         url: `https://wa.me/?text=${encodedText}`,
+//         statusMessage: `Downloaded ${filename}. Attach it in WhatsApp after the chat opens.`,
+//       };
+//     case "twitter":
+//       return {
+//         url: `https://twitter.com/intent/tweet?text=${encodedText}`,
+//         statusMessage: `Downloaded ${filename}. Add the image manually in the X composer that opens.`,
+//       };
+//     case "pinterest":
+//       return {
+//         url: "https://www.pinterest.com/pin-builder/",
+//         statusMessage: `Downloaded ${filename}. Upload it manually in Pinterest after the page opens.`,
+//       };
+//     case "instagram":
+//       return {
+//         url: "https://www.instagram.com/",
+//         statusMessage: `Downloaded ${filename}. Upload it manually from your downloads in Instagram.`,
+//       };
+//   }
+// };
 
-const tryNativeShare = async (file: File, shareText: string) => {
-  if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
-    return false;
-  }
+// const tryNativeShare = async (file: File, shareText: string) => {
+//   if (
+//     typeof navigator === "undefined" ||
+//     typeof navigator.share !== "function"
+//   ) {
+//     return false;
+//   }
 
-  const shareData: ShareData = {
-    files: [file],
-    title: shareText,
-    text: shareText,
-  };
+//   const shareData: ShareData = {
+//     files: [file],
+//     title: shareText,
+//     text: shareText,
+//   };
 
-  if (typeof navigator.canShare === "function" && !navigator.canShare(shareData)) {
-    return false;
-  }
+//   if (
+//     typeof navigator.canShare === "function" &&
+//     !navigator.canShare(shareData)
+//   ) {
+//     return false;
+//   }
 
-  await navigator.share(shareData);
-  return true;
-};
+//   await navigator.share(shareData);
+//   return true;
+// };
 
 export const SaveControl = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -288,7 +295,10 @@ export const SaveControl = () => {
       try {
         const shareText = exportName.trim() || sourceName;
         const exportResult = await createCanvasExport(buildExportOptions());
-        const usedNativeShare = await tryNativeShare(exportResult.file, shareText);
+        const usedNativeShare = await tryNativeShare(
+          exportResult.file,
+          shareText,
+        );
 
         if (usedNativeShare) {
           setIsOpen(false);
@@ -315,7 +325,9 @@ export const SaveControl = () => {
         }
 
         const message =
-          error instanceof Error ? error.message : "Unable to prepare the share.";
+          error instanceof Error
+            ? error.message
+            : "Unable to prepare the share.";
         setErrorMessage(message);
         pushToast({
           variant: "error",
@@ -376,7 +388,8 @@ export const SaveControl = () => {
                 </span>
               </div>
               <p className="text-sm text-secondary-text">
-                Choose the file name, output size, compression, and a quick share path.
+                Choose the file name, output size, compression, and a quick
+                share path.
               </p>
             </section>
 
@@ -528,7 +541,8 @@ export const SaveControl = () => {
                 </p>
                 {showStretchWarning ? (
                   <p className="mt-3 rounded-xl bg-[#FFF6E5] px-3 py-2 text-xs text-[#8A5A10]">
-                    The ratio is unlocked, so this export will stretch the current design.
+                    The ratio is unlocked, so this export will stretch the
+                    current design.
                   </p>
                 ) : null}
               </div>
@@ -557,12 +571,14 @@ export const SaveControl = () => {
                       className="mt-4 w-full accent-accent"
                     />
                     <p className="mt-3 text-xs text-secondary-text">
-                      Lower quality creates a smaller JPG. Higher quality keeps more detail.
+                      Lower quality creates a smaller JPG. Higher quality keeps
+                      more detail.
                     </p>
                   </>
                 ) : (
                   <p className="mt-3 text-xs text-secondary-text">
-                    PNG exports are lossless, so compression quality does not apply.
+                    PNG exports are lossless, so compression quality does not
+                    apply.
                   </p>
                 )}
               </div>
@@ -580,7 +596,10 @@ export const SaveControl = () => {
                 disabled={isBusy}
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-sm font-bold text-bg transition hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
               >
-                <Icon icon="solar:download-minimalistic-linear" className="text-lg" />
+                <Icon
+                  icon="solar:download-minimalistic-linear"
+                  className="text-lg"
+                />
                 {isBusy ? "Preparing export..." : "Download image"}
               </button>
             </section>
@@ -616,7 +635,8 @@ export const SaveControl = () => {
                 ))}
               </div>
               <p className="text-xs text-secondary-text">
-                Native file sharing opens first when the browser supports it. Otherwise the image downloads and a platform fallback opens.
+                Native file sharing opens first when the browser supports it.
+                Otherwise the image downloads and a platform fallback opens.
               </p>
             </section>
 

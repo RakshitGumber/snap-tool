@@ -1,14 +1,15 @@
-// Deprectated
 import { useEffect, useEffectEvent, type RefObject } from "react";
 
-export const useDismissibleLayer = <TElement extends HTMLElement>({
+interface IPanelBlurEvent {
+  containerRef: RefObject<HTMLElement | null>;
+  isOpen: boolean;
+  onDismiss: () => void;
+}
+
+export const usePanelBlur: React.FC<IPanelBlurEvent> = ({
   containerRef,
   isOpen,
   onDismiss,
-}: {
-  containerRef: RefObject<TElement | null>;
-  isOpen: boolean;
-  onDismiss: () => void;
 }) => {
   const handleDismiss = useEffectEvent(onDismiss);
 

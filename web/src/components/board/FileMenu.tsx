@@ -1,3 +1,5 @@
+// Deprecated
+
 import { useRef } from "react";
 
 import { ThemeButton } from "@/components/ui/ThemeButton";

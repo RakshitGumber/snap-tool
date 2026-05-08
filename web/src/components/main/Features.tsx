@@ -1,3 +1,4 @@
+// Deprecated
 import { Icon } from "@iconify/react";
 import { motion, type Variants } from "framer-motion";
 

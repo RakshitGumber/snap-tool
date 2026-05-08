@@ -1,7 +1,7 @@
 import { FileMenu } from "../ui/FileMenu";
 import { NameInput } from "../ui/NameInput";
 import { ExportButton } from "../ui/ExportButton";
-// import { PresetControl } from "./PresetControl";
+import { PresetButton } from "../ui/PresetButton";
 
 export const TopPanel = () => {
   return (
@@ -11,7 +11,7 @@ export const TopPanel = () => {
         <NameInput />
       </div>
       <div className="flex items-center gap-4 px-2.25">
-        {/* <PresetControl /> */}
+        <PresetButton />
         <ExportButton />
       </div>
     </header>

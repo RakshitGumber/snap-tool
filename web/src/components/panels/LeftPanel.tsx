@@ -15,11 +15,11 @@ const sections: LeftPanelSection[] = [
     title: "main",
     icon: "mingcute:grid-2-fill",
   },
-  {
-    id: "images",
-    title: "images",
-    icon: "mingcute:folder-open-2-line",
-  },
+  // {
+  //   id: "images",
+  //   title: "images",
+  //   icon: "mingcute:folder-open-2-line",
+  // },
   // {
   //   id: "background",
   //   title: "bg",

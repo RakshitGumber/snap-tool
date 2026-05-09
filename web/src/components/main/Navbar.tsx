@@ -5,7 +5,7 @@ import { Icon } from "@iconify/react";
 
 import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useState } from "react";
-import { useRouter } from "@/stores/useRouter";
+// import { useRouter } from "@/stores/useRouter";
 
 const parentVariants = {
   visible: { opacity: 1, y: 0 },
@@ -20,7 +20,7 @@ const parentVariants = {
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
-  const route = useRouter((state) => state.route);
+  // const route = useRouter((state) => state.route);
   const [hidden, setHidden] = useState(false);
   const [prevScroll, setPrevScroll] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -139,7 +139,7 @@ export const Navbar = () => {
         {menuOpen ? (
           <div className="absolute top-full left-0 right-0 lg:hidden">
             <div className="rounded-b-2xl bg-card-bg p-3 shadow-sm">
-              <ul className="flex flex-col gap-1">
+              {/* <ul className="flex flex-col gap-1">
                 {navItems.map((item) => (
                   <li key={item.to}>
                     <Link
@@ -155,7 +155,7 @@ export const Navbar = () => {
                     </Link>
                   </li>
                 ))}
-              </ul>
+              </ul> */}
               <div className="mt-3 flex items-center gap-2 border-t border-border-color p-2 md:hidden">
                 <a
                   href="https://github.com/RakshitGumber/snap-tool"

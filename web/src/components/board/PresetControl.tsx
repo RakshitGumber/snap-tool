@@ -144,7 +144,8 @@ export const PresetControl = () => {
           <div className="space-y-4 sm:space-y-5">
             {presetGroups.map((group) => {
               const isActiveGroup =
-                activePreset.kind === "preset" && group.id === activePreset.group.id;
+                activePreset.kind === "preset" &&
+                group.id === activePreset.group.id;
 
               return (
                 <section key={group.id} className="space-y-3">

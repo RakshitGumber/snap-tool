@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import * as PIXI from "pixi.js";
 
 import { getBackgroundPresetById } from "@/config/backgroundPresets";
-import { draggableBox } from "@/libs/draggableBox";
-
+import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import { useCanvasStore } from "@/new_stores/useCanvasStore";
+
+import { CenteredCard } from "../ui/CenteredCard";
+
+type ResizeState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  widthRatio: number;
+};
 
 export const Canvas = () => {
   const boardRef = useRef<HTMLDivElement | null>(null);
-  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const resizeStateRef = useRef<ResizeState | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
-  const canvasSize = useCanvasStore((state) => state.canvasSize);
-  const activeBackgroundId = useCanvasStore(
-    (state) => state.activeBackgroundId,
-  );
+
+  const { canvasSize, activeCard, resizeActiveCard, activeBackgroundId } =
+    useCanvasStore((state) => state);
+
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
 
   useEffect(() => {
@@ -52,79 +59,57 @@ export const Canvas = () => {
     return {
       width: canvasSize.width * scale,
       height: canvasSize.height * scale,
+      scale,
     };
   }, [boardSize.height, boardSize.width, canvasSize.height, canvasSize.width]);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const handlePointerMove = (event: PointerEvent) => {
+      const resizeState = resizeStateRef.current;
 
-    const app = new PIXI.Application();
-    let isCancelled = false;
-    let isInitialized = false;
-    let isDestroyed = false;
+      if (!resizeState || !activeCard || previewSize.scale <= 0) return;
 
-    const destroyApp = () => {
-      if (isDestroyed) return;
+      const preset = getLinkCardPresetById(activeCard.presetId);
+      const deltaX = (event.clientX - resizeState.startX) / previewSize.scale;
+      const deltaY = (event.clientY - resizeState.startY) / previewSize.scale;
+      const directionalDelta = Math.max(deltaX, deltaY * preset.aspectRatio);
+      const nextWidthRatio =
+        resizeState.widthRatio + (directionalDelta * 2) / canvasSize.width;
 
-      isDestroyed = true;
-      app.destroy(true, true);
+      resizeActiveCard(nextWidthRatio);
     };
 
-    async function init() {
-      await app.init({
-        width: canvasSize.width,
-        height: canvasSize.height,
-        backgroundAlpha: 0,
-        autoDensity: true,
-        resolution: window.devicePixelRatio || 1,
-      });
+    const handlePointerUp = (event: PointerEvent) => {
+      const resizeState = resizeStateRef.current;
 
-      isInitialized = true;
+      if (!resizeState || resizeState.pointerId !== event.pointerId) return;
 
-      if (isCancelled) {
-        destroyApp();
-        return;
-      }
+      resizeStateRef.current = null;
+    };
 
-      app.canvas.style.display = "block";
-      app.canvas.style.width = "100%";
-      app.canvas.style.height = "100%";
-
-      canvasRef.current?.appendChild(app.canvas);
-
-      const { items, updateItemPosition } = useCanvasStore.getState();
-
-      items.forEach((item) => {
-        const rect = new PIXI.Graphics();
-
-        rect.rect(-40, -40, 80, 80);
-        rect.fill(item.color);
-
-        rect.x = item.x;
-        rect.y = item.y;
-
-        draggableBox(rect, {
-          onDragMove: (x, y) => {
-            updateItemPosition(item.id, x, y);
-          },
-        });
-
-        app.stage.addChild(rect);
-      });
-    }
-
-    const initPromise = init();
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
 
     return () => {
-      isCancelled = true;
-
-      if (isInitialized) {
-        destroyApp();
-      } else {
-        void initPromise.then(destroyApp);
-      }
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [canvasSize.height, canvasSize.width]);
+  }, [activeCard, canvasSize.width, previewSize.scale, resizeActiveCard]);
+
+  const handleResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!activeCard) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    resizeStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      widthRatio: activeCard.widthRatio,
+    };
+  };
 
   return (
     <div
@@ -132,15 +117,26 @@ export const Canvas = () => {
       className="flex flex-1 items-center justify-center overflow-hidden p-6"
     >
       <div
-        ref={canvasRef}
-        aria-label={`${activeBackground.label} canvas background`}
         style={{
           width: previewSize.width,
           height: previewSize.height,
           background: activeBackground.background,
         }}
-        className="overflow-hidden shadow-lg"
-      />
+        className="relative overflow-hidden shadow-lg"
+      >
+        {activeCard ? (
+          <CenteredCard
+            card={activeCard}
+            canvasWidth={canvasSize.width}
+            scale={previewSize.scale}
+            onResizeStart={handleResizeStart}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm font-medium text-secondary-text">
+            Add a link or screenshot from Images
+          </div>
+        )}
+      </div>
     </div>
   );
 };

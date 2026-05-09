@@ -43,16 +43,16 @@ export const FileMenu = () => {
         </div>
       </button>
       {isOpen && (
-        <div className="absolute top-full z-50 mt-2 bg-panel-bg min-w-48 rounded-lg p-2 border-px border-border-color">
+        <div className="absolute top-full z-50 mt-2 bg-panel-bg min-w-48 rounded-lg p-3 border-px border-border-color gap-3">
           <button
             onClick={handleGoHome}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
+            className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
           >
             Go Home
           </button>
           <button
             onClick={handleClearCanvas}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
+            className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
           >
             Clear canvas
           </button>

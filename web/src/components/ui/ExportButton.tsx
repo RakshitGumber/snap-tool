@@ -558,7 +558,7 @@ export const ExportButton = () => {
   return (
     <div className="relative">
       <button
-        className="gap-2 flex px-5 py-3 items-center text-bg bg-accent rounded-md"
+        className="gap-2 flex px-5 py-2.5 items-center text-bg bg-accent rounded-md"
         onClick={() => handleDownload()}
       >
         <div className="text-base leading-3 font-semibold">Export</div>

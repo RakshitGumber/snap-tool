@@ -44,7 +44,7 @@ export const LeftPanel = () => {
   ];
 
   return (
-    <aside className="h-full bg-panel-bg flex flex-col items-center justify-start gap-4 p-4 border-r border-border-color">
+    <aside className="h-full bg-panel-bg flex flex-col items-center justify-start w-18.5 p-4 border-r border-border-color">
       {actions.map((action) => (
         <button
           key={action.id}
@@ -61,11 +61,8 @@ export const LeftPanel = () => {
           )}
         >
           <div className="px-1.5 py-2">
-            <Icon icon={action.icon} fontSize={30} />
+            <Icon icon={action.icon} fontSize={20} />
           </div>
-          <span className="text-xs font-medium tracking-wide leading-3.25">
-            {action.title}
-          </span>
         </button>
       ))}
     </aside>

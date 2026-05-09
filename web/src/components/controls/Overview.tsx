@@ -11,9 +11,7 @@ export const Overview = () => {
         />
         <span className="text-xl font-medium tracking-wide">Overview</span>
       </div>
-      <div className="flex flex-col flex-1 px-4">
-        Hello{/* Add properties */}
-      </div>
+      <div className="flex flex-col flex-1 px-4"></div>
     </>
   );
 };

@@ -1,10 +1,7 @@
 import { Icon } from "@iconify/react";
 import { clsx } from "clsx";
 
-import {
-  type PanelSectionId,
-  usePanelStore,
-} from "@/new_stores/usePanelStore";
+import { type PanelSectionId, usePanelStore } from "@/new_stores/usePanelStore";
 
 type LeftPanelSection = {
   id: PanelSectionId;
@@ -23,16 +20,16 @@ const sections: LeftPanelSection[] = [
     title: "images",
     icon: "mingcute:folder-open-2-line",
   },
-  {
-    id: "background",
-    title: "bg",
-    icon: "mingcute:background-fill",
-  },
-  {
-    id: "text",
-    title: "text",
-    icon: "mingcute:cursor-text-fill",
-  },
+  // {
+  //   id: "background",
+  //   title: "bg",
+  //   icon: "mingcute:background-fill",
+  // },
+  // {
+  //   id: "text",
+  //   title: "text",
+  //   icon: "mingcute:cursor-text-fill",
+  // },
 ];
 
 export const LeftPanel = () => {

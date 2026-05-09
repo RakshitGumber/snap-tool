@@ -4,17 +4,15 @@
 - Canvas.tsx - Review Required
 - CanvasBackgroundLayer.tsx - Review Required
 - exportCanvasImage.ts - Review Required
-- objectDrag.test.ts - Review Required
 - objectDrag.ts - Review Required
 - objects.ts - Review Required
-- Board.tsx - Review Required
 - BackgroundPanel.tsx - Review Required
 - BackgroundPreview.tsx - Review Required
 - CanvasTitleField.tsx - Deprecated
 - Board/FileMenu.tsx - Deprecated
 - HistoryControls.tsx - Review Required
 - OverviewPanel.tsx - Review Required
-- PresetControl.tsx - Review Required
+- PresetControl.tsx - Deprecated
 - SaveControl.tsx - Deprecate
 - Sidebar.tsx - Review Required
 - TextPanel.tsx - Review Required

@@ -1,14 +1,16 @@
-import { BoardSidebar } from "@/components/board/Sidebar";
 import { TopPanel } from "@/components/panels/TopPanel";
 import { Canvas } from "@/canvas/Canvas";
+import { LeftPanel } from "./panels/LeftPanel";
+import { RightPanel } from "./panels/RightPanel";
 
 export const Board = () => {
   return (
     <main className="flex h-screen flex-col">
       <TopPanel />
       <div className="flex flex-1">
-        <BoardSidebar />
+        <LeftPanel />
         <Canvas />
+        <RightPanel />
       </div>
     </main>
   );

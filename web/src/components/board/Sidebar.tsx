@@ -1,3 +1,4 @@
+// Deprecated
 import { useMemo, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import clsx from "clsx";

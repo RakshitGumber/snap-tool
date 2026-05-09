@@ -79,7 +79,9 @@ const isStoredCard = (value: unknown): value is LinkCardCanvasItem | null => {
   );
 };
 
-const normalizeSnapshot = (value: unknown): LightweightCanvasSnapshot | null => {
+const normalizeSnapshot = (
+  value: unknown,
+): LightweightCanvasSnapshot | null => {
   if (!value || typeof value !== "object") return null;
 
   const snapshot = value as Partial<LightweightCanvasSnapshot>;

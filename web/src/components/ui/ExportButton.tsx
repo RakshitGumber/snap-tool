@@ -64,7 +64,9 @@ const createFillStyle = (
   stops.forEach((stop, index) => {
     const stopMatch = stop.match(/^(.*)\s+([\d.]+)%$/);
     gradient.addColorStop(
-      stopMatch ? Number(stopMatch[2]) / 100 : index / Math.max(1, stops.length - 1),
+      stopMatch
+        ? Number(stopMatch[2]) / 100
+        : index / Math.max(1, stops.length - 1),
       stopMatch ? stopMatch[1] : stop,
     );
   });
@@ -91,7 +93,13 @@ const roundedRect = (
   context.closePath();
 };
 
-const getLayerBox = (box: LinkCardBox, x: number, y: number, width: number, height: number) => ({
+const getLayerBox = (
+  box: LinkCardBox,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
   x: x + box.x * width,
   y: y + box.y * height,
   width: box.width * width,
@@ -113,7 +121,9 @@ const getTextValue = (card: LinkCardCanvasItem, slot: LinkCardSlot) => {
     case "hostname":
       return "hostname" in metadata ? metadata.hostname : "";
     case "startTimeLabel":
-      return "startTimeLabel" in metadata ? metadata.startTimeLabel ?? "" : "";
+      return "startTimeLabel" in metadata
+        ? (metadata.startTimeLabel ?? "")
+        : "";
     default:
       return "";
   }
@@ -126,7 +136,7 @@ const getImageValue = (card: LinkCardCanvasItem, slot: LinkCardSlot) => {
     case "thumbnailUrl":
       return "thumbnailUrl" in metadata ? metadata.thumbnailUrl : "";
     case "avatarUrl":
-      return "avatarUrl" in metadata ? metadata.avatarUrl ?? "" : "";
+      return "avatarUrl" in metadata ? (metadata.avatarUrl ?? "") : "";
     case "openGraphUrl":
       return "openGraphUrl" in metadata ? metadata.openGraphUrl : "";
     case "faviconUrl":
@@ -227,7 +237,10 @@ const truncateText = (
 
   let nextText = text;
 
-  while (nextText.length > 0 && context.measureText(`${nextText}...`).width > maxWidth) {
+  while (
+    nextText.length > 0 &&
+    context.measureText(`${nextText}...`).width > maxWidth
+  ) {
     nextText = nextText.slice(0, -1);
   }
 
@@ -267,7 +280,9 @@ const drawText = (
 
   lines.slice(0, maxLines).forEach((currentLine, index) => {
     const isLastLine = index === maxLines - 1;
-    const value = isLastLine ? truncateText(context, currentLine, box.width) : currentLine;
+    const value = isLastLine
+      ? truncateText(context, currentLine, box.width)
+      : currentLine;
     const x =
       style.align === "center"
         ? box.x + box.width / 2
@@ -386,13 +401,26 @@ const drawCard = async (
         box.x,
         box.y,
       );
-      roundedRect(context, box.x, box.y, box.width, box.height, (layer.radiusRatio ?? 0) * cardWidth);
+      roundedRect(
+        context,
+        box.x,
+        box.y,
+        box.width,
+        box.height,
+        (layer.radiusRatio ?? 0) * cardWidth,
+      );
       context.fill();
       context.restore();
     }
 
     if (layer.kind === "image") {
-      await drawImageLayer(context, layer, card, box, (layer.radiusRatio ?? 0) * cardWidth);
+      await drawImageLayer(
+        context,
+        layer,
+        card,
+        box,
+        (layer.radiusRatio ?? 0) * cardWidth,
+      );
     }
 
     if (layer.kind === "text") {
@@ -411,12 +439,24 @@ const drawCard = async (
       if (!layer.hiddenWhenEmpty || value) {
         context.save();
         context.fillStyle = layer.style.background;
-        roundedRect(context, box.x, box.y, box.width, box.height, layer.style.radiusRatio * cardWidth);
+        roundedRect(
+          context,
+          box.x,
+          box.y,
+          box.width,
+          box.height,
+          layer.style.radiusRatio * cardWidth,
+        );
         context.fill();
         drawText(
           context,
           value,
-          { ...box, y: box.y + (box.height - cardWidth * layer.style.fontSizeRatio * 1.15) / 2 },
+          {
+            ...box,
+            y:
+              box.y +
+              (box.height - cardWidth * layer.style.fontSizeRatio * 1.15) / 2,
+          },
           { ...layer.style, align: "center" },
           cardWidth,
         );
@@ -447,7 +487,14 @@ const drawCard = async (
         if (y + pillHeight > box.y + box.height) return;
 
         context.fillStyle = layer.item.background;
-        roundedRect(context, x, y, pillWidth, pillHeight, layer.item.radiusRatio * cardWidth);
+        roundedRect(
+          context,
+          x,
+          y,
+          pillWidth,
+          pillHeight,
+          layer.item.radiusRatio * cardWidth,
+        );
         context.fill();
         context.fillStyle = layer.item.color;
         context.fillText(stat, x + paddingX, y + paddingY);
@@ -467,12 +514,8 @@ const drawCard = async (
 export const ExportButton = () => {
   const handleDownload = useCallback(async () => {
     try {
-      const {
-        activeBackgroundId,
-        activeCard,
-        canvasSize,
-        cardShadowSize,
-      } = useCanvasStore.getState();
+      const { activeBackgroundId, activeCard, canvasSize, cardShadowSize } =
+        useCanvasStore.getState();
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
 

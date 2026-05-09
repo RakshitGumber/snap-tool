@@ -29,7 +29,7 @@ export const Hero = () => {
           Releasing a new version everyday.
         </div>
         <div className="flex flex-col gap-10">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans tracking-wider font-bold text-title-color capitalize leading-snug">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans w-4/5 tracking-wider font-bold text-title-color capitalize leading-snug">
             Minimalist solution to creating your next post
           </h1>
           <span className="text-lg lg:text-2xl text px-1 w-full md:w-4/5 lg:w-3/4 mx-auto lg:mx-0">
@@ -42,7 +42,7 @@ export const Hero = () => {
                 Create Now
               </button>
             </Link>
-            <Link to="/about">
+            {/* <Link to="/about">
               <button className="lg:px-6 lg:py-3 px-3 py-2 sm:text-xl font-semibold rounded-lg cursor-pointer capitalize flex gap-2 items-center hover:text-title-color">
                 learn more{" "}
                 <Icon
@@ -50,13 +50,13 @@ export const Hero = () => {
                   className="text-accent mb-1"
                 />
               </button>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </motion.div>
-      <div className="hidden lg:block">
+      {/* <div className="hidden lg:block">
         <HeroAnimation />
-      </div>
+      </div> */}
     </main>
   );
 };

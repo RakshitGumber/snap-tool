@@ -12,11 +12,11 @@ const parentVariants = {
   hidden: { opacity: 0, y: "-4rem" },
 };
 
-const navItems = [
-  { label: "Home", to: "/" },
-  { label: "About", to: "/about" },
-  { label: "Roadmap", to: "/roadmap" },
-];
+// const navItems = [
+//   { label: "Home", to: "/" },
+//   { label: "About", to: "/about" },
+//   { label: "Roadmap", to: "/roadmap" },
+// ];
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -87,7 +87,7 @@ export const Navbar = () => {
             </h1>
           </Link>
         </div>
-        <ul className="hidden lg:flex gap-1 px-8">
+        {/* <ul className="hidden lg:flex gap-1 px-8">
           {navItems.map((item) => (
             <li key={item.to} className="flex rounded-lg">
               <Link
@@ -102,11 +102,11 @@ export const Navbar = () => {
               </Link>
             </li>
           ))}
-        </ul>
+        </ul> */}
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
-          <div className="hidden md:flex gap-2">
+          {/* <div className="hidden md:flex gap-2">
             <ThemeButton />
-          </div>
+          </div> */}
           <Link
             to="/create"
             className="font-sans px-3 py-2 rounded-lg gap-1 flex items-center justify-center font-bold tracking-wider text-title-color cursor-pointer hover:bg-text-color/20"

@@ -1,3 +1,4 @@
+// Removing
 import {
   memo,
   useEffect,
@@ -93,7 +94,10 @@ const getObjectGuideBounds = (
   measuredBounds?: Partial<Pick<CanvasObjectBounds, "width" | "height">>,
 ) =>
   object.kind === "text"
-    ? getObjectBounds(object, measuredBounds ?? measureTextItemBounds(object.item))
+    ? getObjectBounds(
+        object,
+        measuredBounds ?? measureTextItemBounds(object.item),
+      )
     : getObjectBounds(object, measuredBounds);
 
 export const Canvas = memo(function BoardCanvas() {
@@ -106,7 +110,9 @@ export const Canvas = memo(function BoardCanvas() {
   const capturedPointerTargetRef = useRef<PointerCaptureTarget | null>(null);
   const frameRequestRef = useRef<number | null>(null);
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
-  const objectElementRefs = useRef<Record<string, HTMLDivElement | HTMLButtonElement | null>>({});
+  const objectElementRefs = useRef<
+    Record<string, HTMLDivElement | HTMLButtonElement | null>
+  >({});
   const textEditSnapshotRef = useRef<{ id: string; text: string } | null>(null);
   const [dropTargetActive, setDropTargetActive] = useState(false);
   const [canvasScale, setCanvasScale] = useState(1);
@@ -128,14 +134,18 @@ export const Canvas = memo(function BoardCanvas() {
   const clearSelection = useEditorUiStore((state) => state.clearSelection);
   const setEditingTextId = useEditorUiStore((state) => state.setEditingTextId);
   const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
-  const moveObjectsOnCanvas = useCanvasStore((state) => state.moveObjectsOnCanvas);
+  const moveObjectsOnCanvas = useCanvasStore(
+    (state) => state.moveObjectsOnCanvas,
+  );
   const resizeImageOnCanvas = useCanvasStore(
     (state) => state.resizeImageOnCanvas,
   );
   const updateCanvasBackgroundImage = useCanvasStore(
     (state) => state.updateCanvasBackgroundImage,
   );
-  const updateTextOnCanvas = useCanvasStore((state) => state.updateTextOnCanvas);
+  const updateTextOnCanvas = useCanvasStore(
+    (state) => state.updateTextOnCanvas,
+  );
   const removeSelectedObjects = useCanvasStore(
     (state) => state.removeSelectedObjects,
   );
@@ -172,7 +182,8 @@ export const Canvas = memo(function BoardCanvas() {
       ? selectedObjects[0].id
       : null;
   const editingText =
-    editingTextId && objectByKey[getObjectRefKey(createObjectRef("text", editingTextId))]
+    editingTextId &&
+    objectByKey[getObjectRefKey(createObjectRef("text", editingTextId))]
       ? objectByKey[getObjectRefKey(createObjectRef("text", editingTextId))]
       : null;
   const backgroundAssetId =
@@ -306,7 +317,11 @@ export const Canvas = memo(function BoardCanvas() {
   }, [canvasShell]);
 
   useLayoutEffect(() => {
-    if (!editingText || editingText.kind !== "text" || !inlineEditorRef.current) {
+    if (
+      !editingText ||
+      editingText.kind !== "text" ||
+      !inlineEditorRef.current
+    ) {
       return;
     }
 
@@ -363,7 +378,9 @@ export const Canvas = memo(function BoardCanvas() {
   );
 
   const finishActiveDrag = useEffectEvent(
-    ({ releasePointerCapture = true }: { releasePointerCapture?: boolean } = {}) => {
+    ({
+      releasePointerCapture = true,
+    }: { releasePointerCapture?: boolean } = {}) => {
       const pointerId = activePointerIdRef.current;
       const pointerTarget = capturedPointerTargetRef.current;
       const hadDragState =
@@ -544,7 +561,8 @@ export const Canvas = memo(function BoardCanvas() {
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) =>
       handleGlobalPointerMove(event);
-    const handlePointerUp = (event: PointerEvent) => handleGlobalPointerFinish(event);
+    const handlePointerUp = (event: PointerEvent) =>
+      handleGlobalPointerFinish(event);
     const handlePointerCancel = (event: PointerEvent) =>
       handleGlobalPointerFinish(event);
     const handleBlur = () => handleWindowBlur();
@@ -621,9 +639,7 @@ export const Canvas = memo(function BoardCanvas() {
         return;
       }
 
-      const activeSelection = isSelected
-        ? selectedObjects
-        : [object.ref];
+      const activeSelection = isSelected ? selectedObjects : [object.ref];
 
       if (!isSelected) {
         if (object.kind === "image") {
@@ -765,9 +781,15 @@ export const Canvas = memo(function BoardCanvas() {
   };
 
   const handleInlineEditorKeyDown = (
-    event: ReactPointerEvent<HTMLTextAreaElement> | React.KeyboardEvent<HTMLTextAreaElement>,
+    event:
+      | ReactPointerEvent<HTMLTextAreaElement>
+      | React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
-    if ("key" in event && event.key === "Escape" && editingText?.kind === "text") {
+    if (
+      "key" in event &&
+      event.key === "Escape" &&
+      editingText?.kind === "text"
+    ) {
       const snapshot = textEditSnapshotRef.current;
       if (snapshot && snapshot.id === editingText.item.id) {
         updateTextDraft({ text: snapshot.text });
@@ -887,7 +909,9 @@ export const Canvas = memo(function BoardCanvas() {
                       onLostPointerCapture={handlePointerCaptureLost}
                       className={clsx(
                         "h-full w-full overflow-hidden rounded-lg outline-2 outline-transparent",
-                        object.item.isMovementLocked ? "cursor-default" : "cursor-grab",
+                        object.item.isMovementLocked
+                          ? "cursor-default"
+                          : "cursor-grab",
                         isSelected && "outline-accent",
                       )}
                       style={{ touchAction: "none" }}
@@ -909,7 +933,9 @@ export const Canvas = memo(function BoardCanvas() {
                       <button
                         type="button"
                         aria-label="Resize image"
-                        onPointerDown={handleImageResizePointerDown(object.item)}
+                        onPointerDown={handleImageResizePointerDown(
+                          object.item,
+                        )}
                         onLostPointerCapture={handlePointerCaptureLost}
                         className="absolute h-4 w-4 rounded-full border-2 border-white bg-accent shadow-md"
                         style={{
@@ -972,7 +998,9 @@ export const Canvas = memo(function BoardCanvas() {
                       onDoubleClick={() => handleStartTextEditing(object.item)}
                       className={clsx(
                         "rounded-xl bg-transparent px-2 py-1 text-left outline-2 outline-transparent",
-                        object.item.isMovementLocked ? "cursor-default" : "cursor-grab",
+                        object.item.isMovementLocked
+                          ? "cursor-default"
+                          : "cursor-grab",
                         isSelected && "outline-accent",
                       )}
                       style={{

@@ -86,6 +86,7 @@ export const PresetButton = () => {
       {isOpen && (
         <div className="absolute top-full mt-2 bg-panel-bg rounded-lg p-2 border border-border-color w-xl right-0">
           <div className="space-y-4 sm:space-y-5">
+            {/* Update this later */}
             {presetGroups.map((group) => {
               return (
                 <section key={group.id} className="space-y-3">

@@ -1,5 +1,5 @@
 import { TopPanel } from "@/components/panels/TopPanel";
-import { Canvas } from "@/canvas/Canvas";
+import { Canvas } from "./panels/Canvas";
 import { LeftPanel } from "./panels/LeftPanel";
 import { RightPanel } from "./panels/RightPanel";
 

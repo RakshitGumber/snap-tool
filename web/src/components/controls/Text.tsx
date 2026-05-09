@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 
 import { BACKGROUND_PRESET_CATEGORIES } from "@/config/backgroundPresets";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 export const Text = () => {
   const setActiveBackground = useCanvasStore(

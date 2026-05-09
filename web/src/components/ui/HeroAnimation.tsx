@@ -1,4 +1,3 @@
-// Maybe deprecate this later
 import { useEffect, useState } from "react";
 import { motion, type Variants, useAnimationControls } from "framer-motion";
 

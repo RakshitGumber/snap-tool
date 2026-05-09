@@ -1,6 +1,6 @@
 import { LinkCardRenderer } from "@/components/cards/LinkCardRenderer";
 import { getLinkCardPresetById } from "@/config/linkCardPresets";
-import type { LinkCardCanvasItem } from "@/new_stores/useCanvasStore";
+import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 import { useEffect, useRef, useState } from "react";
 
 export const CardPreview = ({ card }: { card: LinkCardCanvasItem }) => {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getBackgroundPresetById } from "@/config/backgroundPresets";
 import { getLinkCardPresetById } from "@/config/linkCardPresets";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 import { CenteredCard } from "../ui/CenteredCard";
 

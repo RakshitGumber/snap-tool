@@ -12,7 +12,7 @@ import {
 import {
   type LinkCardCanvasItem,
   useCanvasStore,
-} from "@/new_stores/useCanvasStore";
+} from "@/stores/useCanvasStore";
 import { CardPanel } from "../panels/CardPanel";
 
 type LinkCardDraft = {

@@ -1,7 +1,7 @@
 import { Icon } from "@iconify/react";
 import { clsx } from "clsx";
 
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 type LeftPanelAction = {
   id: "undo" | "redo" | "delete";
@@ -10,29 +10,6 @@ type LeftPanelAction = {
   disabled: boolean;
   onClick: () => void;
 };
-
-// const sections: LeftPanelSection[] = [
-//   {
-//     id: "overview",
-//     title: "main",
-//     icon: "mingcute:grid-2-fill",
-//   },
-//   {
-//     id: "images",
-//     title: "images",
-//     icon: "mingcute:folder-open-2-line",
-//   },
-//   {
-//     id: "background",
-//     title: "bg",
-//     icon: "mingcute:background-fill",
-//   },
-//   {
-//     id: "text",
-//     title: "text",
-//     icon: "mingcute:cursor-text-fill",
-//   },
-// ];
 
 export const LeftPanel = () => {
   const undo = useCanvasStore((state) => state.undo);

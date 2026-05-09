@@ -4,7 +4,7 @@ import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import type {
   CardShadowSize,
   LinkCardCanvasItem,
-} from "@/new_stores/useCanvasStore";
+} from "@/stores/useCanvasStore";
 
 export const CenteredCard = ({
   card,

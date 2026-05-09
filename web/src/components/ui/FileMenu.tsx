@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 import { Logo } from "./Logo";
-import { useRouter } from "@/new_stores/useRouter";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useRouter } from "@/stores/useRouter";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 // import { useRouter } from "@/stores/useRouter";
 import { usePanelBlur } from "@/hooks/usePanelBlur";
 

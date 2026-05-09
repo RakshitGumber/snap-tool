@@ -5,7 +5,7 @@ import {
   getCanvasPresetById,
   getCanvasPresetCategoryByPresetId,
 } from "@/config/canvasPresets";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 import clsx from "clsx";
 
 export const PresetButton = () => {

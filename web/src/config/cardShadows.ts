@@ -1,4 +1,4 @@
-import type { CardShadowSize } from "@/new_stores/useCanvasStore";
+import type { CardShadowSize } from "@/stores/useCanvasStore";
 
 export type CardShadowOption = {
   id: CardShadowSize;
@@ -23,19 +23,34 @@ export const CARD_SHADOW_OPTIONS: CardShadowOption[] = [
     id: "sm",
     label: "Small",
     css: "0 8px 20px rgba(15, 23, 42, 0.18)",
-    canvas: { blur: 20, offsetX: 0, offsetY: 8, color: "rgba(15, 23, 42, 0.18)" },
+    canvas: {
+      blur: 20,
+      offsetX: 0,
+      offsetY: 8,
+      color: "rgba(15, 23, 42, 0.18)",
+    },
   },
   {
     id: "md",
     label: "Medium",
     css: "0 18px 42px rgba(15, 23, 42, 0.24)",
-    canvas: { blur: 42, offsetX: 0, offsetY: 18, color: "rgba(15, 23, 42, 0.24)" },
+    canvas: {
+      blur: 42,
+      offsetX: 0,
+      offsetY: 18,
+      color: "rgba(15, 23, 42, 0.24)",
+    },
   },
   {
     id: "lg",
     label: "Large",
     css: "0 30px 70px rgba(15, 23, 42, 0.32)",
-    canvas: { blur: 70, offsetX: 0, offsetY: 30, color: "rgba(15, 23, 42, 0.32)" },
+    canvas: {
+      blur: 70,
+      offsetX: 0,
+      offsetY: 30,
+      color: "rgba(15, 23, 42, 0.32)",
+    },
   },
 ];
 

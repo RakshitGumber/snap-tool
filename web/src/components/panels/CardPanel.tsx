@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
 import { CardPreview } from "../ui/CardPreview";
-import type { LinkCardCanvasItem } from "@/new_stores/useCanvasStore";
+import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 import clsx from "clsx";
 
 type LinkCardDraft = {

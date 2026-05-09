@@ -1,14 +1,16 @@
 import { Icon } from "@iconify/react";
 
 import { BACKGROUND_PRESET_CATEGORIES } from "@/config/backgroundPresets";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 type BackgroundProps = {
   onBackgroundSelected?: () => void;
 };
 
 export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
-  const activeBackgroundId = useCanvasStore((state) => state.activeBackgroundId);
+  const activeBackgroundId = useCanvasStore(
+    (state) => state.activeBackgroundId,
+  );
   const setActiveBackground = useCanvasStore(
     (state) => state.setActiveBackground,
   );

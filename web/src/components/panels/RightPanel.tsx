@@ -4,20 +4,18 @@ import clsx from "clsx";
 
 import { getBackgroundPresetById } from "@/config/backgroundPresets";
 import { CARD_SHADOW_OPTIONS } from "@/config/cardShadows";
-import { useCanvasStore } from "@/new_stores/useCanvasStore";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 import { Background } from "../controls/Background";
 import { Images } from "../controls/Images";
-// import { Overview } from "../controls/Overview";
-// import { Text } from "../controls/Text";
-// import { usePanelStore } from "@/new_stores/usePanelStore";
 
 type RightPanelView = "home" | "background";
 
 export const RightPanel = () => {
-  // const activePanelId = usePanelStore((state) => state.activePanelId);
   const [view, setView] = useState<RightPanelView>("home");
-  const activeBackgroundId = useCanvasStore((state) => state.activeBackgroundId);
+  const activeBackgroundId = useCanvasStore(
+    (state) => state.activeBackgroundId,
+  );
   const activeCard = useCanvasStore((state) => state.activeCard);
   const cardShadowSize = useCanvasStore((state) => state.cardShadowSize);
   const setCardShadowSize = useCanvasStore((state) => state.setCardShadowSize);
@@ -26,11 +24,6 @@ export const RightPanel = () => {
 
   return (
     <aside className="w-96 flex flex-col bg-panel-bg border-l border-border-color select-none">
-      {/* {activePanelId === "overview" && <Overview />} */}
-      {/* <Images /> */}
-      {/* {activePanelId === "background" && <Background />}
-      {activePanelId === "text" && <Text />} */}
-
       {view === "background" ? (
         <>
           <button

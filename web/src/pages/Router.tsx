@@ -11,7 +11,7 @@ import {
 } from "react";
 
 // import { useRouter } from "@/stores/useRouter";
-import { useRouter } from "@/new_stores/useRouter";
+import { useRouter } from "@/stores/useRouter";
 
 type RouteComponent = LazyExoticComponent<() => ReactElement>;
 
@@ -34,32 +34,14 @@ const CreateRoute = lazy(async () => {
   return { default: mod.CreateRoute };
 });
 
-const AboutRoute = lazy(async () => {
-  const mod = await import("./about");
-  return { default: mod.About };
-});
-
-const RoadmapRoute = lazy(async () => {
-  const mod = await import("./roadmap");
-  return { default: mod.Roadmap };
-});
-
-const FeedbackRoute = lazy(async () => {
-  const mod = await import("./feedback");
-  return { default: mod.Feedback };
-});
-
 const PageNotFound = lazy(async () => {
   const mod = await import("./not-found");
-  return { default: mod.NotFound };
+  return { default: mod.PageNotFound };
 });
 
 const ROUTES: RouteConfig[] = [
   { path: "/", element: RootRoute },
   { path: "/create", element: CreateRoute },
-  { path: "/about", element: AboutRoute },
-  { path: "/roadmap", element: RoadmapRoute },
-  { path: "/feedback", element: FeedbackRoute },
 ];
 
 const matchRoute = (currentPath: string, routeDef: string): boolean => {

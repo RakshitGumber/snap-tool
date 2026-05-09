@@ -1,12 +1,17 @@
 import { useEffect, useRef } from "react";
 import * as PIXI from "pixi.js";
 
+import { getBackgroundPresetById } from "@/config/backgroundPresets";
 import { draggableBox } from "@/libs/draggableBox";
 
 import { useCanvasStore } from "@/new_stores/useCanvasStore";
 
+const CANVAS_SIZE = 600;
+
 export const Canvas = () => {
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const activeBackgroundId = useCanvasStore((state) => state.activeBackgroundId);
+  const activeBackground = getBackgroundPresetById(activeBackgroundId);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -15,9 +20,9 @@ export const Canvas = () => {
 
     async function init() {
       await app.init({
-        width: window.innerWidth,
-        height: window.innerHeight,
-        background: "#1e1e1e",
+        width: CANVAS_SIZE,
+        height: CANVAS_SIZE,
+        backgroundAlpha: 0,
       });
 
       canvasRef.current?.appendChild(app.canvas);
@@ -54,9 +59,14 @@ export const Canvas = () => {
     <div className="flex flex-1 items-center justify-center">
       <div
         ref={canvasRef}
-        style={{ width: 600, height: 600 }}
-        className="bg-white"
-      ></div>
+        aria-label={`${activeBackground.label} canvas background`}
+        style={{
+          width: CANVAS_SIZE,
+          height: CANVAS_SIZE,
+          background: activeBackground.background,
+        }}
+        className="overflow-hidden shadow-lg"
+      />
     </div>
   );
 };

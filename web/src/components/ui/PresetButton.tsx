@@ -60,20 +60,19 @@ export const PresetButton = () => {
         </button>
       </div>
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 max-h-[calc(100vh-5rem)] w-xl overflow-y-auto rounded-lg border border-border-color bg-panel-bg p-2">
-          <div className="space-y-4 sm:space-y-5">
+        <div className="absolute top-full right-0 mt-2 max-h-[80vh] w-xl overflow-y-auto rounded-lg border border-border-color bg-panel-bg px-4">
+          <div className="flex flex-col gap-4">
             {CANVAS_PRESET_CATEGORIES.map((group) => {
               return (
-                <section key={group.id} className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <p className="text-xs uppercase tracking-[0.14em] text-secondary-text">
-                        {group.label}
-                      </p>
-                    </div>
-                  </div>
+                <section
+                  key={group.id}
+                  className="flex flex-col py-3 px-2 gap-4"
+                >
+                  <h1 className="text-base font-bold uppercase tracking-wide text-title-color py-2 px-2 border-b border-border-color">
+                    {group.label}
+                  </h1>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-wrap">
                     {group.presets.map((preset) => {
                       const isActive = preset.id === activePreset.id;
 
@@ -83,14 +82,19 @@ export const PresetButton = () => {
                           type="button"
                           onClick={() => handleSelectPreset(preset.id)}
                           className={clsx(
-                            "overflow-hidden rounded-2xl text-left outline transition hover:-translate-y-0.5 hover:outline-accent/70",
-                            isActive
-                              ? "bg-accent-light/45 outline-accent"
-                              : "bg-card-bg outline-border-color/60",
+                            "rounded-lg text-left w-42 h-42",
+                            isActive && "bg-text-color/8",
                           )}
                         >
-                          <div className="space-y-1 px-3 pb-3">
-                            <p className="text-sm font-semibold text-title-color">
+                          <div className="flex flex-col items-center justify-end h-full py-4 gap-">
+                            <div
+                              className="block bg-white"
+                              style={{
+                                width: Math.min(168, preset.size.width / 10),
+                                height: Math.min(168, preset.size.height / 10),
+                              }}
+                            />
+                            <p className="text-sm font-semibold">
                               {preset.label}
                             </p>
                             <p className="text-xs text-secondary-text">

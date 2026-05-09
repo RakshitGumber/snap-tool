@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import type { BoardSidebarSectionId } from "@/types/board";
 
 export type BoardSidebarSection = {
-  id: BoardSidebarSectionId;
+  id: string;
   label: string;
   content?: ReactNode;
   isPlaceholder?: boolean;

@@ -155,7 +155,7 @@ export const BoardTextPanel = () => {
             }
             className="w-full rounded-xl border border-border-color/70 bg-card-bg px-3 py-2 text-sm text-title-color outline-none transition focus:border-accent"
           >
-            {textConfig.weightOptions.map((weight) => (
+            {textConfig.weightOptions.map((weight: any) => (
               <option key={weight} value={weight}>
                 {weight}
               </option>

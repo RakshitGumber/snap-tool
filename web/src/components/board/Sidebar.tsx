@@ -11,9 +11,8 @@ import { BoardOverviewPanel } from "./OverviewPanel";
 import { BoardTextPanel } from "./TextPanel";
 import type { BoardSidebarSection } from "./types";
 import { BoardUploadsPanel } from "./UploadsPanel";
-import type { BoardSidebarSectionId } from "@/types/board";
 
-const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
+const SECTION_ICONS: Record<, string> = {
   overview: "solar:document-text-linear",
   background: "solar:pallete-2-linear",
   elements: "solar:widget-5-linear",
@@ -21,7 +20,7 @@ const SECTION_ICONS: Record<BoardSidebarSectionId, string> = {
   uploads: "solar:gallery-add-linear",
 };
 
-const SECTION_NAV_LABELS: Record<BoardSidebarSectionId, string> = {
+const SECTION_NAV_LABELS: Record<, string> = {
   overview: "Overview",
   background: "BG",
   elements: "Elements",

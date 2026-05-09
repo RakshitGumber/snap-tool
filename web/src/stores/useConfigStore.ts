@@ -5,7 +5,11 @@ import {
   createCanvasBackgroundFromPreset,
   normalizeCanvasBackgroundPresetValue,
 } from "@/canvas/backgrounds";
-import { BOARD_CONFIG, type BoardLayoutConfig, type BoardTextConfig } from "@/config";
+import {
+  BOARD_CONFIG,
+  type BoardLayoutConfig,
+  type BoardTextConfig,
+} from "@/config/config";
 import type {
   BoardTextInput,
   CanvasBackgroundPreset,
@@ -82,7 +86,8 @@ export const useConfigStore = create<ConfigState & ConfigActions>((set) => ({
     NORMALIZED_BACKGROUND_PRESET_GROUPS,
   ),
 
-  setDefaultCanvasPresetId: (presetId) => set({ defaultCanvasPresetId: presetId }),
+  setDefaultCanvasPresetId: (presetId) =>
+    set({ defaultCanvasPresetId: presetId }),
   setDefaultBackgroundPresetId: (presetId) =>
     set({ defaultBackgroundPresetId: presetId }),
   resetConfigDefaults: () =>
@@ -114,7 +119,9 @@ export const findCanvasPresetById = (
   presetId: CanvasPresetId | null | undefined,
 ) =>
   presetId
-    ? (getConfigState().canvasPresets.find((preset) => preset.id === presetId) ?? null)
+    ? (getConfigState().canvasPresets.find(
+        (preset) => preset.id === presetId,
+      ) ?? null)
     : null;
 
 export const getCanvasPresetById = (presetId: CanvasPresetId) =>
@@ -160,8 +167,9 @@ export const resolveCanvasPreset = ({
 };
 
 export const getCanvasBackgroundById = (presetId: string) =>
-  getConfigState().canvasBackgroundPresets.find((preset) => preset.id === presetId) ??
-  getConfigState().canvasBackgroundPresets[0];
+  getConfigState().canvasBackgroundPresets.find(
+    (preset) => preset.id === presetId,
+  ) ?? getConfigState().canvasBackgroundPresets[0];
 
 export const findCanvasBackgroundById = (
   presetId: string | null | undefined,

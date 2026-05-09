@@ -43,7 +43,9 @@ export const PresetButton = () => {
     const isPreset = activePreset.kind === "preset";
 
     return {
-      activeLabel: isPreset ? activePreset.preset.label : "Custom",
+      activeLabel: isPreset
+        ? `${activePreset.group.label.slice(0, 2)} - ${activePreset.preset.size.height} x ${activePreset.preset.size.width}`
+        : "Custom",
     };
   }, [activePreset]);
 
@@ -75,11 +77,10 @@ export const PresetButton = () => {
           </h3>
         </div>
         <button
-          className="w-40 h-10.5 border border-border-color rounded-lg text-xs font-semibold hover:bg-text-color/8"
+          className="w-40 h-10.5 border border-border-color rounded-lg text-xs font-semibold hover:bg-text-color/8 tracking-wide"
           onClick={() => setIsOpen(!isOpen)}
         >
           {activeLabel}
-          {/* Tw - 1080 x 1080 */}
         </button>
       </div>
       {isOpen && (

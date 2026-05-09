@@ -1,9 +1,16 @@
 import { create } from "zustand";
 
-import { createObjectRef, getObjectRefKey, isSameObjectRef } from "@/canvas/objects";
-import type { BoardSidebarSectionId } from "@/types/board";
+import {
+  createObjectRef,
+  getObjectRefKey,
+  isSameObjectRef,
+} from "@/canvas/objects";
 import { getDefaultBoardTextInput } from "@/stores/useConfigStore";
-import type { BoardObjectRef, BoardTextInput, BoardTextItem } from "@/types/canvas";
+import type {
+  BoardObjectRef,
+  BoardTextInput,
+  BoardTextItem,
+} from "@/types/canvas";
 
 type SelectObjectOptions = {
   additive?: boolean;
@@ -11,7 +18,7 @@ type SelectObjectOptions = {
 };
 
 type EditorUiState = {
-  openSectionId: BoardSidebarSectionId;
+  openSectionId: string;
   isSidebarOpen: boolean;
   isFileMenuOpen: boolean;
   isPresetMenuOpen: boolean;
@@ -22,16 +29,19 @@ type EditorUiState = {
 };
 
 type EditorUiActions = {
-  setOpenSectionId: (sectionId: BoardSidebarSectionId) => void;
+  setOpenSectionId: (sectionId: string) => void;
   setSidebarOpen: (isOpen: boolean) => void;
-  toggleSection: (sectionId: BoardSidebarSectionId) => void;
+  toggleSection: (sectionId: string) => void;
   setFileMenuOpen: (isOpen: boolean) => void;
   setPresetMenuOpen: (isOpen: boolean) => void;
   setBackgroundMoveMode: (isActive: boolean) => void;
   setEditingTextId: (textId: string | null) => void;
   setSelectedObjects: (selectedObjects: BoardObjectRef[]) => void;
   selectImage: (imageId: string | null, options?: SelectObjectOptions) => void;
-  selectText: (text: BoardTextItem | null, options?: SelectObjectOptions) => void;
+  selectText: (
+    text: BoardTextItem | null,
+    options?: SelectObjectOptions,
+  ) => void;
   clearSelection: () => void;
   updateTextDraft: (updates: Partial<BoardTextInput>) => void;
   resetTextDraft: () => void;
@@ -87,91 +97,95 @@ const updateSelection = (
   return [...current, ref];
 };
 
-export const useEditorUiStore = create<EditorUiState & EditorUiActions>((set) => ({
-  openSectionId: "overview",
-  isSidebarOpen: true,
-  isFileMenuOpen: false,
-  isPresetMenuOpen: false,
-  selectedObjects: [],
-  editingTextId: null,
-  isBackgroundMoveMode: false,
-  textDraft: getDefaultBoardTextInput(),
+export const useEditorUiStore = create<EditorUiState & EditorUiActions>(
+  (set) => ({
+    openSectionId: "overview",
+    isSidebarOpen: true,
+    isFileMenuOpen: false,
+    isPresetMenuOpen: false,
+    selectedObjects: [],
+    editingTextId: null,
+    isBackgroundMoveMode: false,
+    textDraft: getDefaultBoardTextInput(),
 
-  setOpenSectionId: (openSectionId) => set({ openSectionId }),
-  setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-  toggleSection: (sectionId) =>
-    set((state) => ({
-      openSectionId: sectionId,
-      isSidebarOpen:
-        state.openSectionId === sectionId ? !state.isSidebarOpen : true,
-    })),
-  setFileMenuOpen: (isFileMenuOpen) => set({ isFileMenuOpen }),
-  setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
-  setBackgroundMoveMode: (isBackgroundMoveMode) => set({ isBackgroundMoveMode }),
-  setEditingTextId: (editingTextId) => set({ editingTextId }),
-  setSelectedObjects: (selectedObjects) =>
-    set({
-      selectedObjects: normalizeSelection(selectedObjects),
-      editingTextId: null,
-      isBackgroundMoveMode: false,
-    }),
-  selectImage: (imageId, options) =>
-    set((state) => ({
-      selectedObjects: normalizeSelection(
-        updateSelection(
-          state.selectedObjects,
-          imageId ? createObjectRef("image", imageId) : null,
-          options,
-        ),
-      ),
-      editingTextId: null,
-      isBackgroundMoveMode: false,
-      textDraft: getDefaultBoardTextInput(),
-    })),
-  selectText: (text, options) =>
-    set((state) => {
-      const nextSelectedObjects = normalizeSelection(
-        updateSelection(
-          state.selectedObjects,
-          text ? createObjectRef("text", text.id) : null,
-          options,
-        ),
-      );
-      const isSingleSelectedText =
-        nextSelectedObjects.length === 1 &&
-        nextSelectedObjects[0].kind === "text" &&
-        text &&
-        nextSelectedObjects[0].id === text.id;
-
-      return {
-        selectedObjects: nextSelectedObjects,
+    setOpenSectionId: (openSectionId) => set({ openSectionId }),
+    setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+    toggleSection: (sectionId) =>
+      set((state) => ({
+        openSectionId: sectionId,
+        isSidebarOpen:
+          state.openSectionId === sectionId ? !state.isSidebarOpen : true,
+      })),
+    setFileMenuOpen: (isFileMenuOpen) => set({ isFileMenuOpen }),
+    setPresetMenuOpen: (isPresetMenuOpen) => set({ isPresetMenuOpen }),
+    setBackgroundMoveMode: (isBackgroundMoveMode) =>
+      set({ isBackgroundMoveMode }),
+    setEditingTextId: (editingTextId) => set({ editingTextId }),
+    setSelectedObjects: (selectedObjects) =>
+      set({
+        selectedObjects: normalizeSelection(selectedObjects),
         editingTextId: null,
         isBackgroundMoveMode: false,
-        textDraft: isSingleSelectedText
-          ? mapTextToDraft(text)
-          : getDefaultBoardTextInput(),
-      };
-    }),
-  clearSelection: () =>
-    set({
-      selectedObjects: [],
-      editingTextId: null,
-      isBackgroundMoveMode: false,
-      textDraft: getDefaultBoardTextInput(),
-    }),
-  updateTextDraft: (updates) =>
-    set((state) => ({
-      textDraft: {
-        ...state.textDraft,
-        ...updates,
-      },
-    })),
-  resetTextDraft: () => set({ textDraft: getDefaultBoardTextInput() }),
-}));
+      }),
+    selectImage: (imageId, options) =>
+      set((state) => ({
+        selectedObjects: normalizeSelection(
+          updateSelection(
+            state.selectedObjects,
+            imageId ? createObjectRef("image", imageId) : null,
+            options,
+          ),
+        ),
+        editingTextId: null,
+        isBackgroundMoveMode: false,
+        textDraft: getDefaultBoardTextInput(),
+      })),
+    selectText: (text, options) =>
+      set((state) => {
+        const nextSelectedObjects = normalizeSelection(
+          updateSelection(
+            state.selectedObjects,
+            text ? createObjectRef("text", text.id) : null,
+            options,
+          ),
+        );
+        const isSingleSelectedText =
+          nextSelectedObjects.length === 1 &&
+          nextSelectedObjects[0].kind === "text" &&
+          text &&
+          nextSelectedObjects[0].id === text.id;
+
+        return {
+          selectedObjects: nextSelectedObjects,
+          editingTextId: null,
+          isBackgroundMoveMode: false,
+          textDraft: isSingleSelectedText
+            ? mapTextToDraft(text)
+            : getDefaultBoardTextInput(),
+        };
+      }),
+    clearSelection: () =>
+      set({
+        selectedObjects: [],
+        editingTextId: null,
+        isBackgroundMoveMode: false,
+        textDraft: getDefaultBoardTextInput(),
+      }),
+    updateTextDraft: (updates) =>
+      set((state) => ({
+        textDraft: {
+          ...state.textDraft,
+          ...updates,
+        },
+      })),
+    resetTextDraft: () => set({ textDraft: getDefaultBoardTextInput() }),
+  }),
+);
 
 export const useSelectedTextId = () =>
   useEditorUiStore((state) =>
-    state.selectedObjects.length === 1 && state.selectedObjects[0].kind === "text"
+    state.selectedObjects.length === 1 &&
+    state.selectedObjects[0].kind === "text"
       ? state.selectedObjects[0].id
       : null,
   );

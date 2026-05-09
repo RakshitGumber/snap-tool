@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import * as PIXI from "pixi.js";
 
+import { draggableBox } from "@/libs/draggableBox";
+
 import { useCanvasStore } from "@/new_stores/useCanvasStore";
 
 export const Canvas = () => {
@@ -11,84 +13,37 @@ export const Canvas = () => {
 
     const app = new PIXI.Application();
 
-    async function setup() {
+    async function init() {
       await app.init({
         width: window.innerWidth,
         height: window.innerHeight,
         background: "#1e1e1e",
-        antialias: true,
       });
 
       canvasRef.current?.appendChild(app.canvas);
 
-      const renderItems = () => {
-        app.stage.removeChildren();
+      const { items, updateItemPosition } = useCanvasStore.getState();
 
-        const { items, updateItemPosition } = useCanvasStore.getState();
+      items.forEach((item) => {
+        const rect = new PIXI.Graphics();
 
-        items.forEach((item) => {
-          const box = new PIXI.Graphics();
+        rect.rect(-40, -40, 80, 80);
+        rect.fill(item.color);
 
-          box.rect(-40, -40, 80, 80);
-          box.fill(item.color);
+        rect.x = item.x;
+        rect.y = item.y;
 
-          box.x = item.x;
-          box.y = item.y;
-
-          box.eventMode = "static";
-          box.cursor = "pointer";
-
-          let dragging = false;
-          let offsetX = 0;
-          let offsetY = 0;
-
-          box.on("pointerdown", (e: PIXI.FederatedPointerEvent) => {
-            dragging = true;
-
-            const pos = e.getLocalPosition(box.parent);
-
-            offsetX = pos.x - box.x;
-            offsetY = pos.y - box.y;
-          });
-
-          box.on("pointerup", () => {
-            dragging = false;
-          });
-
-          box.on("pointerupoutside", () => {
-            dragging = false;
-          });
-
-          box.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
-            if (!dragging) return;
-
-            const pos = e.getLocalPosition(box.parent);
-
-            const newX = pos.x - offsetX;
-            const newY = pos.y - offsetY;
-
-            box.x = newX;
-            box.y = newY;
-
-            updateItemPosition(item.id, newX, newY);
-          });
-
-          app.stage.addChild(box);
+        draggableBox(rect, {
+          onDragMove: (x, y) => {
+            updateItemPosition(item.id, x, y);
+          },
         });
-      };
 
-      renderItems();
-
-      const unsubscribe = useCanvasStore.subscribe(() => {
-        renderItems();
+        app.stage.addChild(rect);
       });
-
-      return () => {
-        unsubscribe();
-      };
     }
 
-    setup();
+    init();
 
     return () => {
       app.destroy(true, true);

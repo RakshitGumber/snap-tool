@@ -1,26 +1,43 @@
+// Review note: Undo and redo toolbar connected to the canvas history stacks.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { useEditorUiStore } from "@/stores/useEditorUiStore";
 
+/**
+ * Handles the control class name behavior for this module.
+ */
 const controlClassName =
   "flex h-10 w-10 items-center justify-center rounded-lg text-title-color transition hover:bg-text-color/20 disabled:cursor-not-allowed disabled:text-secondary-text/70 disabled:hover:bg-transparent";
 
+/**
+ * Renders undo and redo buttons with disabled states driven by history stacks.
+ */
 export const HistoryControls = () => {
+  // Select this store or hook value close to where the component uses it.
   const undo = useCanvasStore((state) => state.undo);
+  // Select this store or hook value close to where the component uses it.
   const redo = useCanvasStore((state) => state.redo);
+  // Select this store or hook value close to where the component uses it.
   const updateLayoutAxisMode = useCanvasStore(
     (state) => state.updateLayoutAxisMode,
   );
+  // Select this store or hook value close to where the component uses it.
   const removeSelectedObjects = useCanvasStore(
     (state) => state.removeSelectedObjects,
   );
+  // Select this store or hook value close to where the component uses it.
   const canUndo = useCanvasStore((state) => state.historyPast.length > 0);
+  // Select this store or hook value close to where the component uses it.
   const canRedo = useCanvasStore((state) => state.historyFuture.length > 0);
+  // Select this store or hook value close to where the component uses it.
   const layoutAxisMode = useCanvasStore(
     (state) => state.canvasMeta?.layoutAxisMode ?? "none",
   );
+  // Select this store or hook value close to where the component uses it.
   const hasSelection = useEditorUiStore(
     (state) => state.selectedObjects.length > 0,
   );

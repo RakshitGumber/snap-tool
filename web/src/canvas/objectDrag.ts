@@ -1,12 +1,21 @@
+// Review note: Pointer-drag math for axis locking, snapping, and guide feedback during object movement.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { getObjectRefKey } from "@/canvas/objects";
 import type { CanvasObjectBounds } from "@/canvas/objects";
 import type { BoardObjectRef } from "@/types/canvas";
 
+/**
+ * Stores the active snap-guide coordinates shown during an object drag.
+ */
 export type GuideState = {
   vertical: number[];
   horizontal: number[];
 };
 
+/**
+ * Captures the fixed drag baseline used to compute movement deltas.
+ */
 export type ObjectDragSession = {
   pointerId: number;
   primaryRef: BoardObjectRef;
@@ -19,33 +28,53 @@ export type ObjectDragSession = {
   primaryBounds: CanvasObjectBounds;
 };
 
+/**
+ * Represents one moved object after snapping and axis constraints have been resolved.
+ */
 export type ObjectDragMove = {
   ref: BoardObjectRef;
   x: number;
   y: number;
 };
 
+/**
+ * Documents the axis lock contract used by the surrounding feature.
+ */
 type AxisLock = "horizontal" | "vertical";
 
+/**
+ * Keeps snap_threshold in one named constant so related calculations stay consistent.
+ */
 const SNAP_THRESHOLD = 8;
 
+/**
+ * Provides a stable no-guide object so callers can avoid null checks.
+ */
 export const EMPTY_GUIDES: GuideState = {
   vertical: [],
   horizontal: [],
 };
 
+/**
+ * Resolves get axis lock from the available editor state.
+ */
 const getAxisLock = (
   deltaX: number,
   deltaY: number,
   isShiftPressed: boolean,
 ): AxisLock | null => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!isShiftPressed) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
   return Math.abs(deltaX) >= Math.abs(deltaY) ? "horizontal" : "vertical";
 };
 
+/**
+ * Builds build alignment result from normalized inputs.
+ */
 const buildAlignmentResult = ({
   movedBounds,
   otherBounds,
@@ -90,7 +119,9 @@ const buildAlignmentResult = ({
   sourceX.forEach((source) => {
     candidateX.forEach((candidate) => {
       const delta = candidate - source;
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (Math.abs(delta) > SNAP_THRESHOLD) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -103,7 +134,9 @@ const buildAlignmentResult = ({
   sourceY.forEach((source) => {
     candidateY.forEach((candidate) => {
       const delta = candidate - source;
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (Math.abs(delta) > SNAP_THRESHOLD) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -123,6 +156,9 @@ const buildAlignmentResult = ({
   };
 };
 
+/**
+ * Snapshots the starting drag state before pointer movement begins.
+ */
 export const createObjectDragSession = ({
   pointerId,
   primaryRef,
@@ -139,6 +175,9 @@ export const createObjectDragSession = ({
   primaryBounds,
 });
 
+/**
+ * Applies pointer deltas, optional axis locks, and snapping to every dragged object.
+ */
 export const resolveObjectDragUpdate = ({
   session,
   pointer,

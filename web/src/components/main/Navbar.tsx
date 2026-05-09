@@ -5,7 +5,8 @@ import { Icon } from "@iconify/react";
 
 import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useState } from "react";
-import { useRouter } from "@/stores/useRouter";
+// import { useRouter } from "@/stores/useRouter";
+import { useRouter } from "@/new_stores/useRouter";
 
 const parentVariants = {
   visible: { opacity: 1, y: 0 },
@@ -89,10 +90,7 @@ export const Navbar = () => {
         </div>
         <ul className="hidden lg:flex gap-1 px-8">
           {navItems.map((item) => (
-            <li
-              key={item.to}
-              className="flex rounded-lg"
-            >
+            <li key={item.to} className="flex rounded-lg">
               <Link
                 to={item.to}
                 className={

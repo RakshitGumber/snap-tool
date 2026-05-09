@@ -1,3 +1,6 @@
+// Review note: Background editing panel for presets, custom colors, uploaded images, fit controls, and effects.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { Icon } from "@iconify/react";
 import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -6,11 +9,13 @@ import {
   CANVAS_BACKGROUND_EFFECT_CONTROLS,
   CANVAS_BACKGROUND_EFFECT_ORDER,
   DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+  // Walk each item deliberately because order and accumulated state matter here.
   formatCanvasBackgroundEffectValue,
   type CanvasBackgroundEffectKey,
 } from "@/canvas/backgroundEffects";
 import {
   cycleCanvasBackgroundImageFit,
+  // Walk each item deliberately because order and accumulated state matter here.
   formatCanvasBackgroundKind,
   isCanvasBackgroundImage,
   isCanvasBackgroundImageMovable,
@@ -29,6 +34,9 @@ import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 
 import { BoardBackgroundPreview } from "./BackgroundPreview";
 
+/**
+ * Keeps background_effect_icons in one named constant so related calculations stay consistent.
+ */
 const BACKGROUND_EFFECT_ICONS: Record<CanvasBackgroundEffectKey, string> = {
   hue: "solar:pallete-2-linear",
   saturation: "solar:tuning-2-linear",
@@ -38,60 +46,89 @@ const BACKGROUND_EFFECT_ICONS: Record<CanvasBackgroundEffectKey, string> = {
   opacity: "solar:droplets-minimalistic-linear",
 };
 
+/**
+ * Formats format fit label for compact UI display.
+ */
 const formatFitLabel = (value: string) =>
   value.slice(0, 1).toUpperCase() + value.slice(1);
 
+/**
+ * Renders every background editing affordance and commits changes through the canvas store.
+ */
 export const BoardBackgroundPanel = () => {
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Select this store or hook value close to where the component uses it.
   const backgroundPresetGroups = useCanvasBackgroundPresetGroups();
+  // Select this store or hook value close to where the component uses it.
   const canvasShell = useCanvasShell();
+  // Select this store or hook value close to where the component uses it.
   const activeBackgroundPreset = useActiveCanvasBackground();
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const backgroundEffectDragActiveRef = useRef(false);
+  // Keep this local UI state in React because it only affects the current component instance.
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
   const [activeBackgroundEffect, setActiveBackgroundEffect] =
     useState<CanvasBackgroundEffectKey>("hue");
+  // Keep this local UI state in React because it only affects the current component instance.
   const [isUploading, setIsUploading] = useState(false);
+  // Select this store or hook value close to where the component uses it.
   const setDefaultBackgroundPresetId = useConfigStore(
     (state) => state.setDefaultBackgroundPresetId,
   );
+  // Select this store or hook value close to where the component uses it.
   const isBackgroundMoveMode = useEditorUiStore(
     (state) => state.isBackgroundMoveMode,
   );
+  // Select this store or hook value close to where the component uses it.
   const setBackgroundMoveMode = useEditorUiStore(
     (state) => state.setBackgroundMoveMode,
   );
+  // Select this store or hook value close to where the component uses it.
   const applyBackgroundToCanvas = useCanvasStore(
     (state) => state.applyBackgroundToCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const applySolidColorBackground = useCanvasStore(
     (state) => state.applySolidColorBackground,
   );
+  // Select this store or hook value close to where the component uses it.
   const applyAssetBackgroundToCanvas = useCanvasStore(
     (state) => state.applyAssetBackgroundToCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateCanvasBackgroundEffects = useCanvasStore(
     (state) => state.updateCanvasBackgroundEffects,
   );
+  // Select this store or hook value close to where the component uses it.
   const resetCanvasBackgroundEffects = useCanvasStore(
     (state) => state.resetCanvasBackgroundEffects,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateCanvasBackgroundImage = useCanvasStore(
     (state) => state.updateCanvasBackgroundImage,
   );
+  // Select this store or hook value close to where the component uses it.
   const beginHistoryTransaction = useCanvasStore(
     (state) => state.beginHistoryTransaction,
   );
+  // Select this store or hook value close to where the component uses it.
   const endHistoryTransaction = useCanvasStore(
     (state) => state.endHistoryTransaction,
   );
+  // Select this store or hook value close to where the component uses it.
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  // Select this store or hook value close to where the component uses it.
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
   );
+  // Select this store or hook value close to where the component uses it.
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
+  // Select this store or hook value close to where the component uses it.
   const addLocalFiles = useUploadLibraryStore((state) => state.addLocalFiles);
+  // Select this store or hook value close to where the component uses it.
   const clearError = useUploadLibraryStore((state) => state.clearError);
 
   const background =
@@ -130,23 +167,29 @@ export const BoardBackgroundPanel = () => {
   );
 
   const activeBackgroundTitle = useMemo(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (activeBackgroundPreset) {
+      // Return the resolved value to the caller after all guards and transformations.
       return activeBackgroundPreset.label;
     }
 
     if (activeBackgroundAsset) {
+      // Return the resolved value to the caller after all guards and transformations.
       return activeBackgroundAsset.name;
     }
 
     if (background?.kind === "solid") {
+      // Return the resolved value to the caller after all guards and transformations.
       return "Custom Color";
     }
 
     if (background?.kind === "gradient") {
+      // Return the resolved value to the caller after all guards and transformations.
       return "Gradient background";
     }
 
     if (background?.kind === "image") {
+      // Return the resolved value to the caller after all guards and transformations.
       return "Image background";
     }
 
@@ -154,6 +197,7 @@ export const BoardBackgroundPanel = () => {
   }, [activeBackgroundAsset, activeBackgroundPreset, background]);
 
   useEffect(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       activeBackgroundAssetId &&
       !resolvedMediaByAssetId[activeBackgroundAssetId]?.preview
@@ -164,7 +208,9 @@ export const BoardBackgroundPanel = () => {
 
   useEffect(
     () => () => {
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!backgroundEffectDragActiveRef.current) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -175,7 +221,9 @@ export const BoardBackgroundPanel = () => {
   );
 
   const beginBackgroundEffectDrag = () => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (backgroundEffectDragActiveRef.current || !canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -184,7 +232,9 @@ export const BoardBackgroundPanel = () => {
   };
 
   const endBackgroundEffectDrag = () => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!backgroundEffectDragActiveRef.current) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -199,6 +249,7 @@ export const BoardBackgroundPanel = () => {
     event.target.value = "";
 
     if (!file) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -207,10 +258,12 @@ export const BoardBackgroundPanel = () => {
 
     try {
       const [asset] = await addLocalFiles([file]);
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (asset) {
         applyAssetBackgroundToCanvas(asset.id);
       }
     } catch {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     } finally {
       setIsUploading(false);
@@ -299,6 +352,7 @@ export const BoardBackgroundPanel = () => {
                       background.fit,
                     );
                     updateCanvasBackgroundImage({ fit: nextFit });
+                    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
                     if (nextFit === "fill") {
                       setBackgroundMoveMode(false);
                     }

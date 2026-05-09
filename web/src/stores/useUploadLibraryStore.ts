@@ -1,3 +1,6 @@
+// Review note: Upload-library store for built-in assets, local persistence, media resolution, and import status.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { create } from "zustand";
 
 import { useCanvasStore } from "@/stores/useCanvasStore";
@@ -15,6 +18,9 @@ import {
   saveStoredUploadAssetMeta,
 } from "@/uploads/storage";
 
+/**
+ * Documents the upload library state contract used by the surrounding feature.
+ */
 type UploadLibraryState = {
   assetOrder: string[];
   assetMetaById: Record<string, UploadLibraryAssetMeta>;
@@ -28,6 +34,9 @@ type UploadLibraryState = {
   lastError: string | null;
 };
 
+/**
+ * Documents the upload library actions contract used by the surrounding feature.
+ */
 type UploadLibraryActions = {
   hydrateLibrary: () => Promise<void>;
   addLocalFiles: (files: File[]) => Promise<UploadLibraryAssetMeta[]>;
@@ -42,6 +51,9 @@ type UploadLibraryActions = {
   clearError: () => void;
 };
 
+/**
+ * Keeps built_in_asset_definitions in one named constant so related calculations stay consistent.
+ */
 const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAssetMeta[] = [
   {
     id: "built-in-ferret",
@@ -56,24 +68,44 @@ const BUILT_IN_ASSET_DEFINITIONS: UploadLibraryAssetMeta[] = [
   },
 ];
 
+/**
+ * Keeps max_file_import_concurrency in one named constant so related calculations stay consistent.
+ */
 const MAX_FILE_IMPORT_CONCURRENCY = 4;
+/**
+ * Handles the runtime asset urls behavior for this module.
+ */
 const runtimeAssetUrls = new Map<string, string>();
+/**
+ * Handles the media promises behavior for this module.
+ */
 const mediaPromises = new Map<string, Promise<UploadResolvedAssetMedia | null>>();
 let hydrationPromise: Promise<void> | null = null;
 
+/**
+ * Handles the sort assets behavior for this module.
+ */
 const sortAssets = (assets: UploadLibraryAssetMeta[]) =>
   [...assets].sort((left, right) => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (left.source === "built-in" && right.source !== "built-in") return -1;
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (left.source !== "built-in" && right.source === "built-in") return 1;
 
     return right.addedAt.localeCompare(left.addedAt);
   });
 
+/**
+ * Handles the to normalized assets behavior for this module.
+ */
 const toNormalizedAssets = (assets: UploadLibraryAssetMeta[]) => ({
   assetOrder: assets.map((asset) => asset.id),
   assetMetaById: Object.fromEntries(assets.map((asset) => [asset.id, asset])),
 });
 
+/**
+ * Handles the merge built in and stored assets behavior for this module.
+ */
 const mergeBuiltInAndStoredAssets = (storedAssets: StoredUploadAssetMeta[]) => {
   const byId = new Map<string, UploadLibraryAssetMeta>();
 
@@ -88,11 +120,18 @@ const mergeBuiltInAndStoredAssets = (storedAssets: StoredUploadAssetMeta[]) => {
   return sortAssets([...byId.values()]);
 };
 
+/**
+ * Resolves get media cache key from the available editor state.
+ */
 const getMediaCacheKey = (assetId: string, variant: UploadAssetMediaVariant) =>
   `${assetId}:${variant}`;
 
+/**
+ * Handles the track runtime asset url behavior for this module.
+ */
 const trackRuntimeAssetUrl = (cacheKey: string, url: string) => {
   const previousUrl = runtimeAssetUrls.get(cacheKey);
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (previousUrl && previousUrl !== url) {
     URL.revokeObjectURL(previousUrl);
   }
@@ -100,7 +139,11 @@ const trackRuntimeAssetUrl = (cacheKey: string, url: string) => {
   runtimeAssetUrls.set(cacheKey, url);
 };
 
+/**
+ * Handles the clear runtime asset urls behavior for this module.
+ */
 const clearRuntimeAssetUrls = () => {
+  // Walk each item deliberately because order and accumulated state matter here.
   for (const url of runtimeAssetUrls.values()) {
     URL.revokeObjectURL(url);
   }
@@ -108,6 +151,9 @@ const clearRuntimeAssetUrls = () => {
   runtimeAssetUrls.clear();
 };
 
+/**
+ * Handles the map with concurrency behavior for this module.
+ */
 const mapWithConcurrency = async <TInput, TOutput>(
   items: TInput[],
   concurrency: number,
@@ -131,9 +177,15 @@ const mapWithConcurrency = async <TInput, TOutput>(
   return results;
 };
 
+/**
+ * Answers the is supported image file predicate used to choose the next branch.
+ */
 const isSupportedImageFile = (file: File) =>
   file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
 
+/**
+ * Handles the set resolved media state behavior for this module.
+ */
 const setResolvedMediaState = ({
   assetId,
   variant,
@@ -168,6 +220,9 @@ if (typeof window !== "undefined") {
   window.addEventListener("beforeunload", clearRuntimeAssetUrls);
 }
 
+/**
+ * Owns upload asset metadata, media resolution state, persistence, and import errors.
+ */
 export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryActions>(
   (set, get) => ({
     assetOrder: [],
@@ -179,11 +234,14 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
     lastError: null,
 
     hydrateLibrary: async () => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (get().status === "ready") {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
       if (hydrationPromise) {
+        // Return the resolved value to the caller after all guards and transformations.
         return hydrationPromise;
       }
 
@@ -193,6 +251,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
       });
 
       hydrationPromise = (async () => {
+        // Isolate fallible browser or storage work so failures can be reported without crashing the UI.
         try {
           const storedAssets = await readStoredUploadAssetMeta();
           const nextAssets = mergeBuiltInAndStoredAssets(storedAssets);
@@ -334,6 +393,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
 
     insertAssetOnActiveCanvas: (assetId) => {
       const asset = get().assetMetaById[assetId];
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!asset) return null;
 
       return useCanvasStore.getState().insertImageOnActiveCanvas(asset);
@@ -345,29 +405,39 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
 
     resolveAssetMedia: async (assetId, variant) => {
       const cached = get().resolvedMediaByAssetId[assetId]?.[variant];
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (cached) {
+        // Return the resolved value to the caller after all guards and transformations.
         return cached;
       }
 
       const promiseKey = getMediaCacheKey(assetId, variant);
       const existingPromise = mediaPromises.get(promiseKey);
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (existingPromise) {
+        // Return the resolved value to the caller after all guards and transformations.
         return existingPromise;
       }
 
       const asset = get().assetMetaById[assetId];
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!asset) {
+        // Return null when this helper cannot produce a usable value.
         return null;
       }
 
       const nextPromise = (async () => {
+        // Isolate fallible browser or storage work so failures can be reported without crashing the UI.
         try {
+          // Keep this conditional branch explicit because it changes the user-visible editor behavior.
           if (asset.storageKind === "bundled" || asset.storageKind === "remote-url") {
             const src =
               variant === "preview"
                 ? asset.previewUrl ?? asset.remoteUrl
                 : asset.remoteUrl ?? asset.previewUrl;
+            // Guard this branch so missing or invalid state does not flow into the main path.
             if (!src) {
+              // Return null when this helper cannot produce a usable value.
               return null;
             }
 
@@ -392,6 +462,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
               : null);
 
           if (!binary) {
+            // Return null when this helper cannot produce a usable value.
             return null;
           }
 
@@ -415,6 +486,7 @@ export const useUploadLibraryStore = create<UploadLibraryState & UploadLibraryAc
       })();
 
       mediaPromises.set(promiseKey, nextPromise);
+      // Return the resolved value to the caller after all guards and transformations.
       return nextPromise;
     },
 

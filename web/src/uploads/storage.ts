@@ -1,3 +1,6 @@
+// Review note: IndexedDB storage layer for upload-library metadata and binary media records.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import type {
   LegacyStoredUploadLibraryAsset,
   StoredUploadAssetBinary,
@@ -5,19 +8,40 @@ import type {
   UploadAssetMediaVariant,
 } from "@/types/uploads";
 
+/**
+ * Keeps db_name in one named constant so related calculations stay consistent.
+ */
 const DB_NAME = "snap-tool-upload-library";
+/**
+ * Keeps legacy_store_name in one named constant so related calculations stay consistent.
+ */
 const LEGACY_STORE_NAME = "assets";
+/**
+ * Keeps meta_store_name in one named constant so related calculations stay consistent.
+ */
 const META_STORE_NAME = "assetMeta";
+/**
+ * Keeps binary_store_name in one named constant so related calculations stay consistent.
+ */
 const BINARY_STORE_NAME = "assetBinary";
+/**
+ * Keeps db_version in one named constant so related calculations stay consistent.
+ */
 const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+/**
+ * Builds the compound IndexedDB key for one asset media variant.
+ */
 export const getBinaryRecordId = (
   assetId: string,
   variant: UploadAssetMediaVariant,
 ) => `${assetId}:${variant}`;
 
+/**
+ * Migrates legacy all-in-one stored assets into metadata-only records.
+ */
 export const toStoredAssetMetaFromLegacy = (
   asset: LegacyStoredUploadLibraryAsset,
 ): StoredUploadAssetMeta => ({
@@ -35,10 +59,15 @@ export const toStoredAssetMetaFromLegacy = (
   remoteUrl: asset.src ?? asset.thumbnailSrc ?? null,
 });
 
+/**
+ * Handles the to stored asset binaries from legacy behavior for this module.
+ */
 const toStoredAssetBinariesFromLegacy = (
   asset: LegacyStoredUploadLibraryAsset,
 ): StoredUploadAssetBinary[] => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (asset.storageKind !== "indexeddb-blob" || !asset.blob) {
+    // Return the resolved value to the caller after all guards and transformations.
     return [];
   }
 
@@ -60,8 +89,13 @@ const toStoredAssetBinariesFromLegacy = (
   ];
 };
 
+/**
+ * Handles the open upload library database behavior for this module.
+ */
 const openUploadLibraryDatabase = () => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (dbPromise) {
+    // Return the resolved value to the caller after all guards and transformations.
     return dbPromise;
   }
 
@@ -91,7 +125,9 @@ const openUploadLibraryDatabase = () => {
 
         legacyStore.openCursor().onsuccess = (event) => {
           const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!cursor) {
+            // Return the resolved value to the caller after all guards and transformations.
             return;
           }
 
@@ -115,6 +151,9 @@ const openUploadLibraryDatabase = () => {
   return dbPromise;
 };
 
+/**
+ * Handles the with store behavior for this module.
+ */
 const withStore = async <T>(
   storeName: string,
   mode: IDBTransactionMode,
@@ -138,6 +177,9 @@ const withStore = async <T>(
   });
 };
 
+/**
+ * Reads all persisted upload asset metadata records.
+ */
 export const readStoredUploadAssetMeta = () =>
   withStore<StoredUploadAssetMeta[]>(META_STORE_NAME, "readonly", (store, resolve, reject) => {
     const request = store.getAll();
@@ -155,6 +197,9 @@ export const readStoredUploadAssetMeta = () =>
     };
   });
 
+/**
+ * Persists one upload asset metadata record.
+ */
 export const saveStoredUploadAssetMeta = (asset: StoredUploadAssetMeta) =>
   withStore<void>(META_STORE_NAME, "readwrite", (store, resolve, reject) => {
     const request = store.put(asset);
@@ -165,6 +210,9 @@ export const saveStoredUploadAssetMeta = (asset: StoredUploadAssetMeta) =>
     };
   });
 
+/**
+ * Reads one persisted binary media variant for a local asset.
+ */
 export const readStoredUploadAssetBinary = (
   assetId: string,
   variant: UploadAssetMediaVariant,
@@ -186,6 +234,9 @@ export const readStoredUploadAssetBinary = (
     },
   );
 
+/**
+ * Persists one binary media variant for a local asset.
+ */
 export const saveStoredUploadAssetBinary = (binary: StoredUploadAssetBinary) =>
   withStore<void>(BINARY_STORE_NAME, "readwrite", (store, resolve, reject) => {
     const request = store.put(binary);

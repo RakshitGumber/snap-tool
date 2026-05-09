@@ -1,7 +1,16 @@
+// Review note: Background-effect normalization and CSS conversion helpers shared by preview, canvas, and export paths.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import type { CanvasBackgroundEffects } from "@/types/canvas";
 
+/**
+ * Narrows effect operations to the keys supported by CanvasBackgroundEffects.
+ */
 export type CanvasBackgroundEffectKey = keyof CanvasBackgroundEffects;
 
+/**
+ * Defines the stable control order shown in the background effects UI.
+ */
 export const CANVAS_BACKGROUND_EFFECT_ORDER: CanvasBackgroundEffectKey[] = [
   "hue",
   "saturation",
@@ -11,6 +20,9 @@ export const CANVAS_BACKGROUND_EFFECT_ORDER: CanvasBackgroundEffectKey[] = [
   "opacity",
 ];
 
+/**
+ * Describes one slider-like control and its formatting rules.
+ */
 type CanvasBackgroundEffectControl = {
   label: string;
   min: number;
@@ -19,6 +31,9 @@ type CanvasBackgroundEffectControl = {
   unit: "deg" | "%" | "px";
 };
 
+/**
+ * Represents the neutral visual effect stack for newly-created backgrounds.
+ */
 export const DEFAULT_CANVAS_BACKGROUND_EFFECTS: CanvasBackgroundEffects = {
   hue: 0,
   saturation: 100,
@@ -28,6 +43,9 @@ export const DEFAULT_CANVAS_BACKGROUND_EFFECTS: CanvasBackgroundEffects = {
   opacity: 100,
 };
 
+/**
+ * Maps each effect key to the UI constraints used by panels and normalization.
+ */
 export const CANVAS_BACKGROUND_EFFECT_CONTROLS: Record<
   CanvasBackgroundEffectKey,
   CanvasBackgroundEffectControl
@@ -76,6 +94,9 @@ export const CANVAS_BACKGROUND_EFFECT_CONTROLS: Record<
   },
 };
 
+/**
+ * Handles the clamp background effect value behavior for this module.
+ */
 const clampBackgroundEffectValue = (
   effectId: CanvasBackgroundEffectKey,
   value: number,
@@ -88,6 +109,9 @@ const clampBackgroundEffectValue = (
   return Math.min(Math.max(Math.round(safeValue), control.min), control.max);
 };
 
+/**
+ * Clamps and fills partial effect updates before they are committed to canvas state.
+ */
 export const normalizeCanvasBackgroundEffects = (
   effects?: Partial<CanvasBackgroundEffects> | null,
 ): CanvasBackgroundEffects => ({
@@ -117,6 +141,9 @@ export const normalizeCanvasBackgroundEffects = (
   ),
 });
 
+/**
+ * Compares normalized effect objects so history only records meaningful changes.
+ */
 export const areCanvasBackgroundEffectsEqual = (
   left: CanvasBackgroundEffects,
   right: CanvasBackgroundEffects,
@@ -128,6 +155,9 @@ export const areCanvasBackgroundEffectsEqual = (
   left.contrast === right.contrast &&
   left.opacity === right.opacity;
 
+/**
+ * Turns effect state into the CSS filter string used by previews and canvas layers.
+ */
 export const buildCanvasBackgroundFilter = (
   effects: Partial<CanvasBackgroundEffects> | null | undefined,
 ) => {
@@ -142,14 +172,23 @@ export const buildCanvasBackgroundFilter = (
   ].join(" ");
 };
 
+/**
+ * Separates opacity from filter effects because canvas and DOM apply it differently.
+ */
 export const getCanvasBackgroundOpacity = (
   effects: Partial<CanvasBackgroundEffects> | null | undefined,
 ) => normalizeCanvasBackgroundEffects(effects).opacity / 100;
 
+/**
+ * Expands blurred image backgrounds enough to hide transparent edges.
+ */
 export const getCanvasBackgroundBlurPadding = (
   effects: Partial<CanvasBackgroundEffects> | null | undefined,
 ) => Math.ceil(normalizeCanvasBackgroundEffects(effects).blur * 4);
 
+/**
+ * Formats slider values for compact display in the background panel.
+ */
 export const formatCanvasBackgroundEffectValue = (
   effectId: CanvasBackgroundEffectKey,
   value: number,

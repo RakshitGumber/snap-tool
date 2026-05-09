@@ -1,3 +1,6 @@
+// Review note: Ephemeral editor UI store for selected objects, active panels, drafts, and interaction modes.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { create } from "zustand";
 
 import {
@@ -12,11 +15,17 @@ import type {
   BoardTextItem,
 } from "@/types/canvas";
 
+/**
+ * Documents the select object options contract used by the surrounding feature.
+ */
 type SelectObjectOptions = {
   additive?: boolean;
   toggle?: boolean;
 };
 
+/**
+ * Documents the editor ui state contract used by the surrounding feature.
+ */
 type EditorUiState = {
   openSectionId: string;
   isSidebarOpen: boolean;
@@ -28,6 +37,9 @@ type EditorUiState = {
   textDraft: BoardTextInput;
 };
 
+/**
+ * Documents the editor ui actions contract used by the surrounding feature.
+ */
 type EditorUiActions = {
   setOpenSectionId: (sectionId: string) => void;
   setSidebarOpen: (isOpen: boolean) => void;
@@ -47,6 +59,9 @@ type EditorUiActions = {
   resetTextDraft: () => void;
 };
 
+/**
+ * Handles the map text to draft behavior for this module.
+ */
 const mapTextToDraft = (text: BoardTextItem | null): BoardTextInput =>
   text
     ? {
@@ -60,35 +75,49 @@ const mapTextToDraft = (text: BoardTextItem | null): BoardTextInput =>
       }
     : getDefaultBoardTextInput();
 
+/**
+ * Normalizes normalize selection before the value is stored or rendered.
+ */
 const normalizeSelection = (selectedObjects: BoardObjectRef[]) => {
   const seen = new Set<string>();
 
   return selectedObjects.filter((ref) => {
     const key = getObjectRefKey(ref);
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (seen.has(key)) {
+      // Return the resolved value to the caller after all guards and transformations.
       return false;
     }
 
     seen.add(key);
+    // Return the resolved value to the caller after all guards and transformations.
     return true;
   });
 };
 
+/**
+ * Handles the update selection behavior for this module.
+ */
 const updateSelection = (
   current: BoardObjectRef[],
   ref: BoardObjectRef | null,
   options?: SelectObjectOptions,
 ) => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!ref) {
+    // Return the resolved value to the caller after all guards and transformations.
     return [];
   }
 
   if (!options?.additive) {
+    // Return the resolved value to the caller after all guards and transformations.
     return [ref];
   }
 
   const exists = current.some((item) => isSameObjectRef(item, ref));
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (exists) {
+    // Return the resolved value to the caller after all guards and transformations.
     return options.toggle
       ? current.filter((item) => !isSameObjectRef(item, ref))
       : current;
@@ -97,6 +126,9 @@ const updateSelection = (
   return [...current, ref];
 };
 
+/**
+ * Owns transient editor UI state that should not be serialized with the canvas.
+ */
 export const useEditorUiStore = create<EditorUiState & EditorUiActions>(
   (set) => ({
     openSectionId: "overview",
@@ -182,6 +214,9 @@ export const useEditorUiStore = create<EditorUiState & EditorUiActions>(
   }),
 );
 
+/**
+ * Selects the active text id only when exactly one selected object is text.
+ */
 export const useSelectedTextId = () =>
   useEditorUiStore((state) =>
     state.selectedObjects.length === 1 &&
@@ -190,7 +225,13 @@ export const useSelectedTextId = () =>
       : null,
   );
 
+/**
+ * Selects stable object keys for multi-selection aware components.
+ */
 export const useSelectedObjectIds = () =>
   useEditorUiStore((state) => state.selectedObjects);
 
+/**
+ * Selects the draft used before text is inserted or when editing a selected text object.
+ */
 export const useTextDraft = () => useEditorUiStore((state) => state.textDraft);

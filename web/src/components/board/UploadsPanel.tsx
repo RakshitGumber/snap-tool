@@ -1,3 +1,6 @@
+// Review note: Upload library panel for importing local files or URLs and inserting assets onto the canvas.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import {
   useEffect,
   useRef,
@@ -13,6 +16,9 @@ import { pushToast } from "@/stores/useToastStore";
 import { useUploadLibraryStore } from "@/stores/useUploadLibraryStore";
 import { clearDraggedAssetId, setDraggedAssetId } from "@/uploads/drag";
 
+/**
+ * Keeps source_labels in one named constant so related calculations stay consistent.
+ */
 const SOURCE_LABELS = {
   "built-in": "Library",
   "local-file": "Local",
@@ -21,36 +27,59 @@ const SOURCE_LABELS = {
   youtube: "YouTube",
 } as const;
 
+/**
+ * Renders upload/import controls and the asset library grid for canvas insertion.
+ */
 export const BoardUploadsPanel = () => {
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Keep this local UI state in React because it only affects the current component instance.
   const [isDropActive, setIsDropActive] = useState(false);
 
   const assetIds = useUploadLibraryStore((state) => state.assetOrder);
+  // Select this store or hook value close to where the component uses it.
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  // Select this store or hook value close to where the component uses it.
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
   );
+  // Select this store or hook value close to where the component uses it.
   const urlInput = useUploadLibraryStore((state) => state.urlInput);
+  // Select this store or hook value close to where the component uses it.
   const status = useUploadLibraryStore((state) => state.status);
+  // Select this store or hook value close to where the component uses it.
   const importStatus = useUploadLibraryStore((state) => state.importStatus);
+  // Select this store or hook value close to where the component uses it.
   const lastError = useUploadLibraryStore((state) => state.lastError);
+  // Select this store or hook value close to where the component uses it.
   const setOpenSectionId = useEditorUiStore((state) => state.setOpenSectionId);
+  // Select this store or hook value close to where the component uses it.
   const setSidebarOpen = useEditorUiStore((state) => state.setSidebarOpen);
+  // Select this store or hook value close to where the component uses it.
   const hydrateLibrary = useUploadLibraryStore((state) => state.hydrateLibrary);
+  // Select this store or hook value close to where the component uses it.
   const addLocalFiles = useUploadLibraryStore((state) => state.addLocalFiles);
+  // Select this store or hook value close to where the component uses it.
   const importFromUrl = useUploadLibraryStore((state) => state.importFromUrl);
+  // Select this store or hook value close to where the component uses it.
   const insertAssetOnActiveCanvas = useUploadLibraryStore(
     (state) => state.insertAssetOnActiveCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const setUrlInput = useUploadLibraryStore((state) => state.setUrlInput);
+  // Select this store or hook value close to where the component uses it.
   const resetUrlInput = useUploadLibraryStore((state) => state.resetUrlInput);
+  // Select this store or hook value close to where the component uses it.
   const clearError = useUploadLibraryStore((state) => state.clearError);
+  // Select this store or hook value close to where the component uses it.
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
 
   useEffect(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (status !== "idle") {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -58,7 +87,9 @@ export const BoardUploadsPanel = () => {
   }, [hydrateLibrary, status]);
 
   useEffect(() => {
+    // Walk each item deliberately because order and accumulated state matter here.
     for (const assetId of assetIds) {
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!resolvedMediaByAssetId[assetId]?.preview) {
         void resolveAssetMedia(assetId, "preview");
       }
@@ -76,12 +107,15 @@ export const BoardUploadsPanel = () => {
     });
 
     if (nextAssetIds.length) {
+      // Return the resolved value to the caller after all guards and transformations.
       returnToOverview();
     }
   };
 
   const handleFiles = async (files: File[]) => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!files.length) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -107,6 +141,7 @@ export const BoardUploadsPanel = () => {
             ? error.message
             : "Unable to import those files.",
       });
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
   };
@@ -119,9 +154,11 @@ export const BoardUploadsPanel = () => {
   };
 
   const handleUrlImport = async () => {
+    // Isolate fallible browser or storage work so failures can be reported without crashing the UI.
     try {
       const asset = await importFromUrl(urlInput);
       insertAssetOnActiveCanvas(asset.id);
+      // Return the resolved value to the caller after all guards and transformations.
       returnToOverview();
       resetUrlInput();
       pushToast({
@@ -136,6 +173,7 @@ export const BoardUploadsPanel = () => {
         message:
           error instanceof Error ? error.message : "Unable to import that URL.",
       });
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
   };
@@ -200,6 +238,7 @@ export const BoardUploadsPanel = () => {
             type="url"
             value={urlInput}
             onChange={(event) => {
+              // Keep this conditional branch explicit because it changes the user-visible editor behavior.
               if (lastError) {
                 clearError();
               }
@@ -242,7 +281,9 @@ export const BoardUploadsPanel = () => {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {assetIds.map((assetId) => {
               const asset = assetMetaById[assetId];
+              // Guard this branch so missing or invalid state does not flow into the main path.
               if (!asset) {
+                // Return null when this helper cannot produce a usable value.
                 return null;
               }
 
@@ -256,6 +297,7 @@ export const BoardUploadsPanel = () => {
                   onClick={() => {
                     clearError();
                     insertAssetOnActiveCanvas(asset.id);
+                    // Return the resolved value to the caller after all guards and transformations.
                     returnToOverview();
                   }}
                   onDragStart={(event) => {

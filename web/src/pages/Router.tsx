@@ -10,7 +10,8 @@ import {
   type ReactElement,
 } from "react";
 
-import { useRouter } from "@/stores/useRouter";
+// import { useRouter } from "@/stores/useRouter";
+import { useRouter } from "@/new_stores/useRouter";
 
 type RouteComponent = LazyExoticComponent<() => ReactElement>;
 

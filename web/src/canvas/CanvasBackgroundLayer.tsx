@@ -1,3 +1,6 @@
+// Review note: Canvas background renderer for solid, gradient, and image backgrounds with visual effects.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import clsx from "clsx";
 
 import {
@@ -16,6 +19,9 @@ import type {
   CanvasBackgroundValue,
 } from "@/types/canvas";
 
+/**
+ * Documents the canvas background layer props contract used by the surrounding feature.
+ */
 type CanvasBackgroundLayerProps = {
   width: number;
   height: number;
@@ -27,6 +33,9 @@ type CanvasBackgroundLayerProps = {
   className?: string;
 };
 
+/**
+ * Paints the active background beneath board objects while mirroring export behavior.
+ */
 export const CanvasBackgroundLayer = ({
   width,
   height,

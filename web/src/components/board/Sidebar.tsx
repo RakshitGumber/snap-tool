@@ -1,3 +1,6 @@
+// Review note: Primary board sidebar navigation that switches between editing panels.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 // Deprecated
 import { useMemo, useCallback } from "react";
 import { Icon } from "@iconify/react";
@@ -12,7 +15,10 @@ import { BoardTextPanel } from "./TextPanel";
 import type { BoardSidebarSection } from "./types";
 import { BoardUploadsPanel } from "./UploadsPanel";
 
-const SECTION_ICONS: Record<, string> = {
+/**
+ * Keeps section_icons in one named constant so related calculations stay consistent.
+ */
+const SECTION_ICONS: Record<BoardSidebarSection["id"], string> = {
   overview: "solar:document-text-linear",
   background: "solar:pallete-2-linear",
   elements: "solar:widget-5-linear",
@@ -20,7 +26,10 @@ const SECTION_ICONS: Record<, string> = {
   uploads: "solar:gallery-add-linear",
 };
 
-const SECTION_NAV_LABELS: Record<, string> = {
+/**
+ * Keeps section_nav_labels in one named constant so related calculations stay consistent.
+ */
+const SECTION_NAV_LABELS: Record<BoardSidebarSection["id"], string> = {
   overview: "Overview",
   background: "BG",
   elements: "Elements",
@@ -28,6 +37,9 @@ const SECTION_NAV_LABELS: Record<, string> = {
   uploads: "Images",
 };
 
+/**
+ * Renders the sidebar section navigation and delegates section changes to UI state.
+ */
 export const BoardSidebar = () => {
   const { openSectionId, isOpen, toggleSection, setSidebarOpen } =
     useEditorUiStore(
@@ -66,6 +78,7 @@ export const BoardSidebar = () => {
   );
 
   const activeSection = useMemo(() => {
+    // Render the final UI for this branch using the state derived above.
     return (
       sections.find((section) => section.id === openSectionId) ?? sections[0]
     );

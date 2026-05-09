@@ -1,3 +1,6 @@
+// Review note: Persistent canvas state store with history, object mutation, layout, and serialization logic.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { useMemo } from "react";
 
 import { create } from "zustand";
@@ -48,24 +51,36 @@ import type {
 } from "@/types/canvas";
 import type { UploadLibraryAssetMeta } from "@/types/uploads";
 
+/**
+ * Documents the canvas state contract used by the surrounding feature.
+ */
 type CanvasState = {
   canvasMeta: CanvasShell | null;
   imagesById: Record<string, BoardImageItem>;
   textsById: Record<string, BoardTextItem>;
 };
 
+/**
+ * Documents the canvas history state contract used by the surrounding feature.
+ */
 type CanvasHistoryState = {
   historyPast: CanvasFrame[];
   historyFuture: CanvasFrame[];
   historyTransactionStart: CanvasFrame | null;
 };
 
+/**
+ * Documents the object move input contract used by the surrounding feature.
+ */
 type ObjectMoveInput = {
   ref: BoardObjectRef;
   x: number;
   y: number;
 };
 
+/**
+ * Documents the canvas actions contract used by the surrounding feature.
+ */
 type CanvasActions = {
   initializeDefaultCanvas: () => CanvasFrame;
   updateCanvasTitle: (title: string) => void;
@@ -119,23 +134,58 @@ type CanvasActions = {
   serializeCanvas: () => CanvasFrame | null;
 };
 
+/**
+ * Keeps max_initial_image_scale in one named constant so related calculations stay consistent.
+ */
 const MAX_INITIAL_IMAGE_SCALE = 0.8;
+/**
+ * Keeps image_position_inset in one named constant so related calculations stay consistent.
+ */
 const IMAGE_POSITION_INSET = 24;
+/**
+ * Keeps min_image_size in one named constant so related calculations stay consistent.
+ */
 const MIN_IMAGE_SIZE = 48;
+/**
+ * Keeps text_insert_offset_step in one named constant so related calculations stay consistent.
+ */
 const TEXT_INSERT_OFFSET_STEP = 24;
+/**
+ * Keeps min_text_font_size in one named constant so related calculations stay consistent.
+ */
 const MIN_TEXT_FONT_SIZE = 12;
+/**
+ * Keeps max_text_font_size in one named constant so related calculations stay consistent.
+ */
 const MAX_TEXT_FONT_SIZE = 180;
+/**
+ * Keeps min_text_font_weight in one named constant so related calculations stay consistent.
+ */
 const MIN_TEXT_FONT_WEIGHT = 100;
+/**
+ * Keeps max_text_font_weight in one named constant so related calculations stay consistent.
+ */
 const MAX_TEXT_FONT_WEIGHT = 900;
+/**
+ * Keeps min_text_box_width in one named constant so related calculations stay consistent.
+ */
 const MIN_TEXT_BOX_WIDTH = 120;
+/**
+ * Keeps default_layout_gap in one named constant so related calculations stay consistent.
+ */
 const DEFAULT_LAYOUT_GAP = 24;
 
+/**
+ * Handles the generate id behavior for this module.
+ */
 const generateId = () => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (
     typeof window !== "undefined" &&
     window.crypto &&
     window.crypto.randomUUID
   ) {
+    // Return the resolved value to the caller after all guards and transformations.
     return window.crypto.randomUUID();
   }
 
@@ -145,25 +195,55 @@ const generateId = () => {
   );
 };
 
+/**
+ * Handles the clamp behavior for this module.
+ */
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+/**
+ * Handles the round position behavior for this module.
+ */
 const roundPosition = (value: number) => Math.round(value * 100) / 100;
 
+/**
+ * Keeps empty_canvas_images in one named constant so related calculations stay consistent.
+ */
 const EMPTY_CANVAS_IMAGES: Record<string, BoardImageItem> = {};
+/**
+ * Keeps empty_canvas_text in one named constant so related calculations stay consistent.
+ */
 const EMPTY_CANVAS_TEXT: Record<string, BoardTextItem> = {};
 
+/**
+ * Resolves get default text input from the available editor state.
+ */
 const getDefaultTextInput = () => useConfigStore.getState().text.defaultInput;
+/**
+ * Handles the disable background move mode behavior for this module.
+ */
 const disableBackgroundMoveMode = () =>
   useEditorUiStore.getState().setBackgroundMoveMode(false);
 
+/**
+ * Answers the are canvas frames equal predicate used to choose the next branch.
+ */
 const areCanvasFramesEqual = (left: CanvasFrame, right: CanvasFrame) =>
   JSON.stringify(left) === JSON.stringify(right);
 
+/**
+ * Documents the legacy image item contract used by the surrounding feature.
+ */
 type LegacyImageItem = Omit<BoardImageItem, "layoutMode" | "layoutGap" | "isMovementLocked"> &
   Partial<Pick<BoardImageItem, "layoutMode" | "layoutGap" | "isMovementLocked">>;
+/**
+ * Documents the legacy text item contract used by the surrounding feature.
+ */
 type LegacyTextItem = Omit<BoardTextItem, "layoutMode" | "layoutGap" | "isMovementLocked"> &
   Partial<Pick<BoardTextItem, "layoutMode" | "layoutGap" | "isMovementLocked">>;
+/**
+ * Documents the legacy canvas frame contract used by the surrounding feature.
+ */
 type LegacyCanvasFrame = Omit<
   CanvasFrame,
   "background" | "backgroundPresetId" | "layoutAxisMode" | "objectOrder" | "images" | "texts"
@@ -175,6 +255,9 @@ type LegacyCanvasFrame = Omit<
   images: LegacyImageItem[];
   texts?: LegacyTextItem[];
 };
+/**
+ * Documents the persisted canvas state contract used by the surrounding feature.
+ */
 type PersistedCanvasState = Partial<
   CanvasState & {
     version?: number;
@@ -184,6 +267,9 @@ type PersistedCanvasState = Partial<
   textOrder?: string[];
 };
 
+/**
+ * Normalizes normalize image item before the value is stored or rendered.
+ */
 const normalizeImageItem = (image: LegacyImageItem): BoardImageItem => ({
   ...image,
   layoutMode: image.layoutMode ?? "free",
@@ -194,6 +280,9 @@ const normalizeImageItem = (image: LegacyImageItem): BoardImageItem => ({
       : DEFAULT_LAYOUT_GAP,
 });
 
+/**
+ * Normalizes normalize text item before the value is stored or rendered.
+ */
 const normalizeTextItem = (text: LegacyTextItem): BoardTextItem => ({
   ...text,
   layoutMode: text.layoutMode ?? "free",
@@ -204,6 +293,9 @@ const normalizeTextItem = (text: LegacyTextItem): BoardTextItem => ({
     : DEFAULT_LAYOUT_GAP,
 });
 
+/**
+ * Resolves get legacy object order from the available editor state.
+ */
 const getLegacyObjectOrder = ({
   images,
   texts,
@@ -212,6 +304,7 @@ const getLegacyObjectOrder = ({
   const safeTexts = texts ?? [];
 
   if (objectOrder?.length) {
+    // Return the resolved value to the caller after all guards and transformations.
     return objectOrder;
   }
 
@@ -221,6 +314,9 @@ const getLegacyObjectOrder = ({
   ];
 };
 
+/**
+ * Normalizes normalize canvas frame before the value is stored or rendered.
+ */
 const normalizeCanvasFrame = (canvas: LegacyCanvasFrame) => {
   const texts = (canvas.texts ?? []).map(normalizeTextItem);
   const images = canvas.images.map(normalizeImageItem);
@@ -261,12 +357,17 @@ const normalizeCanvasFrame = (canvas: LegacyCanvasFrame) => {
   };
 };
 
+/**
+ * Handles the serialize canvas state behavior for this module.
+ */
 const serializeCanvasState = ({
   canvasMeta,
   imagesById,
   textsById,
 }: CanvasState): CanvasFrame | null => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!canvasMeta) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
@@ -287,6 +388,9 @@ const serializeCanvasState = ({
   };
 };
 
+/**
+ * Resolves get contained image size from the available editor state.
+ */
 const getContainedImageSize = ({
   sourceWidth,
   sourceHeight,
@@ -312,12 +416,17 @@ const getContainedImageSize = ({
   };
 };
 
+/**
+ * Builds create canvas image item from normalized inputs.
+ */
 const createCanvasImageItem = (
   asset: UploadLibraryAssetMeta,
   state: Pick<CanvasState, "canvasMeta">,
   point?: { x: number; y: number },
 ): BoardImageItem | null => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!state.canvasMeta) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
@@ -346,6 +455,9 @@ const createCanvasImageItem = (
   };
 };
 
+/**
+ * Normalizes normalize text input before the value is stored or rendered.
+ */
 const normalizeTextInput = (
   textInput: Partial<BoardTextInput>,
   canvasMeta: CanvasShell,
@@ -381,11 +493,16 @@ const normalizeTextInput = (
   >;
 };
 
+/**
+ * Builds create canvas text item from normalized inputs.
+ */
 const createCanvasTextItem = (
   textInput: BoardTextInput,
   state: Pick<CanvasState, "canvasMeta">,
 ): BoardTextItem | null => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!state.canvasMeta) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
@@ -420,6 +537,9 @@ const createCanvasTextItem = (
   };
 };
 
+/**
+ * Handles the apply text item updates behavior for this module.
+ */
 const applyTextItemUpdates = ({
   text,
   updates,
@@ -443,6 +563,9 @@ const applyTextItemUpdates = ({
   } satisfies BoardTextItem;
 };
 
+/**
+ * Resolves get image position for preset from the available editor state.
+ */
 const getImagePositionForPreset = ({
   canvasMeta,
   image,
@@ -457,27 +580,32 @@ const getImagePositionForPreset = ({
 
   switch (preset) {
     case "top":
+      // Return the resolved value to the caller after all guards and transformations.
       return {
         x: centerX,
         y: IMAGE_POSITION_INSET,
       };
     case "bottom":
+      // Return the resolved value to the caller after all guards and transformations.
       return {
         x: centerX,
         y: canvasMeta.height - image.height - IMAGE_POSITION_INSET,
       };
     case "left":
+      // Return the resolved value to the caller after all guards and transformations.
       return {
         x: IMAGE_POSITION_INSET,
         y: centerY,
       };
     case "right":
+      // Return the resolved value to the caller after all guards and transformations.
       return {
         x: canvasMeta.width - image.width - IMAGE_POSITION_INSET,
         y: centerY,
       };
     case "center":
     default:
+      // Return the resolved value to the caller after all guards and transformations.
       return {
         x: centerX,
         y: centerY,
@@ -485,6 +613,9 @@ const getImagePositionForPreset = ({
   }
 };
 
+/**
+ * Resolves get canvas objects from the available editor state.
+ */
 const getCanvasObjects = (state: CanvasState) =>
   state.canvasMeta
     ? getOrderedCanvasObjects({
@@ -494,9 +625,14 @@ const getCanvasObjects = (state: CanvasState) =>
       })
     : [];
 
+/**
+ * Handles the realign axis bound objects behavior for this module.
+ */
 const realignAxisBoundObjects = <T extends CanvasState>(state: T): T => {
   const canvasMeta = state.canvasMeta;
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!canvasMeta || canvasMeta.layoutAxisMode === "none") {
+    // Return the resolved value to the caller after all guards and transformations.
     return state;
   }
 
@@ -506,6 +642,7 @@ const realignAxisBoundObjects = <T extends CanvasState>(state: T): T => {
   );
 
   if (!boundObjects.length) {
+    // Return the resolved value to the caller after all guards and transformations.
     return state;
   }
 
@@ -522,12 +659,15 @@ const realignAxisBoundObjects = <T extends CanvasState>(state: T): T => {
   const axisSize = axis === "horizontal" ? canvasMeta.width : canvasMeta.height;
   const totalSpan = boundObjects.reduce((sum, object, index) => {
     const bounds = boundsById.get(object.ref.id);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!bounds) {
+      // Return the resolved value to the caller after all guards and transformations.
       return sum;
     }
 
     const size = axis === "horizontal" ? bounds.width : bounds.height;
     const gap = index === 0 ? 0 : object.item.layoutGap;
+    // Return the resolved value to the caller after all guards and transformations.
     return sum + gap + size;
   }, 0);
 
@@ -535,7 +675,9 @@ const realignAxisBoundObjects = <T extends CanvasState>(state: T): T => {
 
   boundObjects.forEach((object, index) => {
     const bounds = boundsById.get(object.ref.id);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!bounds) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -573,6 +715,9 @@ const realignAxisBoundObjects = <T extends CanvasState>(state: T): T => {
   } as T;
 };
 
+/**
+ * Builds create default canvas from normalized inputs.
+ */
 const createDefaultCanvas = () => {
   const { defaultCanvasPresetId, defaultBackgroundPresetId } =
     useConfigStore.getState();
@@ -581,7 +726,11 @@ const createDefaultCanvas = () => {
   return createCanvasFrame(preset.size, defaultBackgroundPresetId, preset.id);
 };
 
+/**
+ * Handles the sync editor ui with canvas frame behavior for this module.
+ */
 const syncEditorUiWithCanvasFrame = (frame: CanvasFrame | null) => {
+  // Select this store or hook value close to where the component uses it.
   const editorUiState = useEditorUiStore.getState();
 
   if (
@@ -595,6 +744,7 @@ const syncEditorUiWithCanvasFrame = (frame: CanvasFrame | null) => {
   if (!frame) {
     editorUiState.clearSelection();
     editorUiState.resetTextDraft();
+    // Return the resolved value to the caller after all guards and transformations.
     return;
   }
 
@@ -626,8 +776,14 @@ const syncEditorUiWithCanvasFrame = (frame: CanvasFrame | null) => {
   });
 };
 
+/**
+ * Documents the canvas store contract used by the surrounding feature.
+ */
 type CanvasStore = CanvasState & CanvasHistoryState & CanvasActions;
 
+/**
+ * Documents the canvas store set contract used by the surrounding feature.
+ */
 type CanvasStoreSet = (
   partial:
     | CanvasStore
@@ -635,6 +791,9 @@ type CanvasStoreSet = (
     | ((state: CanvasStore) => CanvasStore | Partial<CanvasStore>),
 ) => void;
 
+/**
+ * Handles the apply canvas state change behavior for this module.
+ */
 const applyCanvasStateChange = (
   set: CanvasStoreSet,
   updater: (state: CanvasStore) => CanvasStore,
@@ -643,6 +802,7 @@ const applyCanvasStateChange = (
     const nextState = updater(state);
 
     if (nextState === state) {
+      // Return the resolved value to the caller after all guards and transformations.
       return state;
     }
 
@@ -659,11 +819,15 @@ const applyCanvasStateChange = (
   });
 };
 
+/**
+ * Handles the migrate persisted state behavior for this module.
+ */
 const migratePersistedState = (persistedState: unknown) => {
   const state = (persistedState ?? {}) as PersistedCanvasState;
   const legacyCanvasMeta = state.canvasMeta;
 
   if (!legacyCanvasMeta) {
+    // Return the resolved value to the caller after all guards and transformations.
     return {
       canvasMeta: null,
       imagesById: EMPTY_CANVAS_IMAGES,
@@ -699,6 +863,9 @@ const migratePersistedState = (persistedState: unknown) => {
   return normalizeCanvasFrame(legacyFrame);
 };
 
+/**
+ * Owns persisted canvas data, history stacks, and every mutation that changes the board.
+ */
 export const useCanvasStore = create<CanvasStore>()(
   persist(
     (set, get) => ({
@@ -711,7 +878,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       initializeDefaultCanvas: () => {
         const existingCanvas = serializeCanvasState(get());
+        // Keep this conditional branch explicit because it changes the user-visible editor behavior.
         if (existingCanvas) {
+          // Return the resolved value to the caller after all guards and transformations.
           return existingCanvas;
         }
 
@@ -731,12 +900,16 @@ export const useCanvasStore = create<CanvasStore>()(
       updateCanvasTitle: (title) =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
           const nextTitle = title.trim() || "untitled";
+          // Keep this conditional branch explicit because it changes the user-visible editor behavior.
           if (canvasMeta.title === nextTitle) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -751,7 +924,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       resizeCanvas: (size, presetId = null) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -768,12 +943,16 @@ export const useCanvasStore = create<CanvasStore>()(
 
       applyBackgroundToCanvas: (backgroundPresetId) => {
         const backgroundPreset = findCanvasBackgroundById(backgroundPresetId);
+        // Guard this branch so missing or invalid state does not flow into the main path.
         if (!backgroundPreset) {
+          // Return the resolved value to the caller after all guards and transformations.
           return;
         }
 
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -792,7 +971,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       applySolidColorBackground: (color) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -813,7 +994,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       applyAssetBackgroundToCanvas: (assetId) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -832,12 +1015,16 @@ export const useCanvasStore = create<CanvasStore>()(
       updateCanvasBackgroundImage: (updates) =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
           const background = canvasMeta.background;
+          // Keep this conditional branch explicit because it changes the user-visible editor behavior.
           if (background.kind !== "image") {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -860,6 +1047,7 @@ export const useCanvasStore = create<CanvasStore>()(
             background.offsetX === nextBackground.offsetX &&
             background.offsetY === nextBackground.offsetY
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -878,7 +1066,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       updateCanvasBackgroundEffects: (updates) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -893,6 +1083,7 @@ export const useCanvasStore = create<CanvasStore>()(
               nextEffects,
             )
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -907,7 +1098,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       resetCanvasBackgroundEffects: () =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -917,6 +1110,7 @@ export const useCanvasStore = create<CanvasStore>()(
               DEFAULT_CANVAS_BACKGROUND_EFFECTS,
             )
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -934,7 +1128,9 @@ export const useCanvasStore = create<CanvasStore>()(
       clearCanvas: () =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -965,6 +1161,7 @@ export const useCanvasStore = create<CanvasStore>()(
           get().historyPast[get().historyPast.length - 1] ?? null;
 
         if (!previousFrame) {
+          // Return the resolved value to the caller after all guards and transformations.
           return;
         }
 
@@ -988,6 +1185,7 @@ export const useCanvasStore = create<CanvasStore>()(
         const nextFrame = get().historyFuture[0] ?? null;
 
         if (!nextFrame) {
+          // Return the resolved value to the caller after all guards and transformations.
           return;
         }
 
@@ -1008,7 +1206,9 @@ export const useCanvasStore = create<CanvasStore>()(
       },
 
       beginHistoryTransaction: () => {
+        // Keep this conditional branch explicit because it changes the user-visible editor behavior.
         if (get().historyTransactionStart) {
+          // Return the resolved value to the caller after all guards and transformations.
           return;
         }
 
@@ -1023,6 +1223,7 @@ export const useCanvasStore = create<CanvasStore>()(
           const currentFrame = serializeCanvasState(state);
 
           if (!transactionStart) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1030,6 +1231,7 @@ export const useCanvasStore = create<CanvasStore>()(
             !currentFrame ||
             areCanvasFramesEqual(transactionStart, currentFrame)
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return {
               historyTransactionStart: null,
             };
@@ -1043,7 +1245,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       insertImageOnActiveCanvas: (asset) => {
         const image = createCanvasImageItem(asset, get());
+        // Guard this branch so missing or invalid state does not flow into the main path.
         if (!image) {
+          // Return null when this helper cannot produce a usable value.
           return null;
         }
 
@@ -1072,7 +1276,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       insertImageOnCanvasAtPoint: (asset, point) => {
         const image = createCanvasImageItem(asset, get(), point);
+        // Guard this branch so missing or invalid state does not flow into the main path.
         if (!image) {
+          // Return null when this helper cannot produce a usable value.
           return null;
         }
 
@@ -1101,7 +1307,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       insertTextOnActiveCanvas: (textInput) => {
         const text = createCanvasTextItem(textInput, get());
+        // Guard this branch so missing or invalid state does not flow into the main path.
         if (!text) {
+          // Return null when this helper cannot produce a usable value.
           return null;
         }
 
@@ -1130,7 +1338,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       moveObjectsOnCanvas: (moves, options) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta || !moves.length) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1139,8 +1349,10 @@ export const useCanvasStore = create<CanvasStore>()(
           let changed = false;
 
           for (const move of moves) {
+            // Keep this conditional branch explicit because it changes the user-visible editor behavior.
             if (move.ref.kind === "image") {
               const image = nextImagesById[move.ref.id];
+              // Guard this branch so missing or invalid state does not flow into the main path.
               if (!image || image.isMovementLocked) {
                 continue;
               }
@@ -1167,6 +1379,7 @@ export const useCanvasStore = create<CanvasStore>()(
             }
 
             const text = nextTextsById[move.ref.id];
+            // Guard this branch so missing or invalid state does not flow into the main path.
             if (!text || text.isMovementLocked) {
               continue;
             }
@@ -1192,6 +1405,7 @@ export const useCanvasStore = create<CanvasStore>()(
           }
 
           if (!changed) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1210,7 +1424,9 @@ export const useCanvasStore = create<CanvasStore>()(
       resizeImageOnCanvas: (imageId, width, height) =>
         applyCanvasStateChange(set, (state) => {
           const image = state.imagesById[imageId];
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!image) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1223,6 +1439,7 @@ export const useCanvasStore = create<CanvasStore>()(
             image.width === nextSize.width &&
             image.height === nextSize.height
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1242,7 +1459,9 @@ export const useCanvasStore = create<CanvasStore>()(
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
           const image = state.imagesById[imageId];
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta || !image || image.isMovementLocked) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1253,6 +1472,7 @@ export const useCanvasStore = create<CanvasStore>()(
           });
 
           if (image.x === nextPosition.x && image.y === nextPosition.y) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1271,9 +1491,12 @@ export const useCanvasStore = create<CanvasStore>()(
 
       toggleObjectMovementLock: (ref) =>
         applyCanvasStateChange(set, (state) => {
+          // Keep this conditional branch explicit because it changes the user-visible editor behavior.
           if (ref.kind === "image") {
             const image = state.imagesById[ref.id];
+            // Guard this branch so missing or invalid state does not flow into the main path.
             if (!image) {
+              // Return the resolved value to the caller after all guards and transformations.
               return state;
             }
 
@@ -1290,7 +1513,9 @@ export const useCanvasStore = create<CanvasStore>()(
           }
 
           const text = state.textsById[ref.id];
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!text) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1310,7 +1535,9 @@ export const useCanvasStore = create<CanvasStore>()(
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
           const text = state.textsById[textId];
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta || !text) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1331,7 +1558,9 @@ export const useCanvasStore = create<CanvasStore>()(
 
       updateLayoutAxisMode: (mode) =>
         applyCanvasStateChange(set, (state) => {
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!state.canvasMeta || state.canvasMeta.layoutAxisMode === mode) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1349,14 +1578,18 @@ export const useCanvasStore = create<CanvasStore>()(
       moveObjectUp: (ref) =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
           const index = canvasMeta.objectOrder.findIndex((item) =>
             isSameObjectRef(item, ref),
           );
+          // Handle collection boundaries before continuing with the resolved values.
           if (index < 0 || index === canvasMeta.objectOrder.length - 1) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1378,14 +1611,18 @@ export const useCanvasStore = create<CanvasStore>()(
       moveObjectDown: (ref) =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
           const index = canvasMeta.objectOrder.findIndex((item) =>
             isSameObjectRef(item, ref),
           );
+          // Handle collection boundaries before continuing with the resolved values.
           if (index <= 0) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1407,19 +1644,24 @@ export const useCanvasStore = create<CanvasStore>()(
       setSelectedObjectDistance: (distance) =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Select this store or hook value close to where the component uses it.
           const selectedObjects = useEditorUiStore.getState().selectedObjects;
+          // Keep this conditional branch explicit because it changes the user-visible editor behavior.
           if (
             !canvasMeta ||
             canvasMeta.layoutAxisMode === "none" ||
             selectedObjects.length !== 2
           ) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
           const orderedSelected = canvasMeta.objectOrder.filter((ref) =>
             selectedObjects.some((selected) => isSameObjectRef(selected, ref)),
           );
+          // Handle collection boundaries before continuing with the resolved values.
           if (orderedSelected.length !== 2) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1429,6 +1671,7 @@ export const useCanvasStore = create<CanvasStore>()(
           const normalizedDistance = Math.round(distance);
 
           for (const ref of [higherRef, lowerRef]) {
+            // Keep this conditional branch explicit because it changes the user-visible editor behavior.
             if (ref.kind === "image" && nextImagesById[ref.id]) {
               nextImagesById[ref.id] = {
                 ...nextImagesById[ref.id],
@@ -1462,8 +1705,11 @@ export const useCanvasStore = create<CanvasStore>()(
       removeSelectedObjects: () =>
         applyCanvasStateChange(set, (state) => {
           const canvasMeta = state.canvasMeta;
+          // Select this store or hook value close to where the component uses it.
           const selectedObjects = useEditorUiStore.getState().selectedObjects;
+          // Guard this branch so missing or invalid state does not flow into the main path.
           if (!canvasMeta || !selectedObjects.length) {
+            // Return the resolved value to the caller after all guards and transformations.
             return state;
           }
 
@@ -1474,6 +1720,7 @@ export const useCanvasStore = create<CanvasStore>()(
           const nextTextsById = { ...state.textsById };
 
           selectedObjects.forEach((ref) => {
+            // Keep this conditional branch explicit because it changes the user-visible editor behavior.
             if (ref.kind === "image") {
               delete nextImagesById[ref.id];
             } else {
@@ -1538,16 +1785,28 @@ export const useCanvasStore = create<CanvasStore>()(
   ),
 );
 
+/**
+ * Selects the active canvas metadata from the store for rendering components.
+ */
 export const useCanvasShell = () => useCanvasStore((state) => state.canvasMeta);
 
+/**
+ * Selects one text object by id while preserving component-level subscription granularity.
+ */
 export const useCanvasText = (textId: string) =>
   useCanvasStore((state) => state.textsById[textId] ?? null);
 
+/**
+ * Selects renderable objects in z-order for canvas and overview consumers.
+ */
 export const useOrderedCanvasObjects = () => {
+  // Select this store or hook value close to where the component uses it.
   const objectOrder = useCanvasStore(
     (state) => state.canvasMeta?.objectOrder ?? null,
   );
+  // Select this store or hook value close to where the component uses it.
   const imagesById = useCanvasStore((state) => state.imagesById);
+  // Select this store or hook value close to where the component uses it.
   const textsById = useCanvasStore((state) => state.textsById);
 
   return useMemo(
@@ -1563,8 +1822,13 @@ export const useOrderedCanvasObjects = () => {
   );
 };
 
+/**
+ * Resolves the active preset from the current canvas size and preset id.
+ */
 export const useActiveCanvasPreset = () => {
+  // Select this store or hook value close to where the component uses it.
   const canvasMeta = useCanvasShell();
+  // Select this store or hook value close to where the component uses it.
   const defaultCanvasPresetId = useConfigStore(
     (state) => state.defaultCanvasPresetId,
   );
@@ -1586,7 +1850,11 @@ export const useActiveCanvasPreset = () => {
   });
 };
 
+/**
+ * Resolves the active background preset for display and fallback behavior.
+ */
 export const useActiveCanvasBackground = () => {
+  // Select this store or hook value close to where the component uses it.
   const canvasMeta = useCanvasShell();
 
   return findCanvasBackgroundById(canvasMeta?.backgroundPresetId);

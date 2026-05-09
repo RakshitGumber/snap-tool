@@ -1,3 +1,6 @@
+// Review note: Background value factories, normalizers, display labels, and image layout calculations.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import type {
   CanvasBackgroundImageFit,
   CanvasBackgroundPreset,
@@ -5,19 +8,30 @@ import type {
   CanvasImageBackground,
 } from "@/types/canvas";
 
+/**
+ * Handles the clamp behavior for this module.
+ */
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
+/**
+ * Keeps image_background_defaults in one named constant so related calculations stay consistent.
+ */
 const IMAGE_BACKGROUND_DEFAULTS = {
   fit: "cover" as CanvasBackgroundImageFit,
   offsetX: 0,
   offsetY: 0,
 };
 
+/**
+ * Handles the clone canvas background behavior for this module.
+ */
 export const cloneCanvasBackground = (
   background: CanvasBackgroundValue,
 ): CanvasBackgroundValue => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (background.kind === "solid") {
+    // Return the resolved value to the caller after all guards and transformations.
     return {
       kind: "solid",
       color: background.color,
@@ -25,6 +39,7 @@ export const cloneCanvasBackground = (
   }
 
   if (background.kind === "gradient") {
+    // Return the resolved value to the caller after all guards and transformations.
     return {
       kind: "gradient",
       css: background.css,
@@ -44,10 +59,15 @@ export const cloneCanvasBackground = (
   };
 };
 
+/**
+ * Normalizes normalize canvas background preset value before the value is stored or rendered.
+ */
 export const normalizeCanvasBackgroundPresetValue = (
   background: CanvasBackgroundValue,
 ): CanvasBackgroundValue => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (background.kind !== "image") {
+    // Return the resolved value to the caller after all guards and transformations.
     return cloneCanvasBackground(background);
   }
 
@@ -64,11 +84,17 @@ export const normalizeCanvasBackgroundPresetValue = (
   };
 };
 
+/**
+ * Builds create canvas background from preset from normalized inputs.
+ */
 export const createCanvasBackgroundFromPreset = (
   preset: CanvasBackgroundPreset,
 ): CanvasBackgroundValue =>
   normalizeCanvasBackgroundPresetValue(preset.value);
 
+/**
+ * Builds create canvas asset image background from normalized inputs.
+ */
 export const createCanvasAssetImageBackground = (
   assetId: string,
 ): CanvasImageBackground => ({
@@ -83,12 +109,16 @@ export const createCanvasAssetImageBackground = (
   height: null,
 });
 
+/**
+ * Handles the infer canvas background from legacy value behavior for this module.
+ */
 export const inferCanvasBackgroundFromLegacyValue = (
   background: string,
 ): CanvasBackgroundValue => {
   const trimmed = background.trim();
 
   if (/^linear-gradient\(/i.test(trimmed)) {
+    // Return the resolved value to the caller after all guards and transformations.
     return {
       kind: "gradient",
       css: trimmed,
@@ -101,6 +131,9 @@ export const inferCanvasBackgroundFromLegacyValue = (
   };
 };
 
+/**
+ * Normalizes normalize canvas background value before the value is stored or rendered.
+ */
 export const normalizeCanvasBackgroundValue = ({
   background,
   preset,
@@ -108,8 +141,11 @@ export const normalizeCanvasBackgroundValue = ({
   background: CanvasBackgroundValue | string | null | undefined;
   preset?: CanvasBackgroundPreset | null;
 }): CanvasBackgroundValue => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (typeof background === "string") {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (preset) {
+      // Return the resolved value to the caller after all guards and transformations.
       return createCanvasBackgroundFromPreset(preset);
     }
 
@@ -117,6 +153,7 @@ export const normalizeCanvasBackgroundValue = ({
   }
 
   if (!background) {
+    // Return the resolved value to the caller after all guards and transformations.
     return preset
       ? createCanvasBackgroundFromPreset(preset)
       : inferCanvasBackgroundFromLegacyValue("#FFFFFF");
@@ -125,60 +162,91 @@ export const normalizeCanvasBackgroundValue = ({
   return normalizeCanvasBackgroundPresetValue(background);
 };
 
+/**
+ * Resolves get canvas background css value from the available editor state.
+ */
 export const getCanvasBackgroundCssValue = (
   background: CanvasBackgroundValue | null | undefined,
 ) => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!background) {
+    // Return the resolved value to the caller after all guards and transformations.
     return "#FFFFFF";
   }
 
   if (background.kind === "solid") {
+    // Return the resolved value to the caller after all guards and transformations.
     return background.color;
   }
 
   if (background.kind === "gradient") {
+    // Return the resolved value to the caller after all guards and transformations.
     return background.css;
   }
 
   return null;
 };
 
+/**
+ * Answers the is canvas background image predicate used to choose the next branch.
+ */
 export const isCanvasBackgroundImage = (
   background: CanvasBackgroundValue | null | undefined,
 ): background is CanvasImageBackground => background?.kind === "image";
 
+/**
+ * Answers the is canvas background image movable predicate used to choose the next branch.
+ */
 export const isCanvasBackgroundImageMovable = (
   background: CanvasBackgroundValue | null | undefined,
 ) => background?.kind === "image" && background.fit !== "fill";
 
+/**
+ * Handles the cycle canvas background image fit behavior for this module.
+ */
 export const cycleCanvasBackgroundImageFit = (
   fit: CanvasBackgroundImageFit,
 ): CanvasBackgroundImageFit => {
+  // Route each variant through its own case so unsupported shapes stay isolated.
   switch (fit) {
     case "contain":
+      // Return the resolved value to the caller after all guards and transformations.
       return "cover";
     case "cover":
+      // Return the resolved value to the caller after all guards and transformations.
       return "fill";
     case "fill":
     default:
+      // Return the resolved value to the caller after all guards and transformations.
       return "contain";
   }
 };
 
+/**
+ * Formats format canvas background kind for compact UI display.
+ */
 export const formatCanvasBackgroundKind = (
   background: CanvasBackgroundValue | null | undefined,
 ) => background?.kind ?? "custom";
 
+/**
+ * Resolves get canvas background image source from the available editor state.
+ */
 export const getCanvasBackgroundImageSource = (
   background: CanvasBackgroundValue | null | undefined,
 ) => {
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (background?.kind !== "image") {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
   return background.src ?? background.previewSrc ?? null;
 };
 
+/**
+ * Captures the rendered image rectangle after fit and offset math is applied.
+ */
 export type CanvasBackgroundImageLayout = {
   x: number;
   y: number;
@@ -192,6 +260,9 @@ export type CanvasBackgroundImageLayout = {
   maxY: number;
 };
 
+/**
+ * Resolves get canvas background image layout from the available editor state.
+ */
 export const getCanvasBackgroundImageLayout = ({
   canvasWidth,
   canvasHeight,

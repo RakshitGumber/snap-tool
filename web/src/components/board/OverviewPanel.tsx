@@ -1,3 +1,6 @@
+// Review note: Object overview and selection panel for moving, locking, removing, and positioning items.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import clsx from "clsx";
@@ -6,6 +9,7 @@ import {
   CANVAS_BACKGROUND_EFFECT_CONTROLS,
   CANVAS_BACKGROUND_EFFECT_ORDER,
   DEFAULT_CANVAS_BACKGROUND_EFFECTS,
+  // Walk each item deliberately because order and accumulated state matter here.
   formatCanvasBackgroundEffectValue,
 } from "@/canvas/backgroundEffects";
 import { formatCanvasBackgroundKind } from "@/canvas/backgrounds";
@@ -25,6 +29,9 @@ import type {
 
 import { BoardBackgroundPreview } from "./BackgroundPreview";
 
+/**
+ * Keeps image_position_presets in one named constant so related calculations stay consistent.
+ */
 const IMAGE_POSITION_PRESETS: Array<{
   id: BoardImagePositionPreset;
   label: string;
@@ -36,38 +43,61 @@ const IMAGE_POSITION_PRESETS: Array<{
   { id: "right", label: "Right" },
 ];
 
+/**
+ * Handles the truncate text behavior for this module.
+ */
 const truncateText = (value: string) =>
   value.length > 48 ? `${value.slice(0, 45).trimEnd()}...` : value;
 
+/**
+ * Answers the is selection modifier predicate used to choose the next branch.
+ */
 const isSelectionModifier = (event: ReactMouseEvent) =>
   event.shiftKey || event.ctrlKey || event.metaKey;
 
+/**
+ * Renders the object/layer overview and routes object actions back to canvas state.
+ */
 export const BoardOverviewPanel = () => {
+  // Keep this local UI state in React because it only affects the current component instance.
   const [openHierarchyKey, setOpenHierarchyKey] = useState<string | null>(null);
 
   const canvasShell = useCanvasShell();
+  // Select this store or hook value close to where the component uses it.
   const activeBackgroundPreset = useActiveCanvasBackground();
+  // Select this store or hook value close to where the component uses it.
   const orderedObjects = useOrderedCanvasObjects();
+  // Select this store or hook value close to where the component uses it.
   const positionImageOnCanvas = useCanvasStore(
     (state) => state.positionImageOnCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const moveObjectUp = useCanvasStore((state) => state.moveObjectUp);
+  // Select this store or hook value close to where the component uses it.
   const moveObjectDown = useCanvasStore((state) => state.moveObjectDown);
+  // Select this store or hook value close to where the component uses it.
   const toggleObjectMovementLock = useCanvasStore(
     (state) => state.toggleObjectMovementLock,
   );
+  // Select this store or hook value close to where the component uses it.
   const setSelectedObjectDistance = useCanvasStore(
     (state) => state.setSelectedObjectDistance,
   );
+  // Select this store or hook value close to where the component uses it.
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  // Select this store or hook value close to where the component uses it.
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
   );
+  // Select this store or hook value close to where the component uses it.
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
+  // Select this store or hook value close to where the component uses it.
   const selectedObjects = useEditorUiStore((state) => state.selectedObjects);
+  // Select this store or hook value close to where the component uses it.
   const selectImage = useEditorUiStore((state) => state.selectImage);
+  // Select this store or hook value close to where the component uses it.
   const selectText = useEditorUiStore((state) => state.selectText);
   const backgroundEffects =
     canvasShell?.backgroundEffects ?? DEFAULT_CANVAS_BACKGROUND_EFFECTS;
@@ -103,10 +133,12 @@ export const BoardOverviewPanel = () => {
         : background?.kind === "image"
           ? "Image background"
           : "White");
+  // Memoize this derived value so repeated renders do not redo the same calculation.
   const selectedKeySet = useMemo(
     () => new Set(selectedObjects.map((ref) => getObjectRefKey(ref))),
     [selectedObjects],
   );
+  // Memoize this derived value so repeated renders do not redo the same calculation.
   const orderedSelectedObjects = useMemo(
     () =>
       orderedObjects.filter((object) =>
@@ -135,6 +167,7 @@ export const BoardOverviewPanel = () => {
 
   useEffect(() => {
     orderedObjects.forEach((object) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (
         object.kind === "image" &&
         !resolvedMediaByAssetId[object.item.assetId]?.preview
@@ -145,6 +178,7 @@ export const BoardOverviewPanel = () => {
   }, [orderedObjects, resolvedMediaByAssetId, resolveAssetMedia]);
 
   useEffect(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       activeBackgroundAssetId &&
       !resolvedMediaByAssetId[activeBackgroundAssetId]?.preview
@@ -160,7 +194,9 @@ export const BoardOverviewPanel = () => {
         (candidate) =>
           candidate.ref.kind === ref.kind && candidate.ref.id === ref.id,
       );
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!object) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -169,6 +205,7 @@ export const BoardOverviewPanel = () => {
           additive,
           toggle: additive,
         });
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 

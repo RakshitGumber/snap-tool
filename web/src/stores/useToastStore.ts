@@ -1,3 +1,4 @@
+// Deprecated
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 
@@ -137,7 +138,7 @@ export const createToastStore = () => {
 
 export const toastStore: ToastStoreApi = createToastStore();
 
-export const useToastStore = <T,>(selector: (state: ToastStore) => T) =>
+export const useToastStore = <T>(selector: (state: ToastStore) => T) =>
   useStore(toastStore, selector);
 
 export const pushToast = (input: ToastInput) =>

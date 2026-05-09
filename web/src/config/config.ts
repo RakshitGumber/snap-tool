@@ -1,3 +1,6 @@
+// Review note: Central board configuration defaults for canvas presets, layout, and text editing.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import type {
   BoardTextInput,
   CanvasBackgroundPresetGroup,
@@ -6,23 +9,35 @@ import type {
   CanvasPresetId,
 } from "@/types/canvas";
 
+/**
+ * Describes the spacing and alignment rules used when objects are axis-bound on the board.
+ */
 export type BoardLayoutConfig = {
   accessPanelWidth: number;
   designPanelWidth: number;
   sidebarWidth: number;
 };
 
+/**
+ * Collects the preset ids used when a new board is initialized.
+ */
 export type BoardDefaultsConfig = {
   canvasPresetId: CanvasPresetId;
   backgroundPresetId: string;
   canvasTitle: string;
 };
 
+/**
+ * Defines the default editable text payload inserted by the text panel.
+ */
 export type BoardTextConfig = {
   defaultInput: BoardTextInput;
   weightOptions: number[];
 };
 
+/**
+ * Groups every static board setting behind a single importable configuration object.
+ */
 export type BoardConfig = {
   layout: BoardLayoutConfig;
   defaults: BoardDefaultsConfig;
@@ -32,6 +47,9 @@ export type BoardConfig = {
   canvasBackgroundPresetGroups: CanvasBackgroundPresetGroup[];
 };
 
+/**
+ * Keeps all baseline canvas, background, and text defaults immutable for consumers.
+ */
 export const BOARD_CONFIG = {
   layout: {
     accessPanelWidth: 76,

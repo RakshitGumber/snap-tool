@@ -1,3 +1,6 @@
+// Review note: Text editing panel for content, color, alignment, font size, and weight.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { useEffect, useId } from "react";
 
 import clsx from "clsx";
@@ -18,26 +21,40 @@ import {
 } from "@/stores/useEditorUiStore";
 import type { BoardTextAlign, BoardTextInput } from "@/types/canvas";
 
+/**
+ * Keeps align_options in one named constant so related calculations stay consistent.
+ */
 const ALIGN_OPTIONS: Array<{ value: BoardTextAlign; label: string }> = [
   { value: "left", label: "Left" },
   { value: "center", label: "Center" },
   { value: "right", label: "Right" },
 ];
 
+/**
+ * Renders controls for the currently selected text object or text insertion draft.
+ */
 export const BoardTextPanel = () => {
+  // Select this store or hook value close to where the component uses it.
   const datalistId = useId();
 
   const canvasShell = useCanvasShell();
+  // Select this store or hook value close to where the component uses it.
   const textConfig = useTextConfig();
+  // Select this store or hook value close to where the component uses it.
   const draft = useTextDraft();
+  // Select this store or hook value close to where the component uses it.
   const selectedTextId = useSelectedTextId();
+  // Select this store or hook value close to where the component uses it.
   const insertTextOnActiveCanvas = useCanvasStore(
     (state) => state.insertTextOnActiveCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateTextOnCanvas = useCanvasStore(
     (state) => state.updateTextOnCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
+  // Select this store or hook value close to where the component uses it.
   const fontCatalog = useGoogleFontsCatalog();
 
   useEffect(() => {
@@ -53,6 +70,7 @@ export const BoardTextPanel = () => {
     } as Partial<BoardTextInput>);
 
     if (!selectedTextId) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -62,13 +80,17 @@ export const BoardTextPanel = () => {
   };
 
   const handleAddText = () => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     const text = draft.text.trim();
     const fontFamily = normalizeBoardTextFamily(draft.fontFamily);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!text || !fontFamily) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -155,7 +177,7 @@ export const BoardTextPanel = () => {
             }
             className="w-full rounded-xl border border-border-color/70 bg-card-bg px-3 py-2 text-sm text-title-color outline-none transition focus:border-accent"
           >
-            {textConfig.weightOptions.map((weight: any) => (
+            {textConfig.weightOptions.map((weight) => (
               <option key={weight} value={weight}>
                 {weight}
               </option>

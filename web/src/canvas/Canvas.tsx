@@ -1,3 +1,6 @@
+// Review note: Interactive editor canvas that renders backgrounds, objects, selection, dragging, resizing, and drop handling.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 // Removing
 import {
   memo,
@@ -54,6 +57,9 @@ import type {
   CanvasBackgroundImageFit,
 } from "@/types/canvas";
 
+/**
+ * Documents the pointer snapshot contract used by the surrounding feature.
+ */
 type PointerSnapshot = {
   pointerId: number;
   clientX: number;
@@ -61,6 +67,9 @@ type PointerSnapshot = {
   shiftKey: boolean;
 };
 
+/**
+ * Documents the canvas drag state contract used by the surrounding feature.
+ */
 type CanvasDragState =
   | {
       kind: "image-resize";
@@ -81,14 +90,23 @@ type CanvasDragState =
       fit: CanvasBackgroundImageFit;
     };
 
+/**
+ * Documents the pointer capture target contract used by the surrounding feature.
+ */
 type PointerCaptureTarget = HTMLButtonElement | HTMLDivElement;
 
+/**
+ * Answers the is selection modifier predicate used to choose the next branch.
+ */
 const isSelectionModifier = (event: {
   shiftKey: boolean;
   ctrlKey: boolean;
   metaKey: boolean;
 }) => event.shiftKey || event.ctrlKey || event.metaKey;
 
+/**
+ * Resolves get object guide bounds from the available editor state.
+ */
 const getObjectGuideBounds = (
   object: OrderedCanvasObject,
   measuredBounds?: Partial<Pick<CanvasObjectBounds, "width" | "height">>,
@@ -100,68 +118,107 @@ const getObjectGuideBounds = (
       )
     : getObjectBounds(object, measuredBounds);
 
+/**
+ * Renders the editable board surface and connects pointer interactions to canvas state.
+ */
 export const Canvas = memo(function BoardCanvas() {
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const viewportInnerRef = useRef<HTMLDivElement | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const inlineEditorRef = useRef<HTMLTextAreaElement | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const objectDragSessionRef = useRef<ObjectDragSession | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const dragStateRef = useRef<CanvasDragState | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const activePointerIdRef = useRef<number | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const capturedPointerTargetRef = useRef<PointerCaptureTarget | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const frameRequestRef = useRef<number | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const pointerSnapshotRef = useRef<PointerSnapshot | null>(null);
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const objectElementRefs = useRef<
     Record<string, HTMLDivElement | HTMLButtonElement | null>
   >({});
+  // Store mutable interaction state in a ref so pointer handlers can read it without re-rendering.
   const textEditSnapshotRef = useRef<{ id: string; text: string } | null>(null);
+  // Keep this local UI state in React because it only affects the current component instance.
   const [dropTargetActive, setDropTargetActive] = useState(false);
+  // Keep this local UI state in React because it only affects the current component instance.
   const [canvasScale, setCanvasScale] = useState(1);
+  // Keep this local UI state in React because it only affects the current component instance.
   const [guideState, setGuideState] = useState<GuideState>(EMPTY_GUIDES);
 
   const canvasShell = useCanvasShell();
+  // Select this store or hook value close to where the component uses it.
   const orderedObjects = useOrderedCanvasObjects();
+  // Select this store or hook value close to where the component uses it.
   const selectedObjects = useSelectedObjectIds();
+  // Select this store or hook value close to where the component uses it.
   const textDraft = useTextDraft();
+  // Select this store or hook value close to where the component uses it.
   const editingTextId = useEditorUiStore((state) => state.editingTextId);
+  // Select this store or hook value close to where the component uses it.
   const isBackgroundMoveMode = useEditorUiStore(
     (state) => state.isBackgroundMoveMode,
   );
+  // Select this store or hook value close to where the component uses it.
   const setBackgroundMoveMode = useEditorUiStore(
     (state) => state.setBackgroundMoveMode,
   );
+  // Select this store or hook value close to where the component uses it.
   const selectImage = useEditorUiStore((state) => state.selectImage);
+  // Select this store or hook value close to where the component uses it.
   const selectText = useEditorUiStore((state) => state.selectText);
+  // Select this store or hook value close to where the component uses it.
   const clearSelection = useEditorUiStore((state) => state.clearSelection);
+  // Select this store or hook value close to where the component uses it.
   const setEditingTextId = useEditorUiStore((state) => state.setEditingTextId);
+  // Select this store or hook value close to where the component uses it.
   const updateTextDraft = useEditorUiStore((state) => state.updateTextDraft);
+  // Select this store or hook value close to where the component uses it.
   const moveObjectsOnCanvas = useCanvasStore(
     (state) => state.moveObjectsOnCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const resizeImageOnCanvas = useCanvasStore(
     (state) => state.resizeImageOnCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateCanvasBackgroundImage = useCanvasStore(
     (state) => state.updateCanvasBackgroundImage,
   );
+  // Select this store or hook value close to where the component uses it.
   const updateTextOnCanvas = useCanvasStore(
     (state) => state.updateTextOnCanvas,
   );
+  // Select this store or hook value close to where the component uses it.
   const removeSelectedObjects = useCanvasStore(
     (state) => state.removeSelectedObjects,
   );
+  // Select this store or hook value close to where the component uses it.
   const beginHistoryTransaction = useCanvasStore(
     (state) => state.beginHistoryTransaction,
   );
+  // Select this store or hook value close to where the component uses it.
   const endHistoryTransaction = useCanvasStore(
     (state) => state.endHistoryTransaction,
   );
+  // Select this store or hook value close to where the component uses it.
   const insertImageOnCanvasAtPoint = useCanvasStore(
     (state) => state.insertImageOnCanvasAtPoint,
   );
+  // Select this store or hook value close to where the component uses it.
   const resolvedMediaByAssetId = useUploadLibraryStore(
     (state) => state.resolvedMediaByAssetId,
   );
+  // Select this store or hook value close to where the component uses it.
   const assetMetaById = useUploadLibraryStore((state) => state.assetMetaById);
+  // Select this store or hook value close to where the component uses it.
   const resolveAssetMedia = useUploadLibraryStore(
     (state) => state.resolveAssetMedia,
   );
@@ -170,6 +227,7 @@ export const Canvas = memo(function BoardCanvas() {
     () => new Set(selectedObjects.map((ref) => getObjectRefKey(ref))),
     [selectedObjects],
   );
+  // Memoize this derived value so repeated renders do not redo the same calculation.
   const objectByKey = useMemo(
     () =>
       Object.fromEntries(
@@ -210,6 +268,7 @@ export const Canvas = memo(function BoardCanvas() {
 
   useEffect(() => {
     orderedObjects.forEach((object) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (
         object.kind === "image" &&
         !resolvedMediaByAssetId[object.item.assetId]?.full
@@ -220,6 +279,7 @@ export const Canvas = memo(function BoardCanvas() {
   }, [orderedObjects, resolveAssetMedia, resolvedMediaByAssetId]);
 
   useEffect(() => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (backgroundAssetId && !resolvedMediaByAssetId[backgroundAssetId]?.full) {
       void resolveAssetMedia(backgroundAssetId, "full");
     }
@@ -227,6 +287,7 @@ export const Canvas = memo(function BoardCanvas() {
 
   useEffect(() => {
     orderedObjects.forEach((object) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (object.kind === "text") {
         ensureGoogleFontLoaded(object.item.fontFamily);
       }
@@ -234,11 +295,13 @@ export const Canvas = memo(function BoardCanvas() {
   }, [orderedObjects]);
 
   useEffect(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       !canvasShell ||
       !isCanvasBackgroundImageMovable(canvasShell.background) ||
       !isBackgroundMoveMode
     ) {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (isBackgroundMoveMode) {
         setBackgroundMoveMode(false);
       }
@@ -247,17 +310,21 @@ export const Canvas = memo(function BoardCanvas() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (event.key !== "Delete" && event.key !== "Backspace") {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
       const target = event.target;
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement ||
         (target instanceof HTMLElement && target.isContentEditable)
       ) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -268,16 +335,21 @@ export const Canvas = memo(function BoardCanvas() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    // Return the resolved value to the caller after all guards and transformations.
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [removeSelectedObjects, selectedObjects.length]);
 
   const updateCanvasScale = useEffectEvent(() => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     const container = viewportInnerRef.current;
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!container) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -297,12 +369,16 @@ export const Canvas = memo(function BoardCanvas() {
   }, [canvasShell?.width, canvasShell?.height]);
 
   useEffect(() => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     const viewport = viewportInnerRef.current;
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!viewport || typeof ResizeObserver === "undefined") {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -317,11 +393,13 @@ export const Canvas = memo(function BoardCanvas() {
   }, [canvasShell]);
 
   useLayoutEffect(() => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       !editingText ||
       editingText.kind !== "text" ||
       !inlineEditorRef.current
     ) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -335,7 +413,9 @@ export const Canvas = memo(function BoardCanvas() {
 
   const getCanvasPoint = useEffectEvent((clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!rect) {
+      // Return the resolved value to the caller after all guards and transformations.
       return { x: 0, y: 0 };
     }
 
@@ -351,6 +431,7 @@ export const Canvas = memo(function BoardCanvas() {
 
     if (element) {
       const rect = element.getBoundingClientRect();
+      // Return the resolved value to the caller after all guards and transformations.
       return getObjectGuideBounds(object, {
         width: rect.width / canvasScale,
         height: rect.height / canvasScale,
@@ -366,6 +447,7 @@ export const Canvas = memo(function BoardCanvas() {
       capturedPointerTargetRef.current = target;
 
       if (typeof target.setPointerCapture !== "function") {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -405,6 +487,7 @@ export const Canvas = memo(function BoardCanvas() {
         typeof pointerTarget.hasPointerCapture === "function" &&
         pointerTarget.hasPointerCapture(pointerId)
       ) {
+        // Isolate fallible browser or storage work so failures can be reported without crashing the UI.
         try {
           pointerTarget.releasePointerCapture(pointerId);
         } catch {
@@ -426,13 +509,16 @@ export const Canvas = memo(function BoardCanvas() {
     const dragState = dragStateRef.current;
 
     if (!pointer) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     const localPoint = getCanvasPoint(pointer.clientX, pointer.clientY);
 
     if (objectDragSession) {
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!canvasShell) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -460,10 +546,12 @@ export const Canvas = memo(function BoardCanvas() {
         releaseFromAxis: true,
       });
       setGuideState(result.guides);
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     if (!dragState) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -481,10 +569,12 @@ export const Canvas = memo(function BoardCanvas() {
         dragState.startWidth * nextScale,
         dragState.startHeight * nextScale,
       );
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
     if (!canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -507,11 +597,13 @@ export const Canvas = memo(function BoardCanvas() {
   });
 
   const handleGlobalPointerMove = useEffectEvent((event: PointerEvent) => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       activePointerIdRef.current === null ||
       event.pointerId !== activePointerIdRef.current ||
       (objectDragSessionRef.current === null && dragStateRef.current === null)
     ) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -523,6 +615,7 @@ export const Canvas = memo(function BoardCanvas() {
     };
 
     if (frameRequestRef.current !== null) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -530,11 +623,13 @@ export const Canvas = memo(function BoardCanvas() {
   });
 
   const handleGlobalPointerFinish = useEffectEvent((event?: PointerEvent) => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       event &&
       activePointerIdRef.current !== null &&
       event.pointerId !== activePointerIdRef.current
     ) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -543,10 +638,12 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handlePointerCaptureLost = useEffectEvent(
     (event: ReactPointerEvent<HTMLButtonElement | HTMLDivElement>) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (
         activePointerIdRef.current === null ||
         event.pointerId !== activePointerIdRef.current
       ) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -597,6 +694,7 @@ export const Canvas = memo(function BoardCanvas() {
       const startPositions = Object.fromEntries(
         selection.map((ref) => {
           const current = objectByKey[getObjectRefKey(ref)];
+          // Return the resolved value to the caller after all guards and transformations.
           return [
             getObjectRefKey(ref),
             current ? { x: current.item.x, y: current.item.y } : { x: 0, y: 0 },
@@ -621,7 +719,9 @@ export const Canvas = memo(function BoardCanvas() {
   const handleObjectPointerDown =
     (object: OrderedCanvasObject) =>
     (event: ReactPointerEvent<HTMLButtonElement>) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (event.button !== 0) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -631,17 +731,20 @@ export const Canvas = memo(function BoardCanvas() {
       const isSelected = selectedKeySet.has(getObjectRefKey(object.ref));
 
       if (additive) {
+        // Keep this conditional branch explicit because it changes the user-visible editor behavior.
         if (object.kind === "image") {
           selectImage(object.item.id, { additive: true, toggle: true });
         } else {
           selectText(object.item, { additive: true, toggle: true });
         }
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
       const activeSelection = isSelected ? selectedObjects : [object.ref];
 
       if (!isSelected) {
+        // Keep this conditional branch explicit because it changes the user-visible editor behavior.
         if (object.kind === "image") {
           selectImage(object.item.id);
         } else {
@@ -650,15 +753,18 @@ export const Canvas = memo(function BoardCanvas() {
       }
 
       if (object.item.isMovementLocked) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
       const draggableSelection = activeSelection.filter((ref) => {
         const candidate = objectByKey[getObjectRefKey(ref)];
+        // Return the resolved value to the caller after all guards and transformations.
         return candidate ? !candidate.item.isMovementLocked : false;
       });
 
       if (!draggableSelection.length) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -668,7 +774,9 @@ export const Canvas = memo(function BoardCanvas() {
   const handleImageResizePointerDown =
     (image: BoardImageItem) =>
     (event: ReactPointerEvent<HTMLButtonElement>) => {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (event.button !== 0) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -691,7 +799,9 @@ export const Canvas = memo(function BoardCanvas() {
   const handleBackgroundPointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (event.button !== 0 || !canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -706,6 +816,7 @@ export const Canvas = memo(function BoardCanvas() {
 
     if (!isBackgroundMoveMode || !canMoveBackground) {
       clearSelection();
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -726,7 +837,9 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>) => {
     const assetId = getDraggedAssetId(event.dataTransfer);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!assetId) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -740,10 +853,12 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleCanvasDragLeave = (event: ReactDragEvent<HTMLDivElement>) => {
     const nextTarget = event.relatedTarget;
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       nextTarget instanceof Node &&
       event.currentTarget.contains(nextTarget)
     ) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -754,7 +869,9 @@ export const Canvas = memo(function BoardCanvas() {
 
   const handleCanvasDrop = (event: ReactDragEvent<HTMLDivElement>) => {
     const assetId = getDraggedAssetId(event.dataTransfer);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!assetId) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -763,7 +880,9 @@ export const Canvas = memo(function BoardCanvas() {
     clearDraggedAssetId();
 
     const asset = assetMetaById[assetId];
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!asset || !canvasShell) {
+      // Return the resolved value to the caller after all guards and transformations.
       return;
     }
 
@@ -785,12 +904,14 @@ export const Canvas = memo(function BoardCanvas() {
       | ReactPointerEvent<HTMLTextAreaElement>
       | React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (
       "key" in event &&
       event.key === "Escape" &&
       editingText?.kind === "text"
     ) {
       const snapshot = textEditSnapshotRef.current;
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (snapshot && snapshot.id === editingText.item.id) {
         updateTextDraft({ text: snapshot.text });
         updateTextOnCanvas(editingText.item.id, { text: snapshot.text });
@@ -800,6 +921,7 @@ export const Canvas = memo(function BoardCanvas() {
   };
 
   if (!canvasShell) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
@@ -881,7 +1003,9 @@ export const Canvas = memo(function BoardCanvas() {
               if (object.kind === "image") {
                 const media = resolvedMediaByAssetId[object.item.assetId]?.full;
                 const asset = assetMetaById[object.item.assetId];
+                // Guard this branch so missing or invalid state does not flow into the main path.
                 if (!media) {
+                  // Return null when this helper cannot produce a usable value.
                   return null;
                 }
 

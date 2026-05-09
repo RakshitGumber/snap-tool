@@ -1,3 +1,6 @@
+// Review note: Canvas export pipeline that recreates the editor scene in an offscreen bitmap and downloads it.
+// The comments in this file are intentionally dense to support the requested review pass.
+
 import { ensureGoogleFontLoaded } from "@/libs/googleFonts";
 import {
   getCanvasBackgroundCssValue,
@@ -20,7 +23,13 @@ import {
   normalizeCanvasBackgroundEffects,
 } from "@/canvas/backgroundEffects";
 
+/**
+ * Documents the canvas export format contract used by the surrounding feature.
+ */
 export type CanvasExportFormat = "png" | "jpg";
+/**
+ * Defines caller-controlled export settings such as format, size, and JPEG quality.
+ */
 export type CanvasExportOptions = {
   format: CanvasExportFormat;
   filenameBase?: string;
@@ -29,6 +38,9 @@ export type CanvasExportOptions = {
   quality?: number;
 };
 
+/**
+ * Returns both the generated Blob/File pair and the metadata needed by download flows.
+ */
 export type CanvasExportResult = {
   blob: Blob;
   file: File;
@@ -38,29 +50,57 @@ export type CanvasExportResult = {
   height: number;
 };
 
+/**
+ * Keeps image_corner_radius in one named constant so related calculations stay consistent.
+ */
 const IMAGE_CORNER_RADIUS = 8;
+/**
+ * Keeps text_padding_x in one named constant so related calculations stay consistent.
+ */
 const TEXT_PADDING_X = 8;
+/**
+ * Keeps text_padding_y in one named constant so related calculations stay consistent.
+ */
 const TEXT_PADDING_Y = 4;
+/**
+ * Keeps min_export_edge in one named constant so related calculations stay consistent.
+ */
 const MIN_EXPORT_EDGE = 64;
+/**
+ * Keeps max_export_edge in one named constant so related calculations stay consistent.
+ */
 const MAX_EXPORT_EDGE = 4096;
+/**
+ * Keeps default_jpeg_quality in one named constant so related calculations stay consistent.
+ */
 const DEFAULT_JPEG_QUALITY = 92;
 
+/**
+ * Keeps mime_type_by_format in one named constant so related calculations stay consistent.
+ */
 const MIME_TYPE_BY_FORMAT: Record<CanvasExportFormat, string> = {
   png: "image/png",
   jpg: "image/jpeg",
 };
 
+/**
+ * Keeps file_extension_by_format in one named constant so related calculations stay consistent.
+ */
 const FILE_EXTENSION_BY_FORMAT: Record<CanvasExportFormat, string> = {
   png: "png",
   jpg: "jpg",
 };
 
+/**
+ * Handles the split top level behavior for this module.
+ */
 const splitTopLevel = (value: string) => {
   const parts: string[] = [];
   let current = "";
   let depth = 0;
 
   for (const character of value) {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (character === "(") {
       depth += 1;
     } else if (character === ")") {
@@ -83,14 +123,21 @@ const splitTopLevel = (value: string) => {
   return parts;
 };
 
+/**
+ * Handles the parse linear gradient behavior for this module.
+ */
 const parseLinearGradient = (value: string) => {
   const match = value.match(/^linear-gradient\((.*)\)$/i);
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!match) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
   const parts = splitTopLevel(match[1]);
+  // Handle collection boundaries before continuing with the resolved values.
   if (parts.length < 2) {
+    // Return null when this helper cannot produce a usable value.
     return null;
   }
 
@@ -104,7 +151,9 @@ const parseLinearGradient = (value: string) => {
 
   const positions = stopParts.map((part) => {
     const stopMatch = part.match(/^(.*?)(?:\s+(-?\d+(?:\.\d+)?)%)?$/);
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!stopMatch) {
+      // Return null when this helper cannot produce a usable value.
       return { color: part, position: null as number | null };
     }
 
@@ -127,6 +176,7 @@ const parseLinearGradient = (value: string) => {
 
   let knownIndex = 0;
   while (knownIndex < positions.length) {
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (positions[knownIndex].position === null) {
       knownIndex += 1;
       continue;
@@ -166,6 +216,9 @@ const parseLinearGradient = (value: string) => {
   };
 };
 
+/**
+ * Handles the fill canvas background behavior for this module.
+ */
 const fillCanvasBackground = (
   context: CanvasRenderingContext2D,
   width: number,
@@ -173,14 +226,18 @@ const fillCanvasBackground = (
   background: CanvasBackgroundValue,
 ) => {
   const backgroundCss = getCanvasBackgroundCssValue(background);
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!backgroundCss) {
+    // Return the resolved value to the caller after all guards and transformations.
     return;
   }
 
   const gradient = parseLinearGradient(backgroundCss);
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!gradient) {
     context.fillStyle = backgroundCss;
     context.fillRect(0, 0, width, height);
+    // Return the resolved value to the caller after all guards and transformations.
     return;
   }
 
@@ -209,6 +266,9 @@ const fillCanvasBackground = (
   context.fillRect(0, 0, width, height);
 };
 
+/**
+ * Handles the draw canvas background image behavior for this module.
+ */
 const drawCanvasBackgroundImage = async ({
   context,
   width,
@@ -248,6 +308,9 @@ const drawCanvasBackgroundImage = async ({
   );
 };
 
+/**
+ * Handles the draw canvas background with effects behavior for this module.
+ */
 const drawCanvasBackgroundWithEffects = async (
   context: CanvasRenderingContext2D,
   width: number,
@@ -271,8 +334,10 @@ const drawCanvasBackgroundWithEffects = async (
   backgroundCanvas.height = height + blurPadding * 2;
 
   const backgroundContext = backgroundCanvas.getContext("2d");
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!backgroundContext) {
     fillCanvasBackground(context, width, height, background);
+    // Return the resolved value to the caller after all guards and transformations.
     return;
   }
 
@@ -281,6 +346,7 @@ const drawCanvasBackgroundWithEffects = async (
   backgroundContext.save();
   backgroundContext.filter = buildCanvasBackgroundFilter(effects);
   backgroundContext.globalAlpha = getCanvasBackgroundOpacity(effects);
+  // Keep this conditional branch explicit because it changes the user-visible editor behavior.
   if (background.kind === "image" && imageBackgroundSource) {
     await drawCanvasBackgroundImage({
       context: backgroundContext,
@@ -305,6 +371,9 @@ const drawCanvasBackgroundWithEffects = async (
   context.drawImage(backgroundCanvas, -blurPadding, -blurPadding);
 };
 
+/**
+ * Builds build rounded rect path from normalized inputs.
+ */
 const buildRoundedRectPath = (
   context: CanvasRenderingContext2D,
   x: number,
@@ -328,6 +397,9 @@ const buildRoundedRectPath = (
   context.closePath();
 };
 
+/**
+ * Handles the load image behavior for this module.
+ */
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
@@ -342,6 +414,9 @@ const loadImage = (src: string) =>
     image.src = src;
   });
 
+/**
+ * Handles the draw image item behavior for this module.
+ */
 const drawImageItem = async (
   context: CanvasRenderingContext2D,
   image: BoardImageItem,
@@ -366,6 +441,9 @@ const drawImageItem = async (
   context.restore();
 };
 
+/**
+ * Handles the break token to fit behavior for this module.
+ */
 const breakTokenToFit = (
   context: CanvasRenderingContext2D,
   token: string,
@@ -376,6 +454,7 @@ const breakTokenToFit = (
 
   for (const character of token) {
     const next = `${current}${character}`;
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!current || context.measureText(next).width <= maxWidth) {
       current = next;
       continue;
@@ -392,12 +471,17 @@ const breakTokenToFit = (
   return chunks;
 };
 
+/**
+ * Handles the wrap paragraph behavior for this module.
+ */
 const wrapParagraph = (
   context: CanvasRenderingContext2D,
   paragraph: string,
   maxWidth: number,
 ) => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!paragraph) {
+    // Return the resolved value to the caller after all guards and transformations.
     return [""];
   }
 
@@ -407,12 +491,14 @@ const wrapParagraph = (
 
   for (const token of tokens) {
     const candidate = `${currentLine}${token}`;
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!currentLine || context.measureText(candidate).width <= maxWidth) {
       currentLine = candidate;
       continue;
     }
 
     if (token.trim() && context.measureText(token).width > maxWidth) {
+      // Keep this conditional branch explicit because it changes the user-visible editor behavior.
       if (currentLine.trim()) {
         lines.push(currentLine.trimEnd());
         currentLine = "";
@@ -430,15 +516,22 @@ const wrapParagraph = (
   }
 
   lines.push(currentLine.trimEnd());
+  // Return the resolved value to the caller after all guards and transformations.
   return lines;
 };
 
+/**
+ * Handles the wrap text lines behavior for this module.
+ */
 const wrapTextLines = (
   context: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
 ) => text.split("\n").flatMap((paragraph) => wrapParagraph(context, paragraph, maxWidth));
 
+/**
+ * Handles the draw text item behavior for this module.
+ */
 const drawTextItem = (
   context: CanvasRenderingContext2D,
   text: BoardTextItem,
@@ -474,15 +567,22 @@ const drawTextItem = (
   context.restore();
 };
 
+/**
+ * Handles the wait for fonts behavior for this module.
+ */
 const waitForFonts = async (texts: BoardTextItem[]) => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (typeof document === "undefined" || !("fonts" in document)) {
+    // Return the resolved value to the caller after all guards and transformations.
     return;
   }
 
   await Promise.all(
     texts.map(async (text) => {
       const family = normalizeBoardTextFamily(text.fontFamily);
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!family) {
+        // Return the resolved value to the caller after all guards and transformations.
         return;
       }
 
@@ -509,6 +609,9 @@ const waitForFonts = async (texts: BoardTextItem[]) => {
   }
 };
 
+/**
+ * Builds build filename from normalized inputs.
+ */
 const buildFilename = (title: string, format: CanvasExportFormat) => {
   const safeTitle =
     title
@@ -521,6 +624,9 @@ const buildFilename = (title: string, format: CanvasExportFormat) => {
   return `${safeTitle}-${timestamp}.${FILE_EXTENSION_BY_FORMAT[format]}`;
 };
 
+/**
+ * Handles the download blob behavior for this module.
+ */
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -533,8 +639,13 @@ const downloadBlob = (blob: Blob, filename: string) => {
   }, 0);
 };
 
+/**
+ * Handles the clamp export dimension behavior for this module.
+ */
 const clampExportDimension = (value: number, fallback: number) => {
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!Number.isFinite(value)) {
+    // Return the resolved value to the caller after all guards and transformations.
     return fallback;
   }
 
@@ -544,9 +655,15 @@ const clampExportDimension = (value: number, fallback: number) => {
   );
 };
 
+/**
+ * Normalizes normalize export quality before the value is stored or rendered.
+ */
 const normalizeExportQuality = (quality?: number) =>
   Math.min(1, Math.max(0.1, Math.round(quality ?? DEFAULT_JPEG_QUALITY) / 100));
 
+/**
+ * Resolves resolve canvas export assets from the available editor state.
+ */
 const resolveCanvasExportAssets = async (canvasFrame: CanvasFrame) => {
   const { assetMetaById, resolveAssetMedia } = useUploadLibraryStore.getState();
   const imageSources = new Map<string, string>();
@@ -560,6 +677,7 @@ const resolveCanvasExportAssets = async (canvasFrame: CanvasFrame) => {
 
   for (const image of canvasFrame.images) {
     const media = await resolveAssetMedia(image.assetId, "full");
+    // Guard this branch so missing or invalid state does not flow into the main path.
     if (!media?.src) {
       throw new Error("One of the board images is not ready to save yet.");
     }
@@ -568,6 +686,7 @@ const resolveCanvasExportAssets = async (canvasFrame: CanvasFrame) => {
   }
 
   if (canvasFrame.background.kind === "image") {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (canvasFrame.background.assetId) {
       const asset = assetMetaById[canvasFrame.background.assetId];
       const media = await resolveAssetMedia(
@@ -606,6 +725,9 @@ const resolveCanvasExportAssets = async (canvasFrame: CanvasFrame) => {
   };
 };
 
+/**
+ * Handles the render canvas export behavior for this module.
+ */
 const renderCanvasExport = async ({
   canvasFrame,
   imageSources,
@@ -632,6 +754,7 @@ const renderCanvasExport = async ({
   exportCanvas.height = outputHeight;
 
   const context = exportCanvas.getContext("2d");
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!context) {
     throw new Error("Unable to create an export canvas.");
   }
@@ -659,8 +782,10 @@ const renderCanvasExport = async ({
   );
 
   for (const object of getOrderedCanvasObjectsFromFrame(canvasFrame)) {
+    // Keep this conditional branch explicit because it changes the user-visible editor behavior.
     if (object.kind === "image") {
       const src = imageSources.get(object.item.id);
+      // Guard this branch so missing or invalid state does not flow into the main path.
       if (!src) {
         continue;
       }
@@ -675,8 +800,12 @@ const renderCanvasExport = async ({
   return exportCanvas;
 };
 
+/**
+ * Handles the encode export canvas behavior for this module.
+ */
 const encodeExportCanvas = async ({
   canvas,
+  // Walk each item deliberately because order and accumulated state matter here.
   format,
   quality,
 }: {
@@ -691,6 +820,7 @@ const encodeExportCanvas = async ({
       canvas.toBlob(
         resolve,
         MIME_TYPE_BY_FORMAT[format],
+        // Walk each item deliberately because order and accumulated state matter here.
         format === "jpg" ? normalizeExportQuality(quality) : undefined,
       );
     });
@@ -707,14 +837,20 @@ const encodeExportCanvas = async ({
   return blob;
 };
 
+/**
+ * Builds an encoded export without triggering a browser download.
+ */
 export const createCanvasExport = async ({
+  // Walk each item deliberately because order and accumulated state matter here.
   format,
   filenameBase,
   width,
   height,
   quality,
 }: CanvasExportOptions): Promise<CanvasExportResult> => {
+  // Select this store or hook value close to where the component uses it.
   const resolvedCanvasFrame = useCanvasStore.getState().serializeCanvas();
+  // Guard this branch so missing or invalid state does not flow into the main path.
   if (!resolvedCanvasFrame) {
     throw new Error("There is no canvas to save yet.");
   }
@@ -735,6 +871,7 @@ export const createCanvasExport = async ({
   });
   const blob = await encodeExportCanvas({
     canvas,
+    // Walk each item deliberately because order and accumulated state matter here.
     format,
     quality,
   });
@@ -747,12 +884,16 @@ export const createCanvasExport = async ({
     blob,
     file,
     filename,
+    // Walk each item deliberately because order and accumulated state matter here.
     format,
     width: outputWidth,
     height: outputHeight,
   };
 };
 
+/**
+ * Creates a temporary anchor so the generated image can be saved by the browser.
+ */
 export const downloadCanvasExport = ({
   blob,
   filename,
@@ -760,6 +901,9 @@ export const downloadCanvasExport = ({
   downloadBlob(blob, filename);
 };
 
+/**
+ * High-level command used by the UI to export the active canvas in the selected format.
+ */
 export const exportCanvasImage = async (format: CanvasExportFormat) => {
   const exportResult = await createCanvasExport({ format });
   downloadCanvasExport(exportResult);

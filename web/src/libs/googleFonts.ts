@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import { normalizeBoardTextFamily } from "@/stores/useConfigStore";
 
-// ============================================================================
-// Types & Constants
-// ============================================================================
-
 export type GoogleFontsSource = "api" | "fallback";
 export type GoogleFontsStatus =
   | "idle"
@@ -40,22 +36,10 @@ const FALLBACK_FONTS = [
   "Merriweather",
 ];
 
-// ============================================================================
-// Global Caches
-// ============================================================================
-
 const loadedFontFamilies = new Set<string>();
 let catalogCache: string[] | null = null;
 let sharedFetchPromise: Promise<string[]> | null = null;
 
-// ============================================================================
-// DOM Utilities
-// ============================================================================
-
-/**
- * Injects <link rel="preconnect"> tags to speed up font loading.
- * SSR Safe.
- */
 const setupGoogleFontsPreconnect = (): void => {
   if (
     typeof document === "undefined" ||
@@ -79,9 +63,6 @@ const setupGoogleFontsPreconnect = (): void => {
   );
 };
 
-/**
- * Builds the CSS2 URL for a given font family.
- */
 const buildGoogleFontsStylesheetUrl = (fontFamily: string): string => {
   const params = new URLSearchParams({
     family: fontFamily,
@@ -90,10 +71,6 @@ const buildGoogleFontsStylesheetUrl = (fontFamily: string): string => {
   return `${GOOGLE_FONTS_STYLESHEET_BASE_URL}?${params.toString()}`;
 };
 
-/**
- * Ensures a specific font family is loaded via a <link> tag.
- * deduplicates requests using a global Set.
- */
 export const ensureGoogleFontLoaded = (fontFamily: string): void => {
   if (typeof document === "undefined") return;
 
@@ -113,30 +90,17 @@ export const ensureGoogleFontLoaded = (fontFamily: string): void => {
   document.head.appendChild(link);
 };
 
-// ============================================================================
-// API & Data Fetching
-// ============================================================================
-
-/**
- * Safely retrieves the API key, supporting Vite with a safe fallback.
- */
 const getGoogleFontsApiKey = (): string => {
   try {
-    // @ts-ignore - Ignore TS error if migrating away from Vite
     return import.meta.env?.VITE_GOOGLE_FONTS_API_KEY?.trim() ?? "";
   } catch {
     return "";
   }
 };
 
-/**
- * Fetches the font catalog from Google APIs.
- * Uses a singleton promise to prevent duplicate network requests across components.
- */
 const fetchFontCatalog = async (apiKey: string): Promise<string[]> => {
   if (catalogCache) return catalogCache;
 
-  // If a fetch is already in progress, await the shared promise
   if (sharedFetchPromise) return sharedFetchPromise;
 
   sharedFetchPromise = (async () => {
@@ -165,23 +129,16 @@ const fetchFontCatalog = async (apiKey: string): Promise<string[]> => {
       return catalogCache;
     } catch (error) {
       console.error("Failed to fetch Google Fonts catalog:", error);
-      catalogCache = null; // Reset cache on failure so we can try again later
+      catalogCache = null;
       throw error;
     } finally {
-      sharedFetchPromise = null; // Clean up promise reference
+      sharedFetchPromise = null;
     }
   })();
 
   return sharedFetchPromise;
 };
 
-// ============================================================================
-// React Hooks
-// ============================================================================
-
-/**
- * React Hook to manage and retrieve the Google Fonts catalog.
- */
 export const useGoogleFontsCatalog = (): GoogleFontsCatalogState => {
   const apiKey = getGoogleFontsApiKey();
 
@@ -198,7 +155,6 @@ export const useGoogleFontsCatalog = (): GoogleFontsCatalogState => {
   });
 
   useEffect(() => {
-    // Skip if we already have the cache or lack an API key
     if (catalogCache || !apiKey) return;
 
     let isMounted = true;
@@ -227,7 +183,6 @@ export const useGoogleFontsCatalog = (): GoogleFontsCatalogState => {
 
     void loadCatalog();
 
-    // Cleanup function prevents state updates on unmounted components
     return () => {
       isMounted = false;
     };

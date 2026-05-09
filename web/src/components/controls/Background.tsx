@@ -3,7 +3,12 @@ import { Icon } from "@iconify/react";
 import { BACKGROUND_PRESET_CATEGORIES } from "@/config/backgroundPresets";
 import { useCanvasStore } from "@/new_stores/useCanvasStore";
 
-export const Background = () => {
+type BackgroundProps = {
+  onBackgroundSelected?: () => void;
+};
+
+export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
+  const activeBackgroundId = useCanvasStore((state) => state.activeBackgroundId);
   const setActiveBackground = useCanvasStore(
     (state) => state.setActiveBackground,
   );
@@ -33,18 +38,29 @@ export const Background = () => {
 
             <div className="flex flex-wrap gap-4">
               {category.presets.map((preset) => {
+                const isActive = preset.id === activeBackgroundId;
+
                 return (
                   <button
                     key={preset.id}
                     type="button"
-                    onClick={() => setActiveBackground(preset.id)}
+                    onClick={() => {
+                      setActiveBackground(preset.id);
+                      onBackgroundSelected?.();
+                    }}
                     className="flex flex-col items-center gap-1"
                   >
                     <span
-                      className="block h-25 w-25 rounded-lg"
+                      className="block h-25 w-25 rounded-lg border"
                       style={{ background: preset.background }}
                     />
-                    <span className="px-3 py-2 text-xs font-semibold">
+                    <span
+                      className={
+                        isActive
+                          ? "px-3 py-2 text-xs font-semibold text-accent"
+                          : "px-3 py-2 text-xs font-semibold"
+                      }
+                    >
                       {preset.label}
                     </span>
                   </button>

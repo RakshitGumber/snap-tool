@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react";
 
 import { Logo } from "./Logo";
 import { useRouter } from "@/new_stores/useRouter";
+import { useCanvasStore } from "@/new_stores/useCanvasStore";
 // import { useRouter } from "@/stores/useRouter";
 import { usePanelBlur } from "@/hooks/usePanelBlur";
 
@@ -10,9 +11,17 @@ export const FileMenu = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const setRoute = useRouter((state) => state.setRoute);
+  const clearCanvasContents = useCanvasStore(
+    (state) => state.clearCanvasContents,
+  );
 
   const handleGoHome = () => {
     setRoute("/");
+    setIsOpen(false);
+  };
+
+  const handleClearCanvas = () => {
+    clearCanvasContents();
     setIsOpen(false);
   };
 
@@ -40,6 +49,12 @@ export const FileMenu = () => {
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
           >
             Go Home
+          </button>
+          <button
+            onClick={handleClearCanvas}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-title-color transition hover:bg-text-color/8 cursor-pointer"
+          >
+            Clear canvas
           </button>
         </div>
       )}

@@ -1,19 +1,26 @@
 import { LinkCardRenderer } from "@/components/cards/LinkCardRenderer";
+import { getCardShadowOption } from "@/config/cardShadows";
 import { getLinkCardPresetById } from "@/config/linkCardPresets";
-import type { LinkCardCanvasItem } from "@/new_stores/useCanvasStore";
+import type {
+  CardShadowSize,
+  LinkCardCanvasItem,
+} from "@/new_stores/useCanvasStore";
 
 export const CenteredCard = ({
   card,
   canvasWidth,
   scale,
+  shadowSize,
   onResizeStart,
 }: {
   card: LinkCardCanvasItem;
   canvasWidth: number;
   scale: number;
+  shadowSize: CardShadowSize;
   onResizeStart: (event: React.PointerEvent<HTMLButtonElement>) => void;
 }) => {
   const preset = getLinkCardPresetById(card.presetId);
+  const shadow = getCardShadowOption(shadowSize);
   const renderedWidth = Math.max(1, canvasWidth * card.widthRatio * scale);
   const renderedHeight = Math.max(1, renderedWidth / preset.aspectRatio);
 
@@ -24,7 +31,7 @@ export const CenteredCard = ({
         transform: "translate(-50%, -50%)",
       }}
     >
-      <div className="rounded-lg">
+      <div className="rounded-lg" style={{ boxShadow: shadow.css }}>
         <LinkCardRenderer
           preset={preset}
           metadata={card.metadata}

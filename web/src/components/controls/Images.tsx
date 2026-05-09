@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 
 import {
@@ -34,7 +34,12 @@ const createCardItem = (
   widthRatio: preset.initialWidthRatio,
 });
 
-export const Images = () => {
+type ImagesProps = {
+  showHeader?: boolean;
+  onCardSelected?: () => void;
+};
+
+export const Images = ({ showHeader = true, onCardSelected }: ImagesProps) => {
   // const fileInputRef = useRef<HTMLInputElement | null>(null);
   const generationRef = useRef(0);
   const [urlInput, setUrlInput] = useState("");
@@ -45,7 +50,7 @@ export const Images = () => {
   // const activeCard = useCanvasStore((state) => state.activeCard);
   const setActiveCard = useCanvasStore((state) => state.setActiveCard);
 
-  const handleGenerate = async (event: any) => {
+  const handleGenerate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalError(null);
 
@@ -128,16 +133,18 @@ export const Images = () => {
 
   return (
     <>
-      <div className="flex items-center gap-3 border-b border-border-color p-4">
-        <Icon
-          icon="mingcute:folder-open-2-line"
-          fontSize={32}
-          className="text-secondary-text"
-        />
-        <span className="text-xl font-medium tracking-wide text-title-color">
-          Images
-        </span>
-      </div>
+      {showHeader ? (
+        <div className="flex items-center gap-3 border-b border-border-color p-4">
+          <Icon
+            icon="mingcute:folder-open-2-line"
+            fontSize={32}
+            className="text-secondary-text"
+          />
+          <span className="text-xl font-medium tracking-wide text-title-color">
+            Images
+          </span>
+        </div>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-5 px-4 py-4">
         <form onSubmit={handleGenerate} className="space-y-3">
@@ -238,6 +245,7 @@ export const Images = () => {
         onSelect={(card) => {
           setActiveCard(card);
           setCardDraft(null);
+          onCardSelected?.();
         }}
       />
     </>

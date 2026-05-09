@@ -18,8 +18,16 @@ export const Canvas = () => {
   const resizeStateRef = useRef<ResizeState | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
 
-  const { canvasSize, activeCard, resizeActiveCard, activeBackgroundId } =
-    useCanvasStore((state) => state);
+  const {
+    canvasSize,
+    activeCard,
+    resizeActiveCard,
+    beginResizeActiveCard,
+    endResizeActiveCard,
+    deleteActiveCard,
+    activeBackgroundId,
+    cardShadowSize,
+  } = useCanvasStore((state) => state);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
 
@@ -85,6 +93,7 @@ export const Canvas = () => {
       if (!resizeState || resizeState.pointerId !== event.pointerId) return;
 
       resizeStateRef.current = null;
+      endResizeActiveCard();
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -96,13 +105,42 @@ export const Canvas = () => {
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [activeCard, canvasSize.width, previewSize.scale, resizeActiveCard]);
+  }, [
+    activeCard,
+    canvasSize.width,
+    endResizeActiveCard,
+    previewSize.scale,
+    resizeActiveCard,
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      const isTextInput =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable);
+
+      if (event.key !== "Delete" || isTextInput) return;
+
+      event.preventDefault();
+      deleteActiveCard();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [deleteActiveCard]);
 
   const handleResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!activeCard) return;
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    beginResizeActiveCard();
     resizeStateRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -129,6 +167,7 @@ export const Canvas = () => {
             card={activeCard}
             canvasWidth={canvasSize.width}
             scale={previewSize.scale}
+            shadowSize={cardShadowSize}
             onResizeStart={handleResizeStart}
           />
         ) : (

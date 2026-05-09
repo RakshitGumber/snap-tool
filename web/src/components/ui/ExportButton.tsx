@@ -2,21 +2,15 @@ import { Icon } from "@iconify/react";
 import { useCallback } from "react";
 
 import {
-  createCanvasExport,
-  downloadCanvasExport,
-} from "@/canvas/exportCanvasImage";
-
-const exportOptions = {
-  format: "png" as const,
-  width: 1080,
-  height: 1080,
-};
+  createLightweightCanvasExport,
+  downloadLightweightCanvasExport,
+} from "@/canvas/exportLightweightCanvasImage";
 
 export const ExportButton = () => {
   const handleDownload = useCallback(async () => {
     try {
-      const exportResult = await createCanvasExport(exportOptions);
-      downloadCanvasExport(exportResult);
+      const exportResult = await createLightweightCanvasExport();
+      downloadLightweightCanvasExport(exportResult);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to save the board.";

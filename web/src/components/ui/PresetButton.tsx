@@ -1,35 +1,24 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { usePanelBlur } from "@/hooks/usePanelBlur";
-// Update this later
 import {
-  useActiveCanvasPreset,
-  useCanvasShell,
-  useCanvasStore,
-} from "@/stores/useCanvasStore";
-// Update this later
-import {
+  CANVAS_PRESET_CATEGORIES,
   getCanvasPresetById,
-  useCanvasPresetGroups,
-  useConfigStore,
-} from "@/stores/useConfigStore";
-import { useShallow } from "zustand/shallow";
+  getCanvasPresetCategoryByPresetId,
+} from "@/config/canvasPresets";
+import { useCanvasStore } from "@/new_stores/useCanvasStore";
 import clsx from "clsx";
 
 export const PresetButton = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const presetGroups = useCanvasPresetGroups();
-  const activePreset = useActiveCanvasPreset();
-  const canvasShell = useCanvasShell();
+  const activeCanvasPresetId = useCanvasStore(
+    (state) => state.activeCanvasPresetId,
+  );
+  const setActiveCanvasPreset = useCanvasStore(
+    (state) => state.setActiveCanvasPreset,
+  );
 
-  const setDefaultCanvasPresetId = useConfigStore(
-    (state) => state.setDefaultCanvasPresetId,
-  );
-  const { initializeDefaultCanvas, resizeCanvas } = useCanvasStore(
-    useShallow((state) => ({
-      initializeDefaultCanvas: state.initializeDefaultCanvas,
-      resizeCanvas: state.resizeCanvas,
-    })),
-  );
+  const activePreset = getCanvasPresetById(activeCanvasPresetId);
+  const activeCategory = getCanvasPresetCategoryByPresetId(activePreset.id);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -40,32 +29,19 @@ export const PresetButton = () => {
   });
 
   const { activeLabel } = useMemo(() => {
-    const isPreset = activePreset.kind === "preset";
-
     return {
-      activeLabel: isPreset
-        ? `${activePreset.group.label.slice(0, 2)} - ${activePreset.preset.size.height} x ${activePreset.preset.size.width}`
-        : "Custom",
+      activeLabel: `${activeCategory.label.slice(0, 2)} - ${activePreset.size.width} x ${activePreset.size.height}`,
     };
-  }, [activePreset]);
+  }, [activeCategory.label, activePreset.size.height, activePreset.size.width]);
 
   const handleSelectPreset = useCallback(
-    (presetId: Parameters<typeof getCanvasPresetById>[0]) => {
+    (presetId: string) => {
       const preset = getCanvasPresetById(presetId);
 
-      if (!canvasShell) {
-        initializeDefaultCanvas();
-      }
-
-      resizeCanvas(preset.size, preset.id);
-      setDefaultCanvasPresetId(preset.id);
+      setActiveCanvasPreset(preset.id);
+      setIsOpen(false);
     },
-    [
-      canvasShell,
-      initializeDefaultCanvas,
-      resizeCanvas,
-      setDefaultCanvasPresetId,
-    ],
+    [setActiveCanvasPreset],
   );
 
   return (
@@ -84,10 +60,9 @@ export const PresetButton = () => {
         </button>
       </div>
       {isOpen && (
-        <div className="absolute top-full mt-2 bg-panel-bg rounded-lg p-2 border border-border-color w-xl right-0">
+        <div className="absolute top-full right-0 mt-2 max-h-[calc(100vh-5rem)] w-xl overflow-y-auto rounded-lg border border-border-color bg-panel-bg p-2">
           <div className="space-y-4 sm:space-y-5">
-            {/* Update this later */}
-            {presetGroups.map((group) => {
+            {CANVAS_PRESET_CATEGORIES.map((group) => {
               return (
                 <section key={group.id} className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
@@ -96,16 +71,11 @@ export const PresetButton = () => {
                         {group.label}
                       </p>
                     </div>
-                    <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-title-color outline outline-border-color/60">
-                      {group.presets.length}
-                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {group.presets.map((preset) => {
-                      const isActive =
-                        activePreset.kind === "preset" &&
-                        preset.id === activePreset.preset.id;
+                      const isActive = preset.id === activePreset.id;
 
                       return (
                         <button

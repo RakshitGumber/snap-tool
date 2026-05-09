@@ -19,6 +19,8 @@ export function draggableBox(
   let offsetY = 0;
 
   target.on("pointerdown", (e: PIXI.FederatedPointerEvent) => {
+    if (!target.parent) return;
+
     dragging = true;
 
     const pos = e.getLocalPosition(target.parent);
@@ -41,6 +43,7 @@ export function draggableBox(
 
   target.on("pointermove", (e: PIXI.FederatedPointerEvent) => {
     if (!dragging) return;
+    if (!target.parent) return;
 
     const pos = e.getLocalPosition(target.parent);
 

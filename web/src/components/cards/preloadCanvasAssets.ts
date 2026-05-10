@@ -7,7 +7,10 @@ import {
   getLinkCardPresetById,
   type LinkCardImageSlot,
 } from "@/components/cards/presets";
-import { getImageSlotValue, loadPixiTexture } from "@/components/cards/presets/shared";
+import {
+  getImageSlotValue,
+  loadPixiTexture,
+} from "@/components/cards/presets/shared";
 import type { CanvasSize } from "@/config/canvasPresets";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 

@@ -3,9 +3,7 @@ import "./pixiSetup";
 import { Application } from "@pixi/react";
 
 import { CenteredPixiCard } from "@/components/cards/LinkCardCanvas";
-import {
-  getLinkCardPresetById,
-} from "@/components/cards/presets";
+import { getLinkCardPresetById } from "@/components/cards/presets";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 
 export const PixiCardPreview = ({

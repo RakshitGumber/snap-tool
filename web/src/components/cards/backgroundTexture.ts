@@ -52,7 +52,7 @@ const createFillStyle = (
   width: number,
   height: number,
 ) => {
-  if (!background) return "#f8fafc";
+  if (!background) return "#f8ff";
   if (parseCssImageBackground(background)) return "#f8fafc";
 
   if (background.startsWith("linear-gradient(")) {
@@ -81,8 +81,10 @@ const createFillStyle = (
       shape.startsWith("circle") ||
       shape.startsWith("ellipse") ||
       shape.startsWith("at ");
-    const centerX = width * (positionMatch ? Number(positionMatch[1]) / 100 : 0.5);
-    const centerY = height * (positionMatch ? Number(positionMatch[2]) / 100 : 0.5);
+    const centerX =
+      width * (positionMatch ? Number(positionMatch[1]) / 100 : 0.5);
+    const centerY =
+      height * (positionMatch ? Number(positionMatch[2]) / 100 : 0.5);
     const radius = Math.max(width, height);
     const gradient = context.createRadialGradient(
       centerX,

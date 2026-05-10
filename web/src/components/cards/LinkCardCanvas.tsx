@@ -112,7 +112,11 @@ export const CenteredPixiCard = ({
 
   return (
     <pixiContainer x={box.x} y={box.y}>
-      <CardComponent metadata={card.metadata} width={box.width} height={box.height} />
+      <CardComponent
+        metadata={card.metadata}
+        width={box.width}
+        height={box.height}
+      />
     </pixiContainer>
   );
 };

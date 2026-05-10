@@ -27,11 +27,7 @@ export const CardPreview = ({ card }: { card: LinkCardCanvasItem }) => {
   }, []);
 
   return (
-    <div
-      ref={previewRef}
-      className="overflow-hidden"
-      style={{ aspectRatio: preset.aspectRatio }}
-    >
+    <div ref={previewRef} style={{ aspectRatio: preset.aspectRatio }}>
       <PixiCardPreview card={card} width={width} />
     </div>
   );

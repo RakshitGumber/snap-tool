@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 import {
   resolveLinkCardMetadata,
@@ -36,14 +36,12 @@ const createCardItem = (
 export const Images = () => {
   const generationRef = useRef(0);
   const [urlInput, setUrlInput] = useState("");
-  const [_, setLocalError] = useState<string | null>(null);
   const [cardDraft, setCardDraft] = useState<LinkCardDraft | null>(null);
 
   const setActiveCard = useCanvasStore((state) => state.setActiveCard);
 
-  const handleGenerate = async (event: any) => {
+  const handleGenerate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLocalError(null);
 
     const generationId = generationRef.current + 1;
     generationRef.current = generationId;
@@ -107,10 +105,7 @@ export const Images = () => {
           type="text"
           inputMode="url"
           value={urlInput}
-          onChange={(event) => {
-            setLocalError(null);
-            setUrlInput(event.target.value);
-          }}
+          onChange={(event) => setUrlInput(event.target.value)}
           placeholder="Enter any link"
           className="min-w-0 h-10 flex-1 rounded-lg border border-border-color bg-bg px-3 py-2 text-sm text-title-color placeholder:text-secondary-text focus:border-accent"
         />

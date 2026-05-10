@@ -1,8 +1,7 @@
 export type LinkCardMetadataSource =
   | "youtube"
   | "github"
-  | "website"
-  | "screenshot";
+  | "website";
 
 export type YouTubeLinkCardMetadata = {
   source: "youtube";
@@ -39,23 +38,10 @@ export type WebsiteLinkCardMetadata = {
   stats: string[];
 };
 
-export type ScreenshotLinkCardMetadata = {
-  source: "screenshot";
-  originalUrl: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  imageUrl: string;
-  imageWidth: number;
-  imageHeight: number;
-  stats: string[];
-};
-
 export type LinkCardMetadata =
   | YouTubeLinkCardMetadata
   | GitHubLinkCardMetadata
-  | WebsiteLinkCardMetadata
-  | ScreenshotLinkCardMetadata;
+  | WebsiteLinkCardMetadata;
 
 type GitHubRepoResponse = {
   full_name?: string;
@@ -245,7 +231,7 @@ const resolveYouTubeMetadata = async (
       subtitle = data.author_name?.trim() || subtitle;
     }
   } catch {
-    // Thumbnail metadata is enough to render a useful no-key card.
+    // OEmbed is optional; thumbnail-based metadata keeps generation usable.
   }
 
   return {
@@ -291,7 +277,7 @@ const resolveGitHubMetadata = async (
     target.type === "repo"
       ? `${target.owner}/${target.repo}`
       : `${target.owner}`;
-  const openGraphUrl = `https://opengraph.githubassets.com/1/${openGraphPath}`;
+  const openGraphUrl = `https://opengraph.githubassets.com/123/${openGraphPath}`;
 
   if (target.type === "repo" && target.repo) {
     let title = `${target.owner}/${target.repo}`;
@@ -341,7 +327,9 @@ const resolveGitHubMetadata = async (
   let stats = ["0 repositories", "0 followers"];
 
   try {
-    const response = await fetch(`https://api.github.com/users/${target.owner}`);
+    const response = await fetch(
+      `https://api.github.com/users/${target.owner}`,
+    );
 
     if (response.ok) {
       const user = (await response.json()) as GitHubUserResponse;
@@ -405,33 +393,4 @@ export const resolveLinkCardMetadata = async (
   if (isGitHubHost(host)) return resolveGitHubMetadata(url);
 
   return resolveWebsiteMetadata(url);
-};
-
-export const createScreenshotMetadata = async (
-  file: File,
-): Promise<ScreenshotLinkCardMetadata> => {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("Choose an image file.");
-  }
-
-  const imageUrl = URL.createObjectURL(file);
-
-  try {
-    const dimensions = await loadImageDimensions(imageUrl);
-
-    return {
-      source: "screenshot",
-      originalUrl: imageUrl,
-      title: file.name,
-      subtitle: "Screenshot",
-      description: file.name,
-      imageUrl,
-      imageWidth: dimensions.width,
-      imageHeight: dimensions.height,
-      stats: [],
-    };
-  } catch (error) {
-    URL.revokeObjectURL(imageUrl);
-    throw error;
-  }
 };

@@ -1,13 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Application } from "@pixi/react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
+import { Rectangle } from "pixi.js";
+import type { ApplicationRef } from "@pixi/react";
 
+import { LinkCardCanvas } from "@/components/cards/LinkCardCanvas";
+import { getPixiResolution } from "@/components/cards/pixiResolution";
+import { useCanvasExport } from "@/providers/CanvasExportContext";
 import {
   getBackgroundPresetById,
   getBackgroundPresetStyle,
 } from "@/config/backgroundPresets";
 import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
-
-import { CenteredCard } from "../ui/CenteredCard";
 
 type ResizeState = {
   pointerId: number;
@@ -16,21 +28,34 @@ type ResizeState = {
   widthRatio: number;
 };
 
+const waitForNextFrame = () =>
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+
 export const Canvas = () => {
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const appRef = useRef<ApplicationRef | null>(null);
   const resizeStateRef = useRef<ResizeState | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
+  const { registerExporter } = useCanvasExport();
 
-  const {
-    canvasSize,
-    activeCard,
-    resizeActiveCard,
-    beginResizeActiveCard,
-    endResizeActiveCard,
-    deleteActiveCard,
-    activeBackgroundId,
-    cardShadowSize,
-  } = useCanvasStore((state) => state);
+  const canvasSize = useCanvasStore((state) => state.canvasSize);
+  const activeCanvasPresetId = useCanvasStore(
+    (state) => state.activeCanvasPresetId,
+  );
+  const activeCard = useCanvasStore((state) => state.activeCard);
+  const activeBackgroundId = useCanvasStore(
+    (state) => state.activeBackgroundId,
+  );
+  const resizeActiveCard = useCanvasStore((state) => state.resizeActiveCard);
+  const beginResizeActiveCard = useCanvasStore(
+    (state) => state.beginResizeActiveCard,
+  );
+  const endResizeActiveCard = useCanvasStore(
+    (state) => state.endResizeActiveCard,
+  );
+  const deleteActiveCard = useCanvasStore((state) => state.deleteActiveCard);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
 
@@ -74,11 +99,32 @@ export const Canvas = () => {
     };
   }, [boardSize.height, boardSize.width, canvasSize.height, canvasSize.width]);
 
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      const resizeState = resizeStateRef.current;
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      if (!activeCard) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      beginResizeActiveCard();
+      resizeStateRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        widthRatio: activeCard.widthRatio,
+      };
+    },
+    [activeCard, beginResizeActiveCard],
+  );
 
-      if (!resizeState || !activeCard || previewSize.scale <= 0) return;
+  const handlePointerMove = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      const resizeState = resizeStateRef.current;
+      // Ensure we are actually dragging this specific button
+      if (
+        !resizeState ||
+        !event.currentTarget.hasPointerCapture(event.pointerId) ||
+        !activeCard ||
+        previewSize.scale <= 0
+      )
+        return;
 
       const preset = getLinkCardPresetById(activeCard.presetId);
       const deltaX = (event.clientX - resizeState.startX) / previewSize.scale;
@@ -88,44 +134,34 @@ export const Canvas = () => {
         resizeState.widthRatio + (directionalDelta * 2) / canvasSize.width;
 
       resizeActiveCard(nextWidthRatio);
-    };
+    },
+    [activeCard, previewSize.scale, canvasSize.width, resizeActiveCard],
+  );
 
-    const handlePointerUp = (event: PointerEvent) => {
+  const handlePointerUp = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
       const resizeState = resizeStateRef.current;
-
       if (!resizeState || resizeState.pointerId !== event.pointerId) return;
 
+      event.currentTarget.releasePointerCapture(event.pointerId);
       resizeStateRef.current = null;
       endResizeActiveCard();
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerUp);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerUp);
-    };
-  }, [
-    activeCard,
-    canvasSize.width,
-    endResizeActiveCard,
-    previewSize.scale,
-    resizeActiveCard,
-  ]);
+    },
+    [endResizeActiveCard],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target;
-      const isTextInput =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLElement && target.isContentEditable);
+      const target = event.target as HTMLElement;
+      if (target.matches('input, textarea, select, [contenteditable="true"]')) {
+        return;
+      }
 
-      if (event.key !== "Delete" || isTextInput) return;
+      if (event.key !== "Delete" && event.key !== "Backspace") {
+        return;
+      }
+
+      if (!activeCard) return;
 
       event.preventDefault();
       deleteActiveCard();
@@ -136,26 +172,53 @@ export const Canvas = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [deleteActiveCard]);
+  }, [activeCard, deleteActiveCard]);
 
-  const handleResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (!activeCard) return;
+  useEffect(() => {
+    return registerExporter(async () => {
+      const app = appRef.current?.getApplication();
+      if (!app) throw new Error("Canvas is not ready yet.");
 
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    beginResizeActiveCard();
-    resizeStateRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      widthRatio: activeCard.widthRatio,
+      const snapshot = useCanvasStore.getState();
+
+      app.renderer.resize(snapshot.canvasSize.width, snapshot.canvasSize.height);
+
+      await waitForNextFrame();
+      app.render();
+
+      app.renderer.extract.download({
+        target: app.stage,
+        filename: `snap-tool-${Date.now()}.png`,
+        frame: new Rectangle(
+          0,
+          0,
+          snapshot.canvasSize.width,
+          snapshot.canvasSize.height,
+        ),
+        resolution: 1,
+        antialias: true,
+      });
+    });
+  }, [registerExporter]);
+
+  const resizeHandleStyle = useMemo((): CSSProperties | undefined => {
+    if (!activeCard) return undefined;
+
+    const preset = getLinkCardPresetById(activeCard.presetId);
+    const scaledCardWidth =
+      canvasSize.width * activeCard.widthRatio * previewSize.scale;
+    const scaledCardHeight = scaledCardWidth / preset.aspectRatio;
+
+    return {
+      left: `calc(50% + ${scaledCardWidth / 2}px - 10px)`,
+      top: `calc(50% + ${scaledCardHeight / 2}px - 10px)`,
     };
-  };
+  }, [activeCard, canvasSize.width, previewSize.scale]);
 
   return (
     <div
       ref={boardRef}
-      className="flex flex-1 h-[calc(100vh-64px)] items-center justify-center overflow-hidden p-6"
+      className="flex h-[calc(100vh-64px)] flex-1 items-center justify-center overflow-hidden p-6"
     >
       <div
         style={{
@@ -165,18 +228,38 @@ export const Canvas = () => {
         }}
         className="relative overflow-hidden shadow-lg"
       >
-        {activeCard ? (
-          <CenteredCard
-            card={activeCard}
-            canvasWidth={canvasSize.width}
-            scale={previewSize.scale}
-            shadowSize={cardShadowSize}
-            onResizeStart={handleResizeStart}
+        <Application
+          key={activeCanvasPresetId}
+          ref={appRef}
+          antialias
+          backgroundAlpha={0}
+          className="block h-full w-full"
+          height={canvasSize.height}
+          resolution={getPixiResolution()}
+          width={canvasSize.width}
+        >
+          <LinkCardCanvas
+            activeBackgroundId={activeBackgroundId}
+            activeCard={activeCard}
+            canvasSize={canvasSize}
           />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm font-medium text-secondary-text">
-            Add a link or screenshot from Images
+        </Application>
+
+        {!activeCard ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-medium text-secondary-text">
+            Add a link from Images
           </div>
+        ) : (
+          <button
+            type="button"
+            aria-label="Resize centered card"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            className="absolute h-5 w-5 rounded-full border bg-accent"
+            style={resizeHandleStyle}
+          />
         )}
       </div>
     </div>

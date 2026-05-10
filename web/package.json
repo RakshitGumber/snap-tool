@@ -28,7 +28,9 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource/roboto": "^5.2.10",
     "@iconify/react": "^6.0.2",
+    "@pixi/react": "^8.0.5",
     "@tailwindcss/vite": "^4.2.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

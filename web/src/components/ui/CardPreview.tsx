@@ -1,7 +1,8 @@
-import { LinkCardRenderer } from "@/components/cards/LinkCardRenderer";
-import { getLinkCardPresetById } from "@/config/linkCardPresets";
-import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 import { useEffect, useRef, useState } from "react";
+
+import { getLinkCardPresetById } from "@/config/linkCardPresets";
+import { PixiCardPreview } from "@/components/cards/PixiCardPreview";
+import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 
 export const CardPreview = ({ card }: { card: LinkCardCanvasItem }) => {
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -26,17 +27,8 @@ export const CardPreview = ({ card }: { card: LinkCardCanvasItem }) => {
   }, []);
 
   return (
-    <div
-      ref={previewRef}
-      className="overflow-hidden"
-      style={{ aspectRatio: preset.aspectRatio }}
-    >
-      <LinkCardRenderer
-        preset={preset}
-        metadata={card.metadata}
-        width={width}
-        height={width / preset.aspectRatio}
-      />
+    <div ref={previewRef} style={{ aspectRatio: preset.aspectRatio }}>
+      <PixiCardPreview card={card} width={width} />
     </div>
   );
 };

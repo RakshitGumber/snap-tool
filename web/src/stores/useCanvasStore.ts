@@ -8,8 +8,6 @@ import {
 } from "@/config/canvasPresets";
 import type { LinkCardMetadata } from "@/libs/linkCards";
 
-export type CardShadowSize = "none" | "sm" | "md" | "lg";
-
 export type LinkCardCanvasItem = {
   id: string;
   presetId: string;
@@ -23,7 +21,6 @@ export type LightweightCanvasSnapshot = {
   activeCanvasPresetId: string;
   activeBackgroundId: string;
   activeCard: LinkCardCanvasItem | null;
-  cardShadowSize: CardShadowSize;
 };
 
 type ICanvas = {
@@ -31,13 +28,11 @@ type ICanvas = {
   activeCanvasPresetId: string;
   activeBackgroundId: string;
   activeCard: LinkCardCanvasItem | null;
-  cardShadowSize: CardShadowSize;
   historyPast: LightweightCanvasSnapshot[];
   historyFuture: LightweightCanvasSnapshot[];
   setActiveCanvasPreset: (presetId: string) => void;
   setActiveBackground: (backgroundId: string) => void;
   setActiveCard: (card: LinkCardCanvasItem | null) => void;
-  setCardShadowSize: (shadowSize: CardShadowSize) => void;
   resizeActiveCard: (widthRatio: number) => void;
   beginResizeActiveCard: () => void;
   endResizeActiveCard: () => void;
@@ -49,7 +44,6 @@ type ICanvas = {
 
 const defaultCanvasPreset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
 const STORAGE_KEY = "snap-tool:canvas:v1";
-const DEFAULT_CARD_SHADOW_SIZE: CardShadowSize = "none";
 const MAX_HISTORY_LENGTH = 60;
 
 const createDefaultSnapshot = (): LightweightCanvasSnapshot => ({
@@ -57,11 +51,7 @@ const createDefaultSnapshot = (): LightweightCanvasSnapshot => ({
   activeCanvasPresetId: defaultCanvasPreset.id,
   activeBackgroundId: DEFAULT_BACKGROUND_PRESET_ID,
   activeCard: null,
-  cardShadowSize: DEFAULT_CARD_SHADOW_SIZE,
 });
-
-const isCardShadowSize = (value: unknown): value is CardShadowSize =>
-  value === "none" || value === "sm" || value === "md" || value === "lg";
 
 const isStoredCard = (value: unknown): value is LinkCardCanvasItem | null => {
   if (value === null) return true;
@@ -101,9 +91,6 @@ const normalizeSnapshot = (
     activeCanvasPresetId: preset.id,
     activeBackgroundId: backgroundId,
     activeCard: snapshot.activeCard,
-    cardShadowSize: isCardShadowSize(snapshot.cardShadowSize)
-      ? snapshot.cardShadowSize
-      : DEFAULT_CARD_SHADOW_SIZE,
   };
 };
 
@@ -125,7 +112,6 @@ const toSnapshot = (state: LightweightCanvasSnapshot) => ({
   activeCanvasPresetId: state.activeCanvasPresetId,
   activeBackgroundId: state.activeBackgroundId,
   activeCard: state.activeCard,
-  cardShadowSize: state.cardShadowSize,
 });
 
 const saveSnapshot = (snapshot: LightweightCanvasSnapshot) => {
@@ -197,14 +183,6 @@ export const useCanvasStore = create<ICanvas>((set) => ({
       }),
     ),
 
-  setCardShadowSize: (cardShadowSize) =>
-    set((state) =>
-      withHistory(state, {
-        ...toSnapshot(state),
-        cardShadowSize,
-      }),
-    ),
-
   resizeActiveCard: (widthRatio) =>
     set((state) => {
       if (!state.activeCard) return state;
@@ -247,7 +225,6 @@ export const useCanvasStore = create<ICanvas>((set) => ({
         ...toSnapshot(state),
         activeBackgroundId: DEFAULT_BACKGROUND_PRESET_ID,
         activeCard: null,
-        cardShadowSize: DEFAULT_CARD_SHADOW_SIZE,
       }),
     ),
 

@@ -5,7 +5,6 @@ import {
   getBackgroundPresetBackground,
   getBackgroundPresetById,
 } from "@/config/backgroundPresets";
-import { getCardShadowOption } from "@/config/cardShadows";
 import {
   getLinkCardPresetById,
   type LinkCardBorder,
@@ -50,10 +49,7 @@ const parseCssImageBackground = (background: string | undefined) => {
   return src ? { src } : null;
 };
 
-const addGradientStops = (
-  gradient: CanvasGradient,
-  stops: string[],
-) => {
+const addGradientStops = (gradient: CanvasGradient, stops: string[]) => {
   stops.forEach((stop, index) => {
     const stopMatch = stop.match(/^(.*)\s+([\d.]+)%$/);
 
@@ -105,8 +101,10 @@ const createFillStyle = (
       shape.startsWith("circle") ||
       shape.startsWith("ellipse") ||
       shape.startsWith("at ");
-    const centerX = x + width * (positionMatch ? Number(positionMatch[1]) / 100 : 0.5);
-    const centerY = y + height * (positionMatch ? Number(positionMatch[2]) / 100 : 0.5);
+    const centerX =
+      x + width * (positionMatch ? Number(positionMatch[1]) / 100 : 0.5);
+    const centerY =
+      y + height * (positionMatch ? Number(positionMatch[2]) / 100 : 0.5);
     const radius = Math.max(width, height);
     const gradient = context.createRadialGradient(
       centerX,
@@ -291,50 +289,6 @@ const drawBackground = async (
   } catch {
     // Keep exporting even when a remote background image is unavailable.
   }
-};
-
-const drawCardShadow = (
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-  shadow: ReturnType<typeof getCardShadowOption>["canvas"],
-) => {
-  if (
-    shadow.color === "transparent" ||
-    (shadow.blur === 0 && shadow.offsetX === 0 && shadow.offsetY === 0)
-  ) {
-    return;
-  }
-
-  const shadowCanvas = document.createElement("canvas");
-  const shadowContext = shadowCanvas.getContext("2d");
-
-  if (!shadowContext) return;
-
-  shadowCanvas.width = context.canvas.width;
-  shadowCanvas.height = context.canvas.height;
-
-  shadowContext.save();
-  shadowContext.shadowBlur = shadow.blur;
-  shadowContext.shadowColor = shadow.color;
-  shadowContext.shadowOffsetX = shadow.offsetX;
-  shadowContext.shadowOffsetY = shadow.offsetY;
-  shadowContext.fillStyle = "#000000";
-  roundedRect(shadowContext, x, y, width, height, radius);
-  shadowContext.fill();
-  shadowContext.restore();
-
-  shadowContext.save();
-  shadowContext.globalCompositeOperation = "destination-out";
-  shadowContext.fillStyle = "#000000";
-  roundedRect(shadowContext, x, y, width, height, radius);
-  shadowContext.fill();
-  shadowContext.restore();
-
-  context.drawImage(shadowCanvas, 0, 0);
 };
 
 const drawImageLayer = async (
@@ -577,7 +531,15 @@ const drawIcon = (
     context.arc(centerX, centerY, size * 0.38, 0, Math.PI * 2);
     context.stroke();
     context.beginPath();
-    context.ellipse(centerX, centerY, size * 0.16, size * 0.38, 0, 0, Math.PI * 2);
+    context.ellipse(
+      centerX,
+      centerY,
+      size * 0.16,
+      size * 0.38,
+      0,
+      0,
+      Math.PI * 2,
+    );
     context.stroke();
     context.beginPath();
     context.moveTo(centerX - size * 0.34, centerY);
@@ -585,10 +547,22 @@ const drawIcon = (
     context.stroke();
   } else if (icon === "mingcute:link-line") {
     context.beginPath();
-    context.arc(centerX - size * 0.16, centerY, size * 0.18, Math.PI * 0.65, Math.PI * 1.65);
+    context.arc(
+      centerX - size * 0.16,
+      centerY,
+      size * 0.18,
+      Math.PI * 0.65,
+      Math.PI * 1.65,
+    );
     context.stroke();
     context.beginPath();
-    context.arc(centerX + size * 0.16, centerY, size * 0.18, -Math.PI * 0.35, Math.PI * 0.65);
+    context.arc(
+      centerX + size * 0.16,
+      centerY,
+      size * 0.18,
+      -Math.PI * 0.35,
+      Math.PI * 0.65,
+    );
     context.stroke();
     context.beginPath();
     context.moveTo(centerX - size * 0.08, centerY);
@@ -607,12 +581,29 @@ const drawIcon = (
     context.beginPath();
     context.moveTo(centerX - size * 0.2, centerY - size * 0.26);
     context.lineTo(centerX - size * 0.2, centerY + size * 0.18);
-    context.quadraticCurveTo(centerX - size * 0.2, centerY + size * 0.32, centerX, centerY + size * 0.32);
+    context.quadraticCurveTo(
+      centerX - size * 0.2,
+      centerY + size * 0.32,
+      centerX,
+      centerY + size * 0.32,
+    );
     context.lineTo(centerX + size * 0.2, centerY + size * 0.18);
     context.stroke();
     context.beginPath();
-    context.arc(centerX - size * 0.2, centerY - size * 0.28, size * 0.1, 0, Math.PI * 2);
-    context.arc(centerX + size * 0.2, centerY + size * 0.16, size * 0.1, 0, Math.PI * 2);
+    context.arc(
+      centerX - size * 0.2,
+      centerY - size * 0.28,
+      size * 0.1,
+      0,
+      Math.PI * 2,
+    );
+    context.arc(
+      centerX + size * 0.2,
+      centerY + size * 0.16,
+      size * 0.1,
+      0,
+      Math.PI * 2,
+    );
     context.fill();
   } else if (icon === "mingcute:browser-line") {
     roundedRect(
@@ -639,7 +630,13 @@ const drawIcon = (
     );
     context.stroke();
     context.beginPath();
-    context.arc(centerX + size * 0.18, centerY - size * 0.12, size * 0.07, 0, Math.PI * 2);
+    context.arc(
+      centerX + size * 0.18,
+      centerY - size * 0.12,
+      size * 0.07,
+      0,
+      Math.PI * 2,
+    );
     context.fill();
     context.beginPath();
     context.moveTo(centerX - size * 0.28, centerY + size * 0.2);
@@ -662,7 +659,6 @@ const drawCard = async (
   card: LinkCardCanvasItem,
   canvasWidth: number,
   canvasHeight: number,
-  shadowSize: ReturnType<typeof getCardShadowOption>["id"],
 ) => {
   const preset = getLinkCardPresetById(card.presetId);
   const cardWidth = canvasWidth * card.widthRatio;
@@ -670,9 +666,6 @@ const drawCard = async (
   const cardX = (canvasWidth - cardWidth) / 2;
   const cardY = (canvasHeight - cardHeight) / 2;
   const radius = preset.borderRadiusRatio * cardWidth;
-  const shadow = getCardShadowOption(shadowSize).canvas;
-
-  drawCardShadow(context, cardX, cardY, cardWidth, cardHeight, radius, shadow);
 
   context.save();
   roundedRect(context, cardX, cardY, cardWidth, cardHeight, radius);
@@ -814,7 +807,7 @@ const drawCard = async (
 export const ExportButton = () => {
   const handleDownload = useCallback(async () => {
     try {
-      const { activeBackgroundId, activeCard, canvasSize, cardShadowSize } =
+      const { activeBackgroundId, activeCard, canvasSize } =
         useCanvasStore.getState();
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
@@ -833,13 +826,7 @@ export const ExportButton = () => {
       );
 
       if (activeCard) {
-        await drawCard(
-          context,
-          activeCard,
-          canvas.width,
-          canvas.height,
-          cardShadowSize,
-        );
+        await drawCard(context, activeCard, canvas.width, canvas.height);
       }
 
       const url = canvas.toDataURL("image/png");

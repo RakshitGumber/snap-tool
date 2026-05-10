@@ -29,7 +29,6 @@ export const Canvas = () => {
     endResizeActiveCard,
     deleteActiveCard,
     activeBackgroundId,
-    cardShadowSize,
   } = useCanvasStore((state) => state);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
@@ -170,7 +169,6 @@ export const Canvas = () => {
             card={activeCard}
             canvasWidth={canvasSize.width}
             scale={previewSize.scale}
-            shadowSize={cardShadowSize}
             onResizeStart={handleResizeStart}
           />
         ) : (

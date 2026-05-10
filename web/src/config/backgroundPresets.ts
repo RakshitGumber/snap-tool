@@ -210,6 +210,9 @@ export const BACKGROUND_PRESETS = BACKGROUND_PRESET_CATEGORIES.flatMap(
 );
 
 export const DEFAULT_BACKGROUND_PRESET_ID = BACKGROUND_PRESETS[0].id;
+export const DEFAULT_CUSTOM_BACKGROUND_COLOR =
+  BACKGROUND_PRESET_CATEGORIES.find((category) => category.id === "solid")
+    ?.presets[0].background ?? BACKGROUND_PRESETS[0].background;
 
 export const createCustomBackgroundId = (color: string) =>
   `${CUSTOM_BACKGROUND_PREFIX}${color.toUpperCase()}`;

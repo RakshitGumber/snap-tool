@@ -6,6 +6,7 @@ import {
   getCanvasPresetById,
   type CanvasSize,
 } from "@/config/canvasPresets";
+import { isLinkCardPresetId } from "@/components/cards/presets";
 import type { LinkCardMetadata } from "@/libs/linkCards";
 
 export type LinkCardCanvasItem = {
@@ -23,11 +24,7 @@ export type LightweightCanvasSnapshot = {
   activeCard: LinkCardCanvasItem | null;
 };
 
-type ICanvas = {
-  canvasSize: CanvasSize;
-  activeCanvasPresetId: string;
-  activeBackgroundId: string;
-  activeCard: LinkCardCanvasItem | null;
+type CanvasStoreState = LightweightCanvasSnapshot & {
   historyPast: LightweightCanvasSnapshot[];
   historyFuture: LightweightCanvasSnapshot[];
   setActiveCanvasPreset: (presetId: string) => void;
@@ -43,8 +40,11 @@ type ICanvas = {
 };
 
 const defaultCanvasPreset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-const STORAGE_KEY = "snap-tool:canvas:v1";
-const MAX_HISTORY_LENGTH = 60;
+const STORAGE_KEY = "snap-tool:canvas:v2";
+const LEGACY_STORAGE_KEY = "snap-tool:canvas:v1";
+const MAX_HISTORY_LENGTH = 32;
+const MIN_CARD_WIDTH_RATIO = 0.12;
+const MAX_CARD_WIDTH_RATIO = 0.92;
 
 const createDefaultSnapshot = (): LightweightCanvasSnapshot => ({
   canvasSize: defaultCanvasPreset.size,
@@ -62,6 +62,7 @@ const isStoredCard = (value: unknown): value is LinkCardCanvasItem | null => {
   return (
     typeof card.id === "string" &&
     typeof card.presetId === "string" &&
+    isLinkCardPresetId(card.presetId) &&
     typeof card.label === "string" &&
     typeof card.widthRatio === "number" &&
     typeof card.metadata === "object" &&
@@ -94,18 +95,23 @@ const normalizeSnapshot = (
   };
 };
 
-const loadInitialSnapshot = () => {
-  if (typeof window === "undefined") return createDefaultSnapshot();
+const loadStoredSnapshot = (storageKey: string) => {
+  if (typeof window === "undefined") return null;
+
+  const rawValue = window.localStorage.getItem(storageKey);
+  if (!rawValue) return null;
 
   try {
-    const rawValue = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawValue) return createDefaultSnapshot();
-
-    return normalizeSnapshot(JSON.parse(rawValue)) ?? createDefaultSnapshot();
+    return normalizeSnapshot(JSON.parse(rawValue));
   } catch {
-    return createDefaultSnapshot();
+    return null;
   }
 };
+
+const loadInitialSnapshot = () =>
+  loadStoredSnapshot(STORAGE_KEY) ??
+  loadStoredSnapshot(LEGACY_STORAGE_KEY) ??
+  createDefaultSnapshot();
 
 const toSnapshot = (state: LightweightCanvasSnapshot) => ({
   canvasSize: state.canvasSize,
@@ -130,14 +136,12 @@ const snapshotsAreEqual = (
 ) => JSON.stringify(left) === JSON.stringify(right);
 
 const withHistory = (
-  state: ICanvas,
+  state: CanvasStoreState,
   nextSnapshot: LightweightCanvasSnapshot,
 ) => {
   const currentSnapshot = toSnapshot(state);
 
-  if (snapshotsAreEqual(currentSnapshot, nextSnapshot)) {
-    return state;
-  }
+  if (snapshotsAreEqual(currentSnapshot, nextSnapshot)) return {};
 
   return {
     ...nextSnapshot,
@@ -148,9 +152,12 @@ const withHistory = (
   };
 };
 
+const clampWidthRatio = (widthRatio: number) =>
+  Math.min(MAX_CARD_WIDTH_RATIO, Math.max(MIN_CARD_WIDTH_RATIO, widthRatio));
+
 const initialSnapshot = loadInitialSnapshot();
 
-export const useCanvasStore = create<ICanvas>((set) => ({
+export const useCanvasStore = create<CanvasStoreState>((set) => ({
   ...initialSnapshot,
   historyPast: [],
   historyFuture: [],
@@ -179,25 +186,30 @@ export const useCanvasStore = create<ICanvas>((set) => ({
     set((state) =>
       withHistory(state, {
         ...toSnapshot(state),
-        activeCard,
+        activeCard: activeCard
+          ? {
+              ...activeCard,
+              widthRatio: clampWidthRatio(activeCard.widthRatio),
+            }
+          : null,
       }),
     ),
 
   resizeActiveCard: (widthRatio) =>
     set((state) => {
-      if (!state.activeCard) return state;
+      if (!state.activeCard) return {};
 
       return {
         activeCard: {
           ...state.activeCard,
-          widthRatio: Math.min(0.92, Math.max(0.12, widthRatio)),
+          widthRatio: clampWidthRatio(widthRatio),
         },
       };
     }),
 
   beginResizeActiveCard: () =>
     set((state) => {
-      if (!state.activeCard) return state;
+      if (!state.activeCard) return {};
 
       return {
         historyPast: [...state.historyPast, toSnapshot(state)].slice(
@@ -211,7 +223,7 @@ export const useCanvasStore = create<ICanvas>((set) => ({
 
   deleteActiveCard: () =>
     set((state) => {
-      if (!state.activeCard) return state;
+      if (!state.activeCard) return {};
 
       return withHistory(state, {
         ...toSnapshot(state),
@@ -231,7 +243,7 @@ export const useCanvasStore = create<ICanvas>((set) => ({
   undo: () =>
     set((state) => {
       const previousSnapshot = state.historyPast.at(-1);
-      if (!previousSnapshot) return state;
+      if (!previousSnapshot) return {};
 
       return {
         ...previousSnapshot,
@@ -246,7 +258,7 @@ export const useCanvasStore = create<ICanvas>((set) => ({
   redo: () =>
     set((state) => {
       const nextSnapshot = state.historyFuture[0];
-      if (!nextSnapshot) return state;
+      if (!nextSnapshot) return {};
 
       return {
         ...nextSnapshot,

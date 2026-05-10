@@ -1,8 +1,7 @@
 export type LinkCardMetadataSource =
   | "youtube"
   | "github"
-  | "website"
-  | "screenshot";
+  | "website";
 
 export type YouTubeLinkCardMetadata = {
   source: "youtube";
@@ -39,23 +38,10 @@ export type WebsiteLinkCardMetadata = {
   stats: string[];
 };
 
-export type ScreenshotLinkCardMetadata = {
-  source: "screenshot";
-  originalUrl: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  imageUrl: string;
-  imageWidth: number;
-  imageHeight: number;
-  stats: string[];
-};
-
 export type LinkCardMetadata =
   | YouTubeLinkCardMetadata
   | GitHubLinkCardMetadata
-  | WebsiteLinkCardMetadata
-  | ScreenshotLinkCardMetadata;
+  | WebsiteLinkCardMetadata;
 
 type GitHubRepoResponse = {
   full_name?: string;
@@ -244,7 +230,9 @@ const resolveYouTubeMetadata = async (
       title = data.title?.trim() || title;
       subtitle = data.author_name?.trim() || subtitle;
     }
-  } catch {}
+  } catch {
+    // OEmbed is optional; thumbnail-based metadata keeps generation usable.
+  }
 
   return {
     source: "youtube",

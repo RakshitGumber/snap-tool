@@ -1,7 +1,10 @@
 import { Icon } from "@iconify/react";
 import { useCallback } from "react";
 
-import { getBackgroundPresetById } from "@/config/backgroundPresets";
+import {
+  getBackgroundPresetBackground,
+  getBackgroundPresetById,
+} from "@/config/backgroundPresets";
 import { getCardShadowOption } from "@/config/cardShadows";
 import {
   getLinkCardPresetById,
@@ -824,7 +827,7 @@ export const ExportButton = () => {
       const background = getBackgroundPresetById(activeBackgroundId);
       await drawBackground(
         context,
-        background.background,
+        getBackgroundPresetBackground(background),
         canvas.width,
         canvas.height,
       );

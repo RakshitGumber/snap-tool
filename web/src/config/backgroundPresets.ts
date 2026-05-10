@@ -1,7 +1,12 @@
+import type { CSSProperties } from "react";
+
+export type BackgroundPresetStyle = CSSProperties;
+
 export type BackgroundPreset = {
   id: string;
   label: string;
   background: string;
+  style?: BackgroundPresetStyle;
 };
 
 export type BackgroundPresetCategory = {
@@ -10,8 +15,30 @@ export type BackgroundPresetCategory = {
   presets: BackgroundPreset[];
 };
 
+const CUSTOM_BACKGROUND_PREFIX = "custom-color:";
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
 const unsplashBackground = (imageId: string) =>
   `url("https://images.unsplash.com/${imageId}?auto=format&fit=crop&w=1800&q=80") center / cover no-repeat`;
+
+export const getBackgroundPresetStyle = (
+  preset: BackgroundPreset,
+): CSSProperties => ({
+  background: preset.background,
+  ...preset.style,
+});
+
+export const getBackgroundPresetBackground = (preset: BackgroundPreset) => {
+  const styleBackground = preset.style?.background;
+
+  if (typeof styleBackground === "string") return styleBackground;
+
+  const styleBackgroundImage = preset.style?.backgroundImage;
+
+  if (typeof styleBackgroundImage === "string") return styleBackgroundImage;
+
+  return preset.background;
+};
 
 export const BACKGROUND_PRESET_CATEGORIES = [
   {
@@ -19,26 +46,88 @@ export const BACKGROUND_PRESET_CATEGORIES = [
     label: "Solid",
     presets: [
       {
-        id: "canvas-white",
+        id: "white",
         label: "White",
-        background: "#ffffff",
+        background: "#F5F3EE",
       },
       {
         id: "graphite",
         label: "Graphite",
-        background: "#1e1e1e",
+        background: "#23252B",
+      },
+      {
+        id: "red",
+        label: "Energetic",
+        background: "#FF3B30",
+      },
+      {
+        id: "calm",
+        label: "Calm",
+        background: "#7FA8A4",
+      },
+      {
+        id: "author",
+        label: "Author",
+        background: "#14213D",
+      },
+      {
+        id: "ember",
+        label: "Ember",
+        background: "#E76F51",
+      },
+      {
+        id: "love",
+        label: "Love",
+        background: "#D6456B",
+      },
+      {
+        id: "sky",
+        label: "Sky",
+        background: "#4DA8FF",
+      },
+      {
+        id: "tech",
+        label: "Tech",
+        background: "#635BFF",
+      },
+      {
+        id: "rage",
+        label: "Rage",
+        background: "#6D071A",
+      },
+      {
+        id: "future",
+        label: "Future",
+        background: "#00BFA6",
       },
     ],
   },
   {
-    id: "gradients",
-    label: "Gradients",
+    id: "soft-gradients",
+    label: "Soft Gradients",
     presets: [
       {
         id: "aurora",
         label: "Aurora",
-        background:
-          "linear-gradient(135deg, #f7e8ff 0%, #bcd7ff 48%, #9ff4d5 100%)",
+        background: `radial-gradient(
+      circle at 70% 80%,
+      rgba(255, 90, 200, 0.95) 0%,
+      rgba(255, 90, 200, 0.6) 18%,
+      transparent 38%
+    ),
+
+    radial-gradient(
+      circle at 15% 55%,
+      rgba(180, 0, 255, 0.9) 0%,
+      rgba(180, 0, 255, 0.55) 20%,
+      transparent 42%
+    ),
+
+    linear-gradient(
+      135deg,
+      #0b63c9 0%,
+      #12b5d0 100%
+    )`,
       },
       {
         id: "blush",
@@ -130,7 +219,13 @@ export const BACKGROUND_PRESET_CATEGORIES = [
       {
         id: "background-studio",
         label: "Studio",
-        background: unsplashBackground("photo-1631631480669-535cc43f2327"),
+        background:
+          'url("https://plus.unsplash.com/premium_photo-1747850152562-bad3f528c924?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")',
+        style: {
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+        },
       },
       {
         id: "background-mountain",
@@ -161,7 +256,34 @@ export const BACKGROUND_PRESETS = BACKGROUND_PRESET_CATEGORIES.flatMap(
 );
 
 export const DEFAULT_BACKGROUND_PRESET_ID = BACKGROUND_PRESETS[0].id;
+export const DEFAULT_CUSTOM_BACKGROUND_COLOR =
+  BACKGROUND_PRESET_CATEGORIES.find((category) => category.id === "solid")
+    ?.presets[0].background ?? BACKGROUND_PRESETS[0].background;
 
-export const getBackgroundPresetById = (presetId: string) =>
-  BACKGROUND_PRESETS.find((preset) => preset.id === presetId) ??
-  BACKGROUND_PRESETS[0];
+export const createCustomBackgroundId = (color: string) =>
+  `${CUSTOM_BACKGROUND_PREFIX}${color.toUpperCase()}`;
+
+export const getCustomBackgroundColor = (presetId: string) => {
+  if (!presetId.startsWith(CUSTOM_BACKGROUND_PREFIX)) return null;
+
+  const color = presetId.slice(CUSTOM_BACKGROUND_PREFIX.length);
+
+  return HEX_COLOR_PATTERN.test(color) ? color.toUpperCase() : null;
+};
+
+export const getBackgroundPresetById = (presetId: string) => {
+  const customColor = getCustomBackgroundColor(presetId);
+
+  if (customColor) {
+    return {
+      id: presetId,
+      label: "Custom",
+      background: customColor,
+    };
+  }
+
+  return (
+    BACKGROUND_PRESETS.find((preset) => preset.id === presetId) ??
+    BACKGROUND_PRESETS[0]
+  );
+};

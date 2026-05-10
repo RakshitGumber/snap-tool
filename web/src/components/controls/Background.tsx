@@ -1,7 +1,14 @@
 import { Icon } from "@iconify/react";
 
-import { BACKGROUND_PRESET_CATEGORIES } from "@/config/backgroundPresets";
+import {
+  BACKGROUND_PRESET_CATEGORIES,
+  createCustomBackgroundId,
+  DEFAULT_CUSTOM_BACKGROUND_COLOR,
+  getCustomBackgroundColor,
+  getBackgroundPresetStyle,
+} from "@/config/backgroundPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
+import { ColorPicker } from "../ui/ColorPicker";
 
 type BackgroundProps = {
   onBackgroundSelected?: () => void;
@@ -14,6 +21,13 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
   const setActiveBackground = useCanvasStore(
     (state) => state.setActiveBackground,
   );
+  const selectedCustomColor =
+    getCustomBackgroundColor(activeBackgroundId) ??
+    DEFAULT_CUSTOM_BACKGROUND_COLOR;
+
+  const handleCustomColorChange = (color: string) => {
+    setActiveBackground(createCustomBackgroundId(color));
+  };
 
   return (
     <>
@@ -39,35 +53,49 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
             </h3>
 
             <div className="flex flex-wrap gap-2">
-              {category.presets.map((preset) => {
-                const isActive = preset.id === activeBackgroundId;
-
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveBackground(preset.id);
-                      onBackgroundSelected?.();
-                    }}
-                    className="flex flex-col items-center gap-1"
-                  >
-                    <span
-                      className="block h-25 w-25 rounded-lg border"
-                      style={{ background: preset.background }}
-                    />
-                    <span
-                      className={
-                        isActive
-                          ? "px-3 py-2 text-xs font-semibold text-accent"
-                          : "px-3 py-2 text-xs font-semibold"
-                      }
+              {category.id === "solid" ? (
+                <>
+                  <ColorPicker
+                    value={selectedCustomColor}
+                    onChange={handleCustomColorChange}
+                  />
+                  {category.presets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveBackground(preset.id);
+                        onBackgroundSelected?.();
+                      }}
+                      className="flex flex-col items-center gap-1"
                     >
-                      {preset.label}
-                    </span>
-                  </button>
-                );
-              })}
+                      <span
+                        className="h-11.5 w-11.5 rounded-md"
+                        style={getBackgroundPresetStyle(preset)}
+                      />
+                    </button>
+                  ))}
+                </>
+              ) : (
+                category.presets.map((preset) => {
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveBackground(preset.id);
+                        onBackgroundSelected?.();
+                      }}
+                      className="flex flex-col items-center"
+                    >
+                      <span
+                        className="block h-25 w-25 rounded-lg"
+                        style={getBackgroundPresetStyle(preset)}
+                      />
+                    </button>
+                  );
+                })
+              )}
             </div>
           </section>
         ))}

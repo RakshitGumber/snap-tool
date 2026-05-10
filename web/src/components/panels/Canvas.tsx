@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { getBackgroundPresetById } from "@/config/backgroundPresets";
+import {
+  getBackgroundPresetById,
+  getBackgroundPresetStyle,
+} from "@/config/backgroundPresets";
 import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
@@ -156,9 +159,9 @@ export const Canvas = () => {
     >
       <div
         style={{
+          ...getBackgroundPresetStyle(activeBackground),
           width: previewSize.width,
           height: previewSize.height,
-          background: activeBackground.background,
         }}
         className="relative overflow-hidden shadow-lg"
       >

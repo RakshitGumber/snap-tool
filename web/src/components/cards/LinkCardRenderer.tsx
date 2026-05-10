@@ -2,9 +2,11 @@ import type { CSSProperties } from "react";
 import { Icon } from "@iconify/react";
 
 import type {
+  LinkCardBorder,
   LinkCardBox,
   LinkCardLayer,
   LinkCardPreset,
+  LinkCardShadow,
   LinkCardSlot,
   LinkCardTextStyle,
 } from "@/config/linkCardPresets";
@@ -28,6 +30,7 @@ const getLayerBoxStyle = (
   height: number,
 ): CSSProperties => ({
   position: "absolute",
+  boxSizing: "border-box",
   left: px(box.x * width),
   top: px(box.y * height),
   width: px(box.width * width),
@@ -36,6 +39,28 @@ const getLayerBoxStyle = (
 
 const getRadius = (ratio: number | undefined, width: number) =>
   ratio === undefined ? undefined : px(metric(width, ratio));
+
+const getBorderStyle = (
+  border: LinkCardBorder | undefined,
+  width: number,
+): CSSProperties =>
+  border
+    ? {
+        border: `${px(metric(width, border.widthRatio))} solid ${border.color}`,
+      }
+    : {};
+
+const getShadowStyle = (
+  shadow: LinkCardShadow | undefined,
+  width: number,
+): CSSProperties =>
+  shadow
+    ? {
+        boxShadow: `${px(metric(width, shadow.offsetXRatio))} ${px(
+          metric(width, shadow.offsetYRatio),
+        )} ${px(metric(width, shadow.blurRatio))} ${shadow.color}`,
+      }
+    : {};
 
 const getTextValue = (
   metadata: LinkCardMetadata,
@@ -130,7 +155,9 @@ const renderLayer = ({
           style={{
             ...boxStyle,
             background: layer.background,
+            ...getBorderStyle(layer.border, width),
             borderRadius: getRadius(layer.radiusRatio, width),
+            ...getShadowStyle(layer.shadow, width),
             opacity: layer.opacity,
           }}
         />
@@ -144,9 +171,12 @@ const renderLayer = ({
           key={layer.id}
           style={{
             ...boxStyle,
+            ...getBorderStyle(layer.border, width),
+            ...getShadowStyle(layer.shadow, width),
             overflow: "hidden",
             background: layer.background,
             borderRadius: getRadius(layer.radiusRatio, width),
+            opacity: layer.opacity,
           }}
         >
           {src ? (

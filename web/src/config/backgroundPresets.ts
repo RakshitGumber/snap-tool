@@ -10,6 +10,9 @@ export type BackgroundPresetCategory = {
   presets: BackgroundPreset[];
 };
 
+const unsplashBackground = (imageId: string) =>
+  `url("https://images.unsplash.com/${imageId}?auto=format&fit=crop&w=1800&q=80") center / cover no-repeat`;
+
 export const BACKGROUND_PRESET_CATEGORIES = [
   {
     id: "solid",
@@ -55,6 +58,99 @@ export const BACKGROUND_PRESET_CATEGORIES = [
         label: "Tropic",
         background:
           "linear-gradient(135deg, #083d77 0%, #2bb3c0 52%, #d9f7a6 100%)",
+      },
+    ],
+  },
+  {
+    id: "vector",
+    label: "Vector Graphic",
+    presets: [
+      {
+        id: "vector-prism",
+        label: "Prism",
+        background: unsplashBackground("photo-1618005182384-a83a8bd57fbe"),
+      },
+      {
+        id: "vector-paper",
+        label: "Paper",
+        background: unsplashBackground("photo-1527769929977-c341ee9f2033"),
+      },
+      {
+        id: "vector-mesh",
+        label: "Mesh",
+        background: unsplashBackground("photo-1487088678257-3a541e6e3922"),
+      },
+      {
+        id: "vector-ribbons",
+        label: "Ribbons",
+        background: unsplashBackground("photo-1579547621113-e4bb2a19bdd6"),
+      },
+      {
+        id: "vector-waves",
+        label: "Waves",
+        background: unsplashBackground("photo-1579548122080-c35fd6820ecb"),
+      },
+    ],
+  },
+  {
+    id: "abstract",
+    label: "Abstract Graphic",
+    presets: [
+      {
+        id: "abstract-liquid",
+        label: "Liquid",
+        background: unsplashBackground("photo-1684139517679-032b7213ad2e"),
+      },
+      {
+        id: "abstract-glass",
+        label: "Glass",
+        background: unsplashBackground("photo-1669295384050-a1d4357bd1d7"),
+      },
+      {
+        id: "abstract-canvas",
+        label: "Canvas",
+        background: unsplashBackground("photo-1637825891028-564f672aa42c"),
+      },
+      {
+        id: "abstract-folds",
+        label: "Folds",
+        background: unsplashBackground("photo-1621947081720-86970823b77a"),
+      },
+      {
+        id: "abstract-spectrum",
+        label: "Spectrum",
+        background: unsplashBackground("photo-1620812097331-ff636155488f"),
+      },
+    ],
+  },
+  {
+    id: "background-image",
+    label: "Background Image",
+    presets: [
+      {
+        id: "background-studio",
+        label: "Studio",
+        background: unsplashBackground("photo-1631631480669-535cc43f2327"),
+      },
+      {
+        id: "background-mountain",
+        label: "Mountain",
+        background: unsplashBackground("photo-1516617442634-75371039cb3a"),
+      },
+      {
+        id: "background-soft-light",
+        label: "Soft Light",
+        background: unsplashBackground("photo-1601314167099-232775b3d6fd"),
+      },
+      {
+        id: "background-horizon",
+        label: "Horizon",
+        background: unsplashBackground("photo-1723384747376-90f201a3bd55"),
+      },
+      {
+        id: "background-texture",
+        label: "Texture",
+        background: unsplashBackground("photo-1613828330596-982c62f72e9a"),
       },
     ],
   },

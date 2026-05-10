@@ -5,8 +5,10 @@ import { getBackgroundPresetById } from "@/config/backgroundPresets";
 import { getCardShadowOption } from "@/config/cardShadows";
 import {
   getLinkCardPresetById,
+  type LinkCardBorder,
   type LinkCardBox,
   type LinkCardLayer,
+  type LinkCardShadow,
   type LinkCardSlot,
   type LinkCardTextStyle,
 } from "@/config/linkCardPresets";
@@ -36,6 +38,31 @@ const splitCssArgs = (value: string) => {
   return parts;
 };
 
+const parseCssImageBackground = (background: string | undefined) => {
+  if (!background?.startsWith("url(")) return null;
+
+  const match = background.match(/^url\((?:"([^"]+)"|'([^']+)'|([^)]*))\)/);
+  const src = match?.[1] ?? match?.[2] ?? match?.[3]?.trim();
+
+  return src ? { src } : null;
+};
+
+const addGradientStops = (
+  gradient: CanvasGradient,
+  stops: string[],
+) => {
+  stops.forEach((stop, index) => {
+    const stopMatch = stop.match(/^(.*)\s+([\d.]+)%$/);
+
+    gradient.addColorStop(
+      stopMatch
+        ? Number(stopMatch[2]) / 100
+        : index / Math.max(1, stops.length - 1),
+      stopMatch ? stopMatch[1] : stop,
+    );
+  });
+};
+
 const createFillStyle = (
   context: CanvasRenderingContext2D,
   background: string | undefined,
@@ -45,33 +72,54 @@ const createFillStyle = (
   y = 0,
 ) => {
   if (!background) return "transparent";
-  if (!background.startsWith("linear-gradient(")) return background;
+  if (parseCssImageBackground(background)) return "#f8fafc";
 
-  const args = splitCssArgs(background.slice(16, -1));
-  const angleMatch = args[0]?.match(/^([\d.]+)deg$/);
-  const angle = ((angleMatch ? Number(angleMatch[1]) : 180) * Math.PI) / 180;
-  const dx = Math.sin(angle);
-  const dy = -Math.cos(angle);
-  const length = Math.abs(width * dx) + Math.abs(height * dy);
-  const gradient = context.createLinearGradient(
-    x + width / 2 - (dx * length) / 2,
-    y + height / 2 - (dy * length) / 2,
-    x + width / 2 + (dx * length) / 2,
-    y + height / 2 + (dy * length) / 2,
-  );
-  const stops = args.slice(angleMatch ? 1 : 0);
-
-  stops.forEach((stop, index) => {
-    const stopMatch = stop.match(/^(.*)\s+([\d.]+)%$/);
-    gradient.addColorStop(
-      stopMatch
-        ? Number(stopMatch[2]) / 100
-        : index / Math.max(1, stops.length - 1),
-      stopMatch ? stopMatch[1] : stop,
+  if (background.startsWith("linear-gradient(")) {
+    const args = splitCssArgs(background.slice(16, -1));
+    const angleMatch = args[0]?.match(/^([\d.]+)deg$/);
+    const angle = ((angleMatch ? Number(angleMatch[1]) : 180) * Math.PI) / 180;
+    const dx = Math.sin(angle);
+    const dy = -Math.cos(angle);
+    const length = Math.abs(width * dx) + Math.abs(height * dy);
+    const gradient = context.createLinearGradient(
+      x + width / 2 - (dx * length) / 2,
+      y + height / 2 - (dy * length) / 2,
+      x + width / 2 + (dx * length) / 2,
+      y + height / 2 + (dy * length) / 2,
     );
-  });
+    const stops = args.slice(angleMatch ? 1 : 0);
 
-  return gradient;
+    addGradientStops(gradient, stops);
+
+    return gradient;
+  }
+
+  if (background.startsWith("radial-gradient(")) {
+    const args = splitCssArgs(background.slice(16, -1));
+    const shape = args[0] ?? "";
+    const positionMatch = shape.match(/at\s+([\d.]+)%\s+([\d.]+)%/);
+    const hasShapeArg =
+      shape.startsWith("circle") ||
+      shape.startsWith("ellipse") ||
+      shape.startsWith("at ");
+    const centerX = x + width * (positionMatch ? Number(positionMatch[1]) / 100 : 0.5);
+    const centerY = y + height * (positionMatch ? Number(positionMatch[2]) / 100 : 0.5);
+    const radius = Math.max(width, height);
+    const gradient = context.createRadialGradient(
+      centerX,
+      centerY,
+      0,
+      centerX,
+      centerY,
+      radius,
+    );
+
+    addGradientStops(gradient, args.slice(hasShapeArg ? 1 : 0));
+
+    return gradient;
+  }
+
+  return background;
 };
 
 const roundedRect = (
@@ -105,6 +153,43 @@ const getLayerBox = (
   width: box.width * width,
   height: box.height * height,
 });
+
+const applyShadow = (
+  context: CanvasRenderingContext2D,
+  shadow: LinkCardShadow | undefined,
+  cardWidth: number,
+) => {
+  if (!shadow) return;
+
+  context.shadowBlur = shadow.blurRatio * cardWidth;
+  context.shadowColor = shadow.color;
+  context.shadowOffsetX = shadow.offsetXRatio * cardWidth;
+  context.shadowOffsetY = shadow.offsetYRatio * cardWidth;
+};
+
+const drawBorder = (
+  context: CanvasRenderingContext2D,
+  border: LinkCardBorder | undefined,
+  box: ReturnType<typeof getLayerBox>,
+  radius: number,
+  cardWidth: number,
+) => {
+  if (!border) return;
+
+  context.save();
+  context.strokeStyle = border.color;
+  context.lineWidth = Math.max(1, border.widthRatio * cardWidth);
+  roundedRect(
+    context,
+    box.x + context.lineWidth / 2,
+    box.y + context.lineWidth / 2,
+    box.width - context.lineWidth,
+    box.height - context.lineWidth,
+    Math.max(0, radius - context.lineWidth / 2),
+  );
+  context.stroke();
+  context.restore();
+};
 
 const getTextValue = (card: LinkCardCanvasItem, slot: LinkCardSlot) => {
   const metadata = card.metadata;
@@ -157,13 +242,71 @@ const loadImage = (src: string) =>
     image.src = src;
   });
 
+const drawCoverImage = (
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const imageRatio = image.naturalWidth / image.naturalHeight;
+  const boxRatio = width / height;
+  const drawWidth = imageRatio > boxRatio ? height * imageRatio : width;
+  const drawHeight = drawWidth / imageRatio;
+
+  context.drawImage(
+    image,
+    x + (width - drawWidth) / 2,
+    y + (height - drawHeight) / 2,
+    drawWidth,
+    drawHeight,
+  );
+};
+
+const drawBackground = async (
+  context: CanvasRenderingContext2D,
+  background: string | undefined,
+  width: number,
+  height: number,
+) => {
+  const imageBackground = parseCssImageBackground(background);
+
+  if (!imageBackground) {
+    context.fillStyle = createFillStyle(context, background, width, height);
+    context.fillRect(0, 0, width, height);
+    return;
+  }
+
+  context.fillStyle = "#f8fafc";
+  context.fillRect(0, 0, width, height);
+
+  try {
+    const image = await loadImage(imageBackground.src);
+
+    drawCoverImage(context, image, 0, 0, width, height);
+  } catch {
+    // Keep exporting even when a remote background image is unavailable.
+  }
+};
+
 const drawImageLayer = async (
   context: CanvasRenderingContext2D,
   layer: Extract<LinkCardLayer, { kind: "image" }>,
   card: LinkCardCanvasItem,
   box: ReturnType<typeof getLayerBox>,
   radius: number,
+  cardWidth: number,
 ) => {
+  if (layer.shadow) {
+    context.save();
+    applyShadow(context, layer.shadow, cardWidth);
+    context.fillStyle = layer.background ?? "#ffffff";
+    roundedRect(context, box.x, box.y, box.width, box.height, radius);
+    context.fill();
+    context.restore();
+  }
+
   context.save();
   roundedRect(context, box.x, box.y, box.width, box.height, radius);
   context.clip();
@@ -197,6 +340,8 @@ const drawImageLayer = async (
             : box.width;
       const drawHeight = drawWidth / imageRatio;
 
+      context.save();
+      context.globalAlpha = layer.opacity ?? 1;
       context.drawImage(
         image,
         box.x + (box.width - drawWidth) / 2,
@@ -204,12 +349,14 @@ const drawImageLayer = async (
         drawWidth,
         drawHeight,
       );
+      context.restore();
     } catch {
       // Keep exporting even if a remote image blocks canvas access.
     }
   }
 
   context.restore();
+  drawBorder(context, layer.border, box, radius, cardWidth);
 };
 
 const applyTextStyle = (
@@ -310,6 +457,10 @@ const drawIcon = (
   context.save();
   context.globalAlpha = opacity ?? 1;
   context.fillStyle = color;
+  context.strokeStyle = color;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.lineWidth = Math.max(2, size * 0.08);
 
   if (icon === "simple-icons:github") {
     context.beginPath();
@@ -333,6 +484,123 @@ const drawIcon = (
     context.lineTo(centerX + size * 0.1, centerY - size * 0.31);
     context.closePath();
     context.fill();
+  } else if (icon === "simple-icons:youtube") {
+    roundedRect(
+      context,
+      centerX - size * 0.38,
+      centerY - size * 0.26,
+      size * 0.76,
+      size * 0.52,
+      size * 0.12,
+    );
+    context.fill();
+    context.fillStyle = "#ffffff";
+    context.beginPath();
+    context.moveTo(centerX - size * 0.08, centerY - size * 0.14);
+    context.lineTo(centerX - size * 0.08, centerY + size * 0.14);
+    context.lineTo(centerX + size * 0.15, centerY);
+    context.closePath();
+    context.fill();
+  } else if (icon === "mingcute:play-circle-fill") {
+    context.beginPath();
+    context.arc(centerX, centerY, size * 0.42, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#ffffff";
+    context.beginPath();
+    context.moveTo(centerX - size * 0.08, centerY - size * 0.16);
+    context.lineTo(centerX - size * 0.08, centerY + size * 0.16);
+    context.lineTo(centerX + size * 0.18, centerY);
+    context.closePath();
+    context.fill();
+  } else if (icon === "mingcute:star-fill") {
+    context.beginPath();
+    for (let point = 0; point < 10; point += 1) {
+      const radius = point % 2 === 0 ? size * 0.42 : size * 0.18;
+      const angle = -Math.PI / 2 + (point * Math.PI) / 5;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+
+      if (point === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    context.closePath();
+    context.fill();
+  } else if (icon === "mingcute:globe-line") {
+    context.beginPath();
+    context.arc(centerX, centerY, size * 0.38, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.ellipse(centerX, centerY, size * 0.16, size * 0.38, 0, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(centerX - size * 0.34, centerY);
+    context.lineTo(centerX + size * 0.34, centerY);
+    context.stroke();
+  } else if (icon === "mingcute:link-line") {
+    context.beginPath();
+    context.arc(centerX - size * 0.16, centerY, size * 0.18, Math.PI * 0.65, Math.PI * 1.65);
+    context.stroke();
+    context.beginPath();
+    context.arc(centerX + size * 0.16, centerY, size * 0.18, -Math.PI * 0.35, Math.PI * 0.65);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(centerX - size * 0.08, centerY);
+    context.lineTo(centerX + size * 0.08, centerY);
+    context.stroke();
+  } else if (icon === "mingcute:code-line") {
+    context.beginPath();
+    context.moveTo(centerX - size * 0.12, centerY - size * 0.22);
+    context.lineTo(centerX - size * 0.28, centerY);
+    context.lineTo(centerX - size * 0.12, centerY + size * 0.22);
+    context.moveTo(centerX + size * 0.12, centerY - size * 0.22);
+    context.lineTo(centerX + size * 0.28, centerY);
+    context.lineTo(centerX + size * 0.12, centerY + size * 0.22);
+    context.stroke();
+  } else if (icon === "mingcute:git-branch-line") {
+    context.beginPath();
+    context.moveTo(centerX - size * 0.2, centerY - size * 0.26);
+    context.lineTo(centerX - size * 0.2, centerY + size * 0.18);
+    context.quadraticCurveTo(centerX - size * 0.2, centerY + size * 0.32, centerX, centerY + size * 0.32);
+    context.lineTo(centerX + size * 0.2, centerY + size * 0.18);
+    context.stroke();
+    context.beginPath();
+    context.arc(centerX - size * 0.2, centerY - size * 0.28, size * 0.1, 0, Math.PI * 2);
+    context.arc(centerX + size * 0.2, centerY + size * 0.16, size * 0.1, 0, Math.PI * 2);
+    context.fill();
+  } else if (icon === "mingcute:browser-line") {
+    roundedRect(
+      context,
+      centerX - size * 0.38,
+      centerY - size * 0.3,
+      size * 0.76,
+      size * 0.6,
+      size * 0.08,
+    );
+    context.stroke();
+    context.beginPath();
+    context.moveTo(centerX - size * 0.38, centerY - size * 0.12);
+    context.lineTo(centerX + size * 0.38, centerY - size * 0.12);
+    context.stroke();
+  } else if (icon === "mingcute:image-line") {
+    roundedRect(
+      context,
+      centerX - size * 0.36,
+      centerY - size * 0.3,
+      size * 0.72,
+      size * 0.6,
+      size * 0.08,
+    );
+    context.stroke();
+    context.beginPath();
+    context.arc(centerX + size * 0.18, centerY - size * 0.12, size * 0.07, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(centerX - size * 0.28, centerY + size * 0.2);
+    context.lineTo(centerX - size * 0.08, centerY);
+    context.lineTo(centerX + size * 0.04, centerY + size * 0.1);
+    context.lineTo(centerX + size * 0.16, centerY - size * 0.02);
+    context.lineTo(centerX + size * 0.3, centerY + size * 0.2);
+    context.stroke();
   } else {
     context.beginPath();
     context.arc(centerX, centerY, size * 0.36, 0, Math.PI * 2);
@@ -393,6 +661,7 @@ const drawCard = async (
     if (layer.kind === "rect") {
       context.save();
       context.globalAlpha = layer.opacity ?? 1;
+      applyShadow(context, layer.shadow, cardWidth);
       context.fillStyle = createFillStyle(
         context,
         layer.background,
@@ -411,6 +680,13 @@ const drawCard = async (
       );
       context.fill();
       context.restore();
+      drawBorder(
+        context,
+        layer.border,
+        box,
+        (layer.radiusRatio ?? 0) * cardWidth,
+        cardWidth,
+      );
     }
 
     if (layer.kind === "image") {
@@ -420,6 +696,7 @@ const drawCard = async (
         card,
         box,
         (layer.radiusRatio ?? 0) * cardWidth,
+        cardWidth,
       );
     }
 
@@ -525,13 +802,12 @@ export const ExportButton = () => {
       canvas.height = canvasSize.height;
 
       const background = getBackgroundPresetById(activeBackgroundId);
-      context.fillStyle = createFillStyle(
+      await drawBackground(
         context,
         background.background,
         canvas.width,
         canvas.height,
       );
-      context.fillRect(0, 0, canvas.width, canvas.height);
 
       if (activeCard) {
         await drawCard(

@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 
-import { getBackgroundPresetById } from "@/config/backgroundPresets";
+import {
+  getBackgroundPresetById,
+  getBackgroundPresetStyle,
+} from "@/config/backgroundPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 import { Background } from "../controls/Background";
@@ -58,7 +61,7 @@ export const RightPanel = () => {
                   type="button"
                   onClick={() => setView("background")}
                   className="h-25 w-25 rounded-lg border border-border-color"
-                  style={{ background: activeBackground.background }}
+                  style={getBackgroundPresetStyle(activeBackground)}
                 />
                 <div>
                   <h3 className="font-semibold text-lg">

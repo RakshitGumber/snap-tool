@@ -5,6 +5,7 @@ import {
   createCustomBackgroundId,
   DEFAULT_CUSTOM_BACKGROUND_COLOR,
   getCustomBackgroundColor,
+  getBackgroundPresetStyle,
 } from "@/config/backgroundPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 import { ColorPicker } from "../ui/ColorPicker";
@@ -70,7 +71,7 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
                     >
                       <span
                         className="h-11.5 w-11.5 rounded-md"
-                        style={{ background: preset.background }}
+                        style={getBackgroundPresetStyle(preset)}
                       />
                     </button>
                   ))}
@@ -89,7 +90,7 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
                     >
                       <span
                         className="block h-25 w-25 rounded-lg"
-                        style={{ background: preset.background }}
+                        style={getBackgroundPresetStyle(preset)}
                       />
                     </button>
                   );

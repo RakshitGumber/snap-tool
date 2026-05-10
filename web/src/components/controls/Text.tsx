@@ -1,6 +1,9 @@
 import { Icon } from "@iconify/react";
 
-import { BACKGROUND_PRESET_CATEGORIES } from "@/config/backgroundPresets";
+import {
+  BACKGROUND_PRESET_CATEGORIES,
+  getBackgroundPresetStyle,
+} from "@/config/backgroundPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 export const Text = () => {
@@ -42,7 +45,7 @@ export const Text = () => {
                   >
                     <span
                       className="block h-25 w-25 rounded-lg"
-                      style={{ background: preset.background }}
+                      style={getBackgroundPresetStyle(preset)}
                     />
                     <span className="px-3 py-2 text-xs font-semibold">
                       {preset.label}

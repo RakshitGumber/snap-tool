@@ -10,6 +10,9 @@ export type BackgroundPresetCategory = {
   presets: BackgroundPreset[];
 };
 
+const CUSTOM_BACKGROUND_PREFIX = "custom-color:";
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+
 const unsplashBackground = (imageId: string) =>
   `url("https://images.unsplash.com/${imageId}?auto=format&fit=crop&w=1800&q=80") center / cover no-repeat`;
 
@@ -208,6 +211,30 @@ export const BACKGROUND_PRESETS = BACKGROUND_PRESET_CATEGORIES.flatMap(
 
 export const DEFAULT_BACKGROUND_PRESET_ID = BACKGROUND_PRESETS[0].id;
 
-export const getBackgroundPresetById = (presetId: string) =>
-  BACKGROUND_PRESETS.find((preset) => preset.id === presetId) ??
-  BACKGROUND_PRESETS[0];
+export const createCustomBackgroundId = (color: string) =>
+  `${CUSTOM_BACKGROUND_PREFIX}${color.toUpperCase()}`;
+
+export const getCustomBackgroundColor = (presetId: string) => {
+  if (!presetId.startsWith(CUSTOM_BACKGROUND_PREFIX)) return null;
+
+  const color = presetId.slice(CUSTOM_BACKGROUND_PREFIX.length);
+
+  return HEX_COLOR_PATTERN.test(color) ? color.toUpperCase() : null;
+};
+
+export const getBackgroundPresetById = (presetId: string) => {
+  const customColor = getCustomBackgroundColor(presetId);
+
+  if (customColor) {
+    return {
+      id: presetId,
+      label: "Custom",
+      background: customColor,
+    };
+  }
+
+  return (
+    BACKGROUND_PRESETS.find((preset) => preset.id === presetId) ??
+    BACKGROUND_PRESETS[0]
+  );
+};

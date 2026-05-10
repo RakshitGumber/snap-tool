@@ -6,7 +6,7 @@ import {
   getCanvasPresetById,
   type CanvasSize,
 } from "@/config/canvasPresets";
-import { isLinkCardPresetId } from "@/components/cards/presets";
+import { isLinkCardPresetId } from "@/config/linkCardPresets";
 import type { LinkCardMetadata } from "@/libs/linkCards";
 
 export type LinkCardCanvasItem = {

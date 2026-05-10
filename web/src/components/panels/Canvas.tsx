@@ -1,5 +1,4 @@
 import { Application } from "@pixi/react";
-import { flushSync } from "react-dom";
 import {
   useCallback,
   useEffect,
@@ -13,13 +12,13 @@ import { Rectangle } from "pixi.js";
 import type { ApplicationRef } from "@pixi/react";
 
 import { LinkCardCanvas } from "@/components/cards/LinkCardCanvas";
-import { preloadCanvasAssets } from "@/components/cards/preloadCanvasAssets";
+import { getPixiResolution } from "@/components/cards/pixiResolution";
 import { useCanvasExport } from "@/providers/CanvasExportContext";
 import {
   getBackgroundPresetById,
   getBackgroundPresetStyle,
 } from "@/config/backgroundPresets";
-import { getLinkCardPresetById } from "@/components/cards/presets";
+import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 type ResizeState = {
@@ -39,7 +38,6 @@ export const Canvas = () => {
   const appRef = useRef<ApplicationRef | null>(null);
   const resizeStateRef = useRef<ResizeState | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
-  const [assetRevision, setAssetRevision] = useState(0);
   const { registerExporter } = useCanvasExport();
 
   const canvasSize = useCanvasStore((state) => state.canvasSize);
@@ -159,6 +157,12 @@ export const Canvas = () => {
         return;
       }
 
+      if (event.key !== "Delete" && event.key !== "Backspace") {
+        return;
+      }
+
+      if (!activeCard) return;
+
       event.preventDefault();
       deleteActiveCard();
     };
@@ -168,7 +172,7 @@ export const Canvas = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [deleteActiveCard]);
+  }, [activeCard, deleteActiveCard]);
 
   useEffect(() => {
     return registerExporter(async () => {
@@ -177,21 +181,9 @@ export const Canvas = () => {
 
       const snapshot = useCanvasStore.getState();
 
-      await preloadCanvasAssets({
-        activeBackgroundId: snapshot.activeBackgroundId,
-        activeCard: snapshot.activeCard,
-        canvasSize: snapshot.canvasSize,
-      });
-
-      flushSync(() => {
-        setAssetRevision((revision) => revision + 1);
-      });
+      app.renderer.resize(snapshot.canvasSize.width, snapshot.canvasSize.height);
 
       await waitForNextFrame();
-      app.renderer.resize(
-        snapshot.canvasSize.width,
-        snapshot.canvasSize.height,
-      );
       app.render();
 
       app.renderer.extract.download({
@@ -240,17 +232,15 @@ export const Canvas = () => {
           key={activeCanvasPresetId}
           ref={appRef}
           antialias
-          autoDensity={false}
           backgroundAlpha={0}
           className="block h-full w-full"
           height={canvasSize.height}
-          resolution={1}
+          resolution={getPixiResolution()}
           width={canvasSize.width}
         >
           <LinkCardCanvas
             activeBackgroundId={activeBackgroundId}
             activeCard={activeCard}
-            assetRevision={assetRevision}
             canvasSize={canvasSize}
           />
         </Application>

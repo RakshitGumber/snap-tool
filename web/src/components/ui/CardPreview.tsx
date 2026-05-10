@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { getLinkCardPresetById } from "@/components/cards/presets";
+import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import { PixiCardPreview } from "@/components/cards/PixiCardPreview";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 

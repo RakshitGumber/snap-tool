@@ -1,4 +1,4 @@
-import { useTheme } from "@/providers/ThemeProvider";
+import { useTheme } from "@/providers/ThemeContext";
 
 type ThemeButtonProps = {
   variant?: "icon" | "menu";

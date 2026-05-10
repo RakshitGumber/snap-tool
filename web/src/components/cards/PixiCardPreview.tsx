@@ -3,7 +3,8 @@ import "./pixiSetup";
 import { Application } from "@pixi/react";
 
 import { CenteredPixiCard } from "@/components/cards/LinkCardCanvas";
-import { getLinkCardPresetById } from "@/components/cards/presets";
+import { getPixiResolution } from "@/components/cards/pixiResolution";
+import { getLinkCardPresetById } from "@/config/linkCardPresets";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 
 export const PixiCardPreview = ({
@@ -19,11 +20,11 @@ export const PixiCardPreview = ({
   return (
     <Application
       antialias
-      autoDensity={false}
+      autoDensity
       backgroundAlpha={0}
       className="block h-full w-full"
       height={height}
-      resolution={1}
+      resolution={getPixiResolution()}
       width={width}
     >
       <CenteredPixiCard

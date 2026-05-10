@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CanvasTextMetrics,
+  FillGradient,
   Graphics,
   TextStyle,
   Texture,
@@ -9,11 +10,10 @@ import {
   type TextStyleOptions,
 } from "pixi.js";
 
+import type { LinkCardImageSlot } from "@/config/linkCardPresets";
 import type { LinkCardMetadata } from "@/libs/linkCards";
 
-import type { LinkCardImageSlot } from "./types";
-
-type Box = {
+export type Box = {
   x: number;
   y: number;
   width: number;
@@ -21,6 +21,7 @@ type Box = {
 };
 
 type FontWeightInput = TextStyleOptions["fontWeight"] | number;
+type PixiFill = ColorSource | FillGradient;
 
 type TextBlockProps = {
   text: string;
@@ -59,6 +60,7 @@ type ImageBoxProps = {
 
 const textureCache = new Map<string, Texture | null>();
 const texturePromises = new Map<string, Promise<Texture | null>>();
+const CARD_FONT_FAMILY = "Roboto, Arial, sans-serif";
 
 const loadImageElement = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -95,7 +97,10 @@ export const loadPixiTexture = async (src: string | null | undefined) => {
 const getCachedTexture = (src: string | null | undefined) =>
   src ? (textureCache.get(src) ?? null) : null;
 
-const usePixiTexture = (src: string | null | undefined, revision?: number) => {
+export const usePixiTexture = (
+  src: string | null | undefined,
+  revision?: number,
+) => {
   const [texture, setTexture] = useState<Texture | null>(() =>
     getCachedTexture(src),
   );
@@ -106,8 +111,8 @@ const usePixiTexture = (src: string | null | undefined, revision?: number) => {
     Promise.resolve(getCachedTexture(src))
       .then((cachedTexture) => cachedTexture ?? loadPixiTexture(src))
       .then((nextTexture) => {
-      if (isActive) setTexture(nextTexture);
-    });
+        if (isActive) setTexture(nextTexture);
+      });
 
     return () => {
       isActive = false;
@@ -153,13 +158,18 @@ export const imageForMetadata = (
 export const shortUrl = (value: string) => {
   try {
     const url = new URL(value);
-    return `${url.hostname.replace(/^www\./, "")}${url.pathname === "/" ? "" : url.pathname}`;
+    return `${url.hostname.replace(/^www\./, "")}${
+      url.pathname === "/" ? "" : url.pathname
+    }`;
   } catch {
     return value;
   }
 };
 
-export const textOrFallback = (value: string | null | undefined, fallback: string) =>
+export const textOrFallback = (
+  value: string | null | undefined,
+  fallback: string,
+) =>
   value?.trim() ? value : fallback;
 
 const normalizeFontWeight = (
@@ -167,7 +177,10 @@ const normalizeFontWeight = (
 ): TextStyleOptions["fontWeight"] => {
   if (typeof fontWeight !== "number") return fontWeight;
 
-  const normalized = Math.min(900, Math.max(100, Math.round(fontWeight / 100) * 100));
+  const normalized = Math.min(
+    900,
+    Math.max(100, Math.round(fontWeight / 100) * 100),
+  );
   return String(normalized) as TextStyleOptions["fontWeight"];
 };
 
@@ -175,11 +188,16 @@ export const roundedRect = (
   graphics: Graphics,
   box: Box,
   radius: number,
-  fill: ColorSource,
+  fill: PixiFill,
   alpha = 1,
 ) => {
   graphics.roundRect(box.x, box.y, box.width, box.height, radius);
-  graphics.fill({ color: fill, alpha });
+  if (fill instanceof FillGradient) {
+    graphics.alpha = alpha;
+    graphics.fill(fill);
+  } else {
+    graphics.fill({ color: fill, alpha });
+  }
 };
 
 export const PixiRect = ({
@@ -191,15 +209,20 @@ export const PixiRect = ({
 }: {
   box: Box;
   radius?: number;
-  fill: ColorSource;
+  fill: PixiFill;
   alpha?: number;
   stroke?: { color: ColorSource; width: number; alpha?: number };
 }) => {
   const draw = useCallback(
     (graphics: Graphics) => {
       graphics.clear();
+      graphics.alpha = alpha;
       graphics.roundRect(box.x, box.y, box.width, box.height, radius);
-      graphics.fill({ color: fill, alpha });
+      if (fill instanceof FillGradient) {
+        graphics.fill(fill);
+      } else {
+        graphics.fill({ color: fill, alpha });
+      }
 
       if (stroke && stroke.width > 0) {
         graphics.stroke({
@@ -229,6 +252,7 @@ const clampText = ({
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   const lines: string[] = [];
   let line = "";
+  let didTruncate = false;
 
   for (const word of words) {
     const nextLine = line ? `${line} ${word}` : word;
@@ -242,14 +266,29 @@ const clampText = ({
     lines.push(line);
     line = word;
 
-    if (lines.length === maxLines) break;
+    if (lines.length === maxLines) {
+      didTruncate = true;
+      break;
+    }
   }
 
   if (lines.length < maxLines && line) lines.push(line);
+  if (!didTruncate && lines.length <= maxLines) return lines.join("\n");
 
-  if (lines.length <= maxLines) return lines.join("\n");
+  const visibleLines = lines.slice(0, maxLines);
+  const lastLine = visibleLines[visibleLines.length - 1] ?? "";
+  let truncatedLine = lastLine;
 
-  return lines.slice(0, maxLines).join("\n");
+  while (
+    truncatedLine.length > 1 &&
+    CanvasTextMetrics.measureText(`${truncatedLine}...`, style).width > width
+  ) {
+    truncatedLine = truncatedLine.slice(0, -1).trimEnd();
+  }
+
+  visibleLines[visibleLines.length - 1] = `${truncatedLine || lastLine}...`;
+
+  return visibleLines.join("\n");
 };
 
 export const PixiTextBlock = ({
@@ -269,7 +308,7 @@ export const PixiTextBlock = ({
         align,
         breakWords: true,
         fill: color,
-        fontFamily: "Inter Variable, Inter, sans-serif",
+        fontFamily: CARD_FONT_FAMILY,
         fontSize,
         fontWeight: normalizeFontWeight(fontWeight),
         lineHeight: fontSize * lineHeight,
@@ -331,7 +370,7 @@ export const PixiBadge = ({
           new TextStyle({
             align: "center",
             fill: color,
-            fontFamily: "Inter Variable, Inter, sans-serif",
+            fontFamily: CARD_FONT_FAMILY,
             fontSize,
             fontWeight: normalizeFontWeight(fontWeight),
           })

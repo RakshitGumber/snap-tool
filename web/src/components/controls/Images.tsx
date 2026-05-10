@@ -7,7 +7,7 @@ import {
 import {
   getLinkCardPresetsBySource,
   type LinkCardPreset,
-} from "@/components/cards/presets";
+} from "@/config/linkCardPresets";
 import {
   type LinkCardCanvasItem,
   useCanvasStore,

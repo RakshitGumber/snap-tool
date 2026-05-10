@@ -53,13 +53,18 @@ export const RightPanel = () => {
             </div>
             <div className="flex px-5 flex-col gap-3 pb-6">
               <h3 className="font-semibold text-lg">Background</h3>
-              <div className="flex flex-col">
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setView("background")}
                   className="h-25 w-25 rounded-lg border border-border-color"
                   style={{ background: activeBackground.background }}
                 />
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {activeBackground.label}
+                  </h3>
+                </div>
               </div>
             </div>
           </div>

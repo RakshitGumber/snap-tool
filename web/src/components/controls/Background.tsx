@@ -38,7 +38,7 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
               {category.label}
             </h3>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-2">
               {category.presets.map((preset) => {
                 const isActive = preset.id === activeBackgroundId;
 

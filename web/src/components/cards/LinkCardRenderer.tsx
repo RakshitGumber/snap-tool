@@ -62,10 +62,7 @@ const getShadowStyle = (
       }
     : {};
 
-const getTextValue = (
-  metadata: LinkCardMetadata,
-  slot: LinkCardSlot,
-) => {
+const getTextValue = (metadata: LinkCardMetadata, slot: LinkCardSlot) => {
   switch (slot) {
     case "title":
       return metadata.title;
@@ -78,21 +75,20 @@ const getTextValue = (
     case "hostname":
       return "hostname" in metadata ? metadata.hostname : "";
     case "startTimeLabel":
-      return "startTimeLabel" in metadata ? metadata.startTimeLabel ?? "" : "";
+      return "startTimeLabel" in metadata
+        ? (metadata.startTimeLabel ?? "")
+        : "";
     default:
       return "";
   }
 };
 
-const getImageValue = (
-  metadata: LinkCardMetadata,
-  slot: LinkCardSlot,
-) => {
+const getImageValue = (metadata: LinkCardMetadata, slot: LinkCardSlot) => {
   switch (slot) {
     case "thumbnailUrl":
       return "thumbnailUrl" in metadata ? metadata.thumbnailUrl : "";
     case "avatarUrl":
-      return "avatarUrl" in metadata ? metadata.avatarUrl ?? "" : "";
+      return "avatarUrl" in metadata ? (metadata.avatarUrl ?? "") : "";
     case "openGraphUrl":
       return "openGraphUrl" in metadata ? metadata.openGraphUrl : "";
     case "faviconUrl":
@@ -118,9 +114,7 @@ const getTextStyle = (
   opacity: style.opacity,
 });
 
-const getLineClampStyle = (
-  lineClamp: number | undefined,
-): CSSProperties =>
+const getLineClampStyle = (lineClamp: number | undefined): CSSProperties =>
   lineClamp
     ? {
         display: "-webkit-box",
@@ -253,7 +247,10 @@ const renderLayer = ({
         >
           <Icon
             icon={layer.icon}
-            fontSize={Math.min(layer.box.width * width, layer.box.height * height)}
+            fontSize={Math.min(
+              layer.box.width * width,
+              layer.box.height * height,
+            )}
           />
         </div>
       );
@@ -309,7 +306,6 @@ export const LinkCardRenderer = ({
     <div
       className={className}
       style={{
-        background: preset.background,
         borderRadius: getRadius(preset.borderRadiusRatio, width),
         height,
         overflow: "hidden",

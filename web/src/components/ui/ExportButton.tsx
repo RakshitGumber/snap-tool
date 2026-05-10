@@ -290,6 +290,50 @@ const drawBackground = async (
   }
 };
 
+const drawCardShadow = (
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  shadow: ReturnType<typeof getCardShadowOption>["canvas"],
+) => {
+  if (
+    shadow.color === "transparent" ||
+    (shadow.blur === 0 && shadow.offsetX === 0 && shadow.offsetY === 0)
+  ) {
+    return;
+  }
+
+  const shadowCanvas = document.createElement("canvas");
+  const shadowContext = shadowCanvas.getContext("2d");
+
+  if (!shadowContext) return;
+
+  shadowCanvas.width = context.canvas.width;
+  shadowCanvas.height = context.canvas.height;
+
+  shadowContext.save();
+  shadowContext.shadowBlur = shadow.blur;
+  shadowContext.shadowColor = shadow.color;
+  shadowContext.shadowOffsetX = shadow.offsetX;
+  shadowContext.shadowOffsetY = shadow.offsetY;
+  shadowContext.fillStyle = "#000000";
+  roundedRect(shadowContext, x, y, width, height, radius);
+  shadowContext.fill();
+  shadowContext.restore();
+
+  shadowContext.save();
+  shadowContext.globalCompositeOperation = "destination-out";
+  shadowContext.fillStyle = "#000000";
+  roundedRect(shadowContext, x, y, width, height, radius);
+  shadowContext.fill();
+  shadowContext.restore();
+
+  context.drawImage(shadowCanvas, 0, 0);
+};
+
 const drawImageLayer = async (
   context: CanvasRenderingContext2D,
   layer: Extract<LinkCardLayer, { kind: "image" }>,
@@ -625,35 +669,11 @@ const drawCard = async (
   const radius = preset.borderRadiusRatio * cardWidth;
   const shadow = getCardShadowOption(shadowSize).canvas;
 
-  context.save();
-  context.shadowBlur = shadow.blur;
-  context.shadowColor = shadow.color;
-  context.shadowOffsetX = shadow.offsetX;
-  context.shadowOffsetY = shadow.offsetY;
-  context.fillStyle = createFillStyle(
-    context,
-    preset.background,
-    cardWidth,
-    cardHeight,
-    cardX,
-    cardY,
-  );
-  roundedRect(context, cardX, cardY, cardWidth, cardHeight, radius);
-  context.fill();
-  context.restore();
+  drawCardShadow(context, cardX, cardY, cardWidth, cardHeight, radius, shadow);
 
   context.save();
   roundedRect(context, cardX, cardY, cardWidth, cardHeight, radius);
   context.clip();
-  context.fillStyle = createFillStyle(
-    context,
-    preset.background,
-    cardWidth,
-    cardHeight,
-    cardX,
-    cardY,
-  );
-  context.fillRect(cardX, cardY, cardWidth, cardHeight);
 
   for (const layer of preset.layers) {
     const box = getLayerBox(layer.box, cardX, cardY, cardWidth, cardHeight);

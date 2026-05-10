@@ -12,9 +12,9 @@ import { RightPanel } from "./panels/RightPanel";
 export const Board = () => {
   // Render the final UI for this branch using the state derived above.
   return (
-    <main className="flex h-screen flex-col">
+    <main className="flex h-screen flex-col overflow-hidden">
       <TopPanel />
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <LeftPanel />
         <Canvas />
         <RightPanel />

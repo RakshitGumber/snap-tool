@@ -124,7 +124,6 @@ export type LinkCardPreset = {
   source: LinkCardSourceKind;
   aspectRatio: number;
   initialWidthRatio: number;
-  background: string;
   borderRadiusRatio: number;
   layers: LinkCardLayer[];
 };
@@ -146,8 +145,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "youtube",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.68,
-        background:
-          "radial-gradient(circle at 22% 14%, #ff375f 0%, #201018 34%, #050507 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -237,8 +234,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "youtube",
         aspectRatio: 16 / 10,
         initialWidthRatio: 0.66,
-        background:
-          "radial-gradient(circle at 82% 18%, #ff0033 0%, #151515 38%, #070707 100%)",
         borderRadiusRatio: 0.028,
         layers: [
           {
@@ -318,8 +313,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "youtube",
         aspectRatio: 4 / 5,
         initialWidthRatio: 0.42,
-        background:
-          "radial-gradient(circle at 50% 15%, #ffd1dc 0%, #fc466b 36%, #1f0b12 100%)",
         borderRadiusRatio: 0.034,
         layers: [
           {
@@ -382,7 +375,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "youtube",
         aspectRatio: 16 / 7,
         initialWidthRatio: 0.7,
-        background: "#0a0a0a",
         borderRadiusRatio: 0.022,
         layers: [
           {
@@ -465,8 +457,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "youtube",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.68,
-        background:
-          "radial-gradient(circle at 75% 20%, #ff0033 0%, #111827 42%, #020617 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -545,8 +535,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "github",
         aspectRatio: 16 / 10,
         initialWidthRatio: 0.66,
-        background:
-          "radial-gradient(circle at 80% 15%, #2dd4bf 0%, #10241f 36%, #0d1117 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -635,7 +623,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "github",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.68,
-        background: "#05070a",
         borderRadiusRatio: 0.024,
         layers: [
           {
@@ -715,8 +702,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "github",
         aspectRatio: 4 / 5,
         initialWidthRatio: 0.42,
-        background:
-          "radial-gradient(circle at 30% 10%, #94a3b8 0%, #1e293b 38%, #020617 100%)",
         borderRadiusRatio: 0.032,
         layers: [
           {
@@ -807,8 +792,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "github",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.64,
-        background:
-          "radial-gradient(circle at 85% 10%, #22c55e 0%, #052e16 34%, #020617 100%)",
         borderRadiusRatio: 0.024,
         layers: [
           {
@@ -888,7 +871,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "github",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.64,
-        background: "#fef08a",
         borderRadiusRatio: 0.018,
         layers: [
           {
@@ -975,8 +957,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "website",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.64,
-        background:
-          "radial-gradient(circle at 20% 20%, #60a5fa 0%, #312e81 42%, #111827 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -1057,7 +1037,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "website",
         aspectRatio: 16 / 10,
         initialWidthRatio: 0.64,
-        background: "#e0f2fe",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -1145,8 +1124,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "website",
         aspectRatio: 1,
         initialWidthRatio: 0.48,
-        background:
-          "radial-gradient(circle at 50% 10%, #fef3c7 0%, #fb923c 44%, #7c2d12 100%)",
         borderRadiusRatio: 0.035,
         layers: [
           {
@@ -1199,7 +1176,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "website",
         aspectRatio: 4 / 5,
         initialWidthRatio: 0.43,
-        background: "#111827",
         borderRadiusRatio: 0.03,
         layers: [
           {
@@ -1264,7 +1240,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "website",
         aspectRatio: 16 / 7,
         initialWidthRatio: 0.68,
-        background: "#020617",
         borderRadiusRatio: 0.024,
         layers: [
           {
@@ -1334,8 +1309,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "screenshot",
         aspectRatio: 16 / 10,
         initialWidthRatio: 0.68,
-        background:
-          "radial-gradient(circle at 20% 15%, #c4b5fd 0%, #dbeafe 44%, #f8fafc 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -1383,8 +1356,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "screenshot",
         aspectRatio: 9 / 16,
         initialWidthRatio: 0.34,
-        background:
-          "radial-gradient(circle at 50% 8%, #38bdf8 0%, #1e3a8a 45%, #020617 100%)",
         borderRadiusRatio: 0.045,
         layers: [
           {
@@ -1431,7 +1402,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "screenshot",
         aspectRatio: 4 / 5,
         initialWidthRatio: 0.44,
-        background: "#f8f5ef",
         borderRadiusRatio: 0.018,
         layers: [
           {
@@ -1484,8 +1454,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "screenshot",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.68,
-        background:
-          "radial-gradient(circle at 50% 45%, #334155 0%, #0f172a 44%, #020617 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {
@@ -1540,8 +1508,6 @@ export const LINK_CARD_PRESET_GROUPS: LinkCardPresetGroup[] = [
         source: "screenshot",
         aspectRatio: 16 / 9,
         initialWidthRatio: 0.68,
-        background:
-          "radial-gradient(circle at 18% 22%, #fde68a 0%, #f8fafc 42%, #dbeafe 100%)",
         borderRadiusRatio: 0.026,
         layers: [
           {

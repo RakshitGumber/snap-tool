@@ -152,7 +152,7 @@ export const Canvas = () => {
   return (
     <div
       ref={boardRef}
-      className="flex flex-1 items-center justify-center overflow-hidden p-6"
+      className="flex flex-1 h-[calc(100vh-64px)] items-center justify-center overflow-hidden p-6"
     >
       <div
         style={{

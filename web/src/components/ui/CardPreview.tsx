@@ -28,7 +28,7 @@ export const CardPreview = ({ card }: { card: LinkCardCanvasItem }) => {
   return (
     <div
       ref={previewRef}
-      className="overflow-hidden bg-black"
+      className="overflow-hidden"
       style={{ aspectRatio: preset.aspectRatio }}
     >
       <LinkCardRenderer

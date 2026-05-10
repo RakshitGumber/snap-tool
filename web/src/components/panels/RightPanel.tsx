@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
-import clsx from "clsx";
 
 import { getBackgroundPresetById } from "@/config/backgroundPresets";
-import { CARD_SHADOW_OPTIONS } from "@/config/cardShadows";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 import { Background } from "../controls/Background";
@@ -16,13 +14,11 @@ export const RightPanel = () => {
   const activeBackgroundId = useCanvasStore(
     (state) => state.activeBackgroundId,
   );
-  const cardShadowSize = useCanvasStore((state) => state.cardShadowSize);
-  const setCardShadowSize = useCanvasStore((state) => state.setCardShadowSize);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
 
   return (
-    <aside className="w-96 flex flex-col bg-panel-bg border-l border-border-color select-none">
+    <aside className="h-full min-h-0 w-96 shrink-0 flex flex-col bg-panel-bg border-l border-border-color select-none overflow-hidden">
       {view === "background" ? (
         <>
           <button
@@ -33,7 +29,9 @@ export const RightPanel = () => {
             <Icon icon="mingcute:left-line" fontSize={20} />
             Controls
           </button>
-          <Background onBackgroundSelected={() => setView("home")} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <Background onBackgroundSelected={() => setView("home")} />
+          </div>
         </>
       ) : (
         <>
@@ -48,19 +46,21 @@ export const RightPanel = () => {
             </span>
           </div>
 
-          <div className="flex flex-col gap-3 px-5 py-6">
-            <h3 className="font-semibold text-lg">Link</h3>
-            <Images />
-          </div>
-          <div className="flex px-5 flex-col gap-3">
-            <h3 className="font-semibold text-lg">Background</h3>
-            <div className="flex flex-col">
-              <button
-                type="button"
-                onClick={() => setView("background")}
-                className="h-25 w-25 rounded-lg border border-border-color"
-                style={{ background: activeBackground.background }}
-              />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="flex flex-col gap-3 px-5 py-6">
+              <h3 className="font-semibold text-lg">Link</h3>
+              <Images />
+            </div>
+            <div className="flex px-5 flex-col gap-3 pb-6">
+              <h3 className="font-semibold text-lg">Background</h3>
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => setView("background")}
+                  className="h-25 w-25 rounded-lg border border-border-color"
+                  style={{ background: activeBackground.background }}
+                />
+              </div>
             </div>
           </div>
         </>

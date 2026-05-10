@@ -19,14 +19,59 @@ export const BACKGROUND_PRESET_CATEGORIES = [
     label: "Solid",
     presets: [
       {
-        id: "canvas-white",
+        id: "white",
         label: "White",
-        background: "#ffffff",
+        background: "#F5F3EE",
       },
       {
         id: "graphite",
         label: "Graphite",
-        background: "#1e1e1e",
+        background: "#23252B",
+      },
+      {
+        id: "red",
+        label: "Energetic",
+        background: "#FF3B30",
+      },
+      {
+        id: "calm",
+        label: "Calm",
+        background: "#7FA8A4",
+      },
+      {
+        id: "author",
+        label: "Author",
+        background: "#14213D",
+      },
+      {
+        id: "ember",
+        label: "Ember",
+        background: "#E76F51",
+      },
+      {
+        id: "love",
+        label: "Love",
+        background: "#D6456B",
+      },
+      {
+        id: "sky",
+        label: "Sky",
+        background: "#4DA8FF",
+      },
+      {
+        id: "tech",
+        label: "Tech",
+        background: "#635BFF",
+      },
+      {
+        id: "rage",
+        label: "Rage",
+        background: "#6D071A",
+      },
+      {
+        id: "future",
+        label: "Future",
+        background: "#00BFA6",
       },
     ],
   },
@@ -130,7 +175,8 @@ export const BACKGROUND_PRESET_CATEGORIES = [
       {
         id: "background-studio",
         label: "Studio",
-        background: unsplashBackground("photo-1631631480669-535cc43f2327"),
+        background:
+          "https://plus.unsplash.com/premium_photo-1747850152562-bad3f528c924?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       },
       {
         id: "background-mountain",

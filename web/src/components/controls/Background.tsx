@@ -39,35 +39,71 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
             </h3>
 
             <div className="flex flex-wrap gap-2">
-              {category.presets.map((preset) => {
-                const isActive = preset.id === activeBackgroundId;
-
-                return (
+              {category.id === "solid" ? (
+                <>
                   <button
-                    key={preset.id}
                     type="button"
                     onClick={() => {
-                      setActiveBackground(preset.id);
+                      setActiveBackground("red");
                       onBackgroundSelected?.();
                     }}
                     className="flex flex-col items-center gap-1"
                   >
-                    <span
-                      className="block h-25 w-25 rounded-lg border"
-                      style={{ background: preset.background }}
-                    />
-                    <span
-                      className={
-                        isActive
-                          ? "px-3 py-2 text-xs font-semibold text-accent"
-                          : "px-3 py-2 text-xs font-semibold"
-                      }
+                    <div
+                      className="h-11 w-11 rounded-md text-panel-bg flex items-center justify-center"
+                      style={{ background: category.presets[0].background }}
                     >
-                      {preset.label}
-                    </span>
+                      <Icon icon="mingcute:palette-line" fontSize={32}></Icon>
+                    </div>
                   </button>
-                );
-              })}
+                  {category.presets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveBackground(preset.id);
+                        onBackgroundSelected?.();
+                      }}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <span
+                        className="h-11 w-11 rounded-md"
+                        style={{ background: preset.background }}
+                      />
+                    </button>
+                  ))}
+                </>
+              ) : (
+                category.presets.map((preset) => {
+                  const isActive = preset.id === activeBackgroundId;
+
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveBackground(preset.id);
+                        onBackgroundSelected?.();
+                      }}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <span
+                        className="block h-25 w-25 rounded-lg border"
+                        style={{ background: preset.background }}
+                      />
+                      <span
+                        className={
+                          isActive
+                            ? "px-3 py-2 text-xs font-semibold text-accent"
+                            : "px-3 py-2 text-xs font-semibold"
+                        }
+                      >
+                        {preset.label}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </section>
         ))}

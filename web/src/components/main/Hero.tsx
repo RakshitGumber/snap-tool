@@ -177,12 +177,12 @@ export const Hero = () => {
   return (
     <div className="w-full overflow-hidden">
       <section className="relative flex min-h-[92svh] w-full items-center justify-center px-6 pb-12 pt-28 sm:px-8 lg:pt-32">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_22%,oklch(0.89_0.055_160),transparent_32%),linear-gradient(135deg,oklch(0.98_0.006_165),oklch(0.94_0.01_245))] dark:bg-[radial-gradient(circle_at_18%_22%,oklch(0.28_0.06_160),transparent_32%),linear-gradient(135deg,oklch(0.16_0.012_245),oklch(0.1_0.008_245))]" />
+        <div className="absolute inset-0 -z-10 bg-bg" />
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]"
+          className="grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]"
         >
           <motion.div variants={reveal} className="max-w-2xl">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border-color bg-panel-bg px-3 py-2 text-sm font-bold text-title-color shadow-sm">
@@ -223,7 +223,7 @@ export const Hero = () => {
         id="workflow"
         className="w-full border-y border-border-color bg-panel-bg px-6 py-16 sm:px-8 lg:py-24"
       >
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.7fr_1.3fr]">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
               Workflow
@@ -259,7 +259,7 @@ export const Hero = () => {
         id="templates"
         className="w-full bg-bg px-6 py-16 sm:px-8 lg:py-24"
       >
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-6xl">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
             <h2 className="max-w-2xl text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
               Three source types, each with its own visual language.
@@ -289,7 +289,7 @@ export const Hero = () => {
       </section>
 
       <section className="w-full bg-panel-bg px-6 py-16 sm:px-8 lg:py-24">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
           <div className="rounded-[1.75rem] border border-border-color bg-bg p-4">
             <div className="rounded-[1.2rem] bg-[oklch(0.17_0.016_245)] p-5 text-[oklch(0.96_0.006_165)]">
               <div className="flex items-center justify-between gap-3">
@@ -331,7 +331,7 @@ export const Hero = () => {
         id="faq"
         className="w-full bg-bg px-6 py-16 sm:px-8 lg:py-24"
       >
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
               Questions
@@ -360,7 +360,7 @@ export const Hero = () => {
       </section>
 
       <section className="w-full bg-[oklch(0.18_0.016_245)] px-6 py-16 text-[oklch(0.96_0.006_165)] sm:px-8 lg:py-24">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 lg:flex-row lg:items-center">
+        <div className="mx-auto flex max-w-6xl flex-col justify-between gap-8 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.16em] text-[oklch(0.74_0.12_165)]">
               Ready

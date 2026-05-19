@@ -1,9 +1,6 @@
 import { Link } from "@/pages/Router";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 
-import { Icon } from "@iconify/react";
-
-import { ThemeButton } from "@/components/ui/ThemeButton";
 import { useState } from "react";
 // import { useRouter } from "@/stores/useRouter";
 
@@ -12,23 +9,15 @@ const parentVariants = {
   hidden: { opacity: 0, y: "-4rem" },
 };
 
-const navItems = [
-  { label: "Flow", to: "#workflow" },
-  { label: "Templates", to: "#templates" },
-  { label: "FAQ", to: "#faq" },
-];
-
 export const Navbar = () => {
   const { scrollY } = useScroll();
   // const route = useRouter((state) => state.route);
   const [hidden, setHidden] = useState(false);
   const [prevScroll, setPrevScroll] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   function update(latest: number, prev: number): void {
     if (latest < prev) {
       setHidden(false);
-      setMenuOpen(false);
     } else if (latest > 100 && latest > prev) {
       setHidden(true);
     }
@@ -50,56 +39,17 @@ export const Navbar = () => {
         staggerChildren: 0.05,
       }}
     >
-      <nav className="relative max-w-7xl flex items-center justify-between p-4 md:p-6 flex-1 gap-3">
+      <nav className="relative max-w-6xl flex items-center justify-between p-4 md:p-0 flex-1 gap-3">
         <div className="flex items-center gap-2 md:gap-3 mr-auto">
-          <button
-            type="button"
-            className="flex lg:hidden rounded-lg p-2 text-title-color transition hover:bg-text-color/20"
-            aria-label={
-              menuOpen ? "Close navigation menu" : "Open navigation menu"
-            }
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className=""
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M3.25 12C3.25 11.5858 3.58579 11.25 4 11.25L19.9996 11.25C20.4138 11.25 20.7496 11.5858 20.7496 12C20.7496 12.4142 20.4138 12.75 19.9996 12.75H4C3.58579 12.75 3.25 12.4142 3.25 12ZM6.53307 19C6.53307 18.5858 6.86886 18.25 7.28307 18.25L20 18.25C20.4142 18.25 20.75 18.5858 20.75 19C20.75 19.4142 20.4142 19.75 20 19.75L7.28307 19.75C6.86886 19.75 6.53307 19.4142 6.53307 19ZM12.2219 5C12.2219 4.58579 12.5577 4.25 12.9719 4.25L20 4.25C20.4142 4.25 20.75 4.58579 20.75 5C20.75 5.41421 20.4142 5.75 20 5.75L12.9719 5.75C12.5577 5.75 12.2219 5.41421 12.2219 5Z"
-                fill="var(--text-heading)"
-              />
-            </svg>
-          </button>
           <Link
             className="flex px-3 py-2 rounded-lg items-center cursor-pointer text-title-color hover:bg-secondary-text/20"
             to="/"
-            onClick={() => setMenuOpen(false)}
           >
             <h1 className="font-sans font-bold px-1 text-xl text-current tracking-normal md:px-2 md:text-2xl select-none">
               Single Filter
             </h1>
           </Link>
         </div>
-        <ul className="hidden lg:flex gap-1 px-8">
-          {navItems.map((item) => (
-            <li key={item.to}>
-              <a
-                href={item.to}
-                className="px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-bold text-secondary-text"
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           {/* <div className="hidden md:flex gap-2">
             <ThemeButton />
@@ -107,7 +57,6 @@ export const Navbar = () => {
           <Link
             to="/create"
             className="font-sans px-3 py-2 rounded-lg gap-1 flex items-center justify-center font-bold tracking-wider text-title-color cursor-pointer hover:bg-text-color/20"
-            onClick={() => setMenuOpen(false)}
           >
             <svg
               width="24"
@@ -132,40 +81,6 @@ export const Navbar = () => {
             Create
           </Link>
         </div>
-
-        {menuOpen ? (
-          <div className="absolute top-full left-0 right-0 lg:hidden">
-            <div className="rounded-b-2xl bg-card-bg p-3 shadow-sm">
-              <ul className="flex flex-col gap-1">
-                {navItems.map((item) => (
-                  <li key={item.to}>
-                    <a
-                      href={item.to}
-                      className="flex rounded-lg px-4 py-3 text-secondary-text transition hover:bg-text-color/20 hover:text-title-color font-bold"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {item.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 flex items-center gap-2 border-t border-border-color p-2 md:hidden">
-                <a
-                  href="https://github.com/RakshitGumber/snap-tool"
-                  className="rounded-lg font-semibold hover:bg-title-color/20 items-center flex gap-1 text-xl p-2 text-title-color"
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <Icon icon="simple-icons:github" />
-                </a>
-                <div onClick={() => setMenuOpen(false)}>
-                  <ThemeButton />
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </nav>
     </motion.header>
   );

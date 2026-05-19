@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-19T00:00:00.000Z",
+  "title": "Design System: Single Filter",
+  "extensions": {
+    "colorMeta": {
+      "app-bg": {
+        "role": "neutral",
+        "displayName": "Canvas Mist",
+        "canonical": "#f4f5f6",
+        "tonalRamp": [
+          "oklch(18% 0.006 245)",
+          "oklch(28% 0.006 245)",
+          "oklch(40% 0.006 245)",
+          "oklch(52% 0.006 245)",
+          "oklch(66% 0.006 245)",
+          "oklch(78% 0.006 245)",
+          "oklch(90% 0.006 245)",
+          "oklch(96% 0.006 245)"
+        ]
+      },
+      "panel-bg": {
+        "role": "neutral",
+        "displayName": "Panel White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(20% 0.004 245)",
+          "oklch(32% 0.004 245)",
+          "oklch(44% 0.004 245)",
+          "oklch(56% 0.004 245)",
+          "oklch(70% 0.004 245)",
+          "oklch(82% 0.004 245)",
+          "oklch(92% 0.004 245)",
+          "oklch(98% 0.004 245)"
+        ]
+      },
+      "heading": {
+        "role": "neutral",
+        "displayName": "Ink Heading",
+        "canonical": "#25252a",
+        "tonalRamp": [
+          "oklch(16% 0.012 280)",
+          "oklch(24% 0.012 280)",
+          "oklch(34% 0.012 280)",
+          "oklch(46% 0.012 280)",
+          "oklch(58% 0.012 280)",
+          "oklch(72% 0.012 280)",
+          "oklch(86% 0.012 280)",
+          "oklch(95% 0.012 280)"
+        ]
+      },
+      "body": {
+        "role": "neutral",
+        "displayName": "Slate Body",
+        "canonical": "#4B4D63",
+        "tonalRamp": [
+          "oklch(18% 0.025 275)",
+          "oklch(28% 0.025 275)",
+          "oklch(38% 0.025 275)",
+          "oklch(50% 0.025 275)",
+          "oklch(62% 0.025 275)",
+          "oklch(74% 0.025 275)",
+          "oklch(86% 0.025 275)",
+          "oklch(94% 0.025 275)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Workbench Green",
+        "canonical": "#37af87",
+        "tonalRamp": [
+          "oklch(18% 0.055 165)",
+          "oklch(28% 0.075 165)",
+          "oklch(40% 0.095 165)",
+          "oklch(52% 0.11 165)",
+          "oklch(64% 0.12 165)",
+          "oklch(74% 0.105 165)",
+          "oklch(84% 0.075 165)",
+          "oklch(94% 0.035 165)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Soft Divider",
+        "canonical": "#dfe0e6",
+        "tonalRamp": [
+          "oklch(18% 0.008 270)",
+          "oklch(30% 0.008 270)",
+          "oklch(42% 0.008 270)",
+          "oklch(54% 0.008 270)",
+          "oklch(68% 0.008 270)",
+          "oklch(80% 0.008 270)",
+          "oklch(90% 0.008 270)",
+          "oklch(96% 0.008 270)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Landing Display",
+        "purpose": "Public landing headlines only."
+      },
+      "title": {
+        "displayName": "Panel Title",
+        "purpose": "Editor panel headings and active control labels."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable support copy and longer explanations."
+      },
+      "label": {
+        "displayName": "Control Label",
+        "purpose": "Buttons, inputs, compact controls, and status text."
+      }
+    },
+    "shadows": [
+      {
+        "name": "navigation-lift",
+        "value": "0 1px 2px rgba(0, 0, 0, 0.05)",
+        "purpose": "Subtle fixed-header separation."
+      },
+      {
+        "name": "canvas-lift",
+        "value": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+        "purpose": "Makes the canvas preview read as an exportable object."
+      }
+    ],
+    "motion": [
+      {
+        "name": "editor-state",
+        "value": "150ms to 250ms ease-out",
+        "purpose": "State feedback for controls without slowing the workflow."
+      },
+      {
+        "name": "landing-reveal",
+        "value": "1000ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Landing-page content reveal only, not editor chrome."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary editor action for fetching links, creating, and exporting.",
+      "html": "<button class=\"ds-btn-primary\">Fetch</button>",
+      "css": ".ds-btn-primary { min-height: 40px; border: 0; border-radius: 8px; background: #37af87; color: #f4f5f6; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.25; cursor: pointer; transition: opacity 180ms ease-out, transform 180ms ease-out; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid #37af87; outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Toolbar Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis toolbar or navigation action.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Undo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9.5 7.5 5 12l4.5 4.5M5.5 12H14a5 5 0 0 1 5 5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button>",
+      "css": ".ds-btn-ghost { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: #61637a; cursor: pointer; transition: background 180ms ease-out, color 180ms ease-out; } .ds-btn-ghost svg { width: 20px; height: 20px; } .ds-btn-ghost:hover { background: rgba(75, 77, 99, 0.08); color: #25252a; } .ds-btn-ghost:active { background: rgba(75, 77, 99, 0.14); } .ds-btn-ghost:focus-visible { outline: 2px solid #37af87; outline-offset: 2px; }"
+    },
+    {
+      "name": "Link Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Compact URL input for creating card variants from supported links.",
+      "html": "<input class=\"ds-input-link\" type=\"text\" value=\"github.com/RakshitGumber/snap-tool\" aria-label=\"Link URL\" />",
+      "css": ".ds-input-link { height: 40px; min-width: 240px; border: 1px solid #dfe0e6; border-radius: 8px; background: #f4f5f6; color: #25252a; padding: 8px 12px; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.25; transition: border-color 180ms ease-out, box-shadow 180ms ease-out; } .ds-input-link::placeholder { color: #61637a; } .ds-input-link:hover { border-color: rgba(55, 175, 135, 0.55); } .ds-input-link:focus { outline: none; border-color: #37af87; box-shadow: 0 0 0 3px rgba(55, 175, 135, 0.18); }"
+    },
+    {
+      "name": "Editor Top Panel",
+      "kind": "nav",
+      "refersTo": "editor-top-panel",
+      "description": "Functional toolbar with file actions, canvas preset selection, and export.",
+      "html": "<div class=\"ds-top-panel\"><button class=\"ds-file-button\">File</button><div class=\"ds-panel-actions\"><button class=\"ds-preset-button\">X Landscape Post</button><button class=\"ds-export-button\">Export</button></div></div>",
+      "css": ".ds-top-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #dfe0e6; background: #ffffff; padding: 11px 16px; font-family: Inter, system-ui, sans-serif; } .ds-file-button, .ds-preset-button { border: 0; border-radius: 8px; background: transparent; color: #25252a; padding: 8px 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 180ms ease-out; } .ds-file-button:hover, .ds-preset-button:hover { background: rgba(75, 77, 99, 0.08); } .ds-panel-actions { display: flex; align-items: center; gap: 16px; } .ds-export-button { min-height: 40px; border: 0; border-radius: 8px; background: #37af87; color: #f4f5f6; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; } .ds-top-panel button:focus-visible { outline: 2px solid #37af87; outline-offset: 2px; }"
+    },
+    {
+      "name": "Control Panel Section",
+      "kind": "card",
+      "refersTo": "control-panel-section",
+      "description": "Right-panel grouping for link generation and background selection.",
+      "html": "<section class=\"ds-control-section\"><h3>Link</h3><div class=\"ds-control-row\"><input aria-label=\"Enter any link\" placeholder=\"Enter any link\" /><button>Fetch</button></div></section>",
+      "css": ".ds-control-section { width: 384px; border-left: 1px solid #dfe0e6; background: #ffffff; padding: 24px 20px; font-family: Inter, system-ui, sans-serif; color: #4B4D63; } .ds-control-section h3 { margin: 0 0 12px; color: #25252a; font-size: 18px; font-weight: 600; line-height: 1.35; } .ds-control-row { display: flex; gap: 8px; } .ds-control-row input { min-width: 0; height: 40px; flex: 1; border: 1px solid #dfe0e6; border-radius: 8px; background: #f4f5f6; color: #25252a; padding: 8px 12px; font-size: 14px; } .ds-control-row input:focus { outline: none; border-color: #37af87; box-shadow: 0 0 0 3px rgba(55, 175, 135, 0.18); } .ds-control-row button { height: 40px; border: 0; border-radius: 8px; background: #37af87; color: #f4f5f6; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }"
+    },
+    {
+      "name": "Canvas Empty State",
+      "kind": "custom",
+      "refersTo": "canvas-empty-state",
+      "description": "Centered editor hint when no generated card is active.",
+      "html": "<div class=\"ds-canvas-shell\"><div class=\"ds-canvas-object\"><span>Add a link from Images</span></div></div>",
+      "css": ".ds-canvas-shell { width: 520px; height: 320px; display: flex; align-items: center; justify-content: center; background: #f4f5f6; padding: 24px; font-family: Inter, system-ui, sans-serif; } .ds-canvas-object { width: 420px; height: 236px; display: flex; align-items: center; justify-content: center; background: #F5F3EE; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); color: #61637a; font-size: 14px; font-weight: 500; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Creator Workbench",
+    "overview": "Single Filter is a quiet editor for fast creator output. The interface should feel like a practical workbench: panels stay predictable, controls stay close to the task, and the canvas remains the most expressive object on screen.\n\nThe system is product-register by default. It values strong defaults, familiar controls, and fast export over decorative storytelling. Marketing pages may be more open, but the editor sets the visual standard: neutral surfaces, restrained hierarchy, and one confident accent.\n\nIt explicitly rejects generic SaaS gloss: vague productivity copy, oversized marketing sections, glassy decoration, gradient-heavy polish, and template-like AI aesthetics.",
+    "keyCharacteristics": [
+      "Focused editor shell with dense but legible controls.",
+      "Neutral surfaces around a visually expressive canvas.",
+      "Single green accent for action, focus, and selection.",
+      "Familiar product affordances for inputs, panels, undo, redo, delete, resize, and export.",
+      "Light by default, with a dark token set available for focused work sessions."
+    ],
+    "rules": [
+      {
+        "name": "The Canvas Carries Color Rule",
+        "body": "The editor shell stays restrained so templates, backgrounds, and exported graphics can be expressive.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Accent Rule",
+        "body": "Green is for action, focus, selection, and confirmation. Do not introduce decorative accent colors in the editor chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Panel Scale Rule",
+        "body": "Editor panels never use hero-sized type. Compact controls need compact hierarchy.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Inter carries the product UI. Do not add display fonts to labels, buttons, toolbars, or canvas controls.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Chrome Rule",
+        "body": "Panels, controls, and toolbars are flat at rest. Elevation belongs to overlays and the canvas object, not every container.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the editor shell restrained so the exported graphic carries the visual punch.",
+      "Do use Workbench Green for primary actions, focus, and selected state.",
+      "Do keep controls familiar: buttons look like buttons, inputs look editable, icon buttons expose labels through aria-label and titles.",
+      "Do preserve platform aspect ratios and stable canvas dimensions.",
+      "Do provide visible focus, keyboard access, and reduced-motion respect for every interactive workflow."
+    ],
+    "donts": [
+      "Don't use generic SaaS gloss: vague productivity copy, oversized marketing sections, glassy decoration, gradient-heavy polish, or template-like AI aesthetics.",
+      "Don't turn the editor into a pro design suite with dense manual configuration, floating inspectors, or hidden expert-only controls.",
+      "Don't make the product feel like a casual toy with gimmicky motion, novelty templates, or unserious export visuals.",
+      "Don't use colored side-stripe borders, gradient text, decorative glassmorphism, or identical card grids as default patterns.",
+      "Don't let inactive states carry full-saturation accent color."
+    ]
+  }
+}

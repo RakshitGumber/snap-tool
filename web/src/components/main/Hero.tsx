@@ -88,133 +88,54 @@ const faqs = [
   },
 ];
 
-const PreviewWindow = () => (
-  <div className="relative mx-auto w-full max-w-2xl rounded-[1.75rem] border border-border-color bg-panel-bg p-3 shadow-[0_24px_70px_-42px_oklch(0.18_0.02_165)]">
-    <div className="rounded-[1.25rem] border border-border-color bg-[oklch(0.975_0.006_175)] p-4 dark:bg-[oklch(0.18_0.012_245)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-color pb-4">
-        <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-[oklch(0.78_0.13_27)]" />
-          <span className="h-3 w-3 rounded-full bg-[oklch(0.82_0.13_92)]" />
-          <span className="h-3 w-3 rounded-full bg-accent" />
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border-color bg-bg px-3 py-2 text-xs font-semibold text-secondary-text">
-          <Icon icon="lucide:link" className="text-base text-accent" />
-          github.com/maker/new-release
-        </div>
-      </div>
-
-      <div className="grid gap-4 py-4 lg:grid-cols-[0.78fr_1.22fr]">
-        <div className="space-y-3">
-          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
-              Canvas
-            </p>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-xs font-bold text-title-color">
-              <span className="rounded-lg bg-bg px-2 py-2 text-center">1:1</span>
-              <span className="rounded-lg bg-accent px-2 py-2 text-center text-bg">
-                4:5
-              </span>
-              <span className="rounded-lg bg-bg px-2 py-2 text-center">16:9</span>
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
-              Background
-            </p>
-            <div className="mt-3 flex gap-2">
-              <span className="h-9 w-9 rounded-full bg-[oklch(0.72_0.13_165)]" />
-              <span className="h-9 w-9 rounded-full bg-[oklch(0.7_0.12_245)]" />
-              <span className="h-9 w-9 rounded-full bg-[oklch(0.76_0.11_55)]" />
-            </div>
-          </div>
-          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
-              Variant
-            </p>
-            <div className="mt-3 space-y-2">
-              <span className="block h-3 rounded-full bg-accent/80" />
-              <span className="block h-3 w-3/4 rounded-full bg-border-color" />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex min-h-[360px] items-center justify-center rounded-2xl bg-[oklch(0.91_0.03_160)] p-6">
-          <div className="aspect-[4/5] w-full max-w-[280px] rounded-[1.2rem] bg-[oklch(0.16_0.02_245)] p-5 text-[oklch(0.96_0.006_165)] shadow-[0_28px_60px_-30px_oklch(0.16_0.02_245)]">
-            <div className="flex items-center justify-between">
-              <Icon icon="simple-icons:github" className="text-3xl" />
-              <span className="rounded-full bg-[oklch(0.29_0.04_245)] px-3 py-1 text-xs font-bold">
-                Release
-              </span>
-            </div>
-            <div className="mt-10 space-y-4">
-              <p className="text-sm font-semibold text-[oklch(0.72_0.13_165)]">
-                single-filter/web
-              </p>
-              <h2 className="text-4xl font-black leading-none tracking-normal">
-                Exportable link cards for creators.
-              </h2>
-              <p className="text-sm leading-6 text-[oklch(0.82_0.01_245)]">
-                Turn metadata into clean social graphics without rebuilding the
-                same layout from scratch.
-              </p>
-            </div>
-            <div className="mt-12 grid grid-cols-2 gap-3 text-xs font-bold">
-              <span className="rounded-xl bg-[oklch(0.22_0.025_245)] p-3">
-                3 source types
-              </span>
-              <span className="rounded-xl bg-[oklch(0.22_0.025_245)] p-3">
-                PNG export
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 export const Hero = () => {
   return (
     <div className="w-full overflow-hidden">
-      <section className="relative flex min-h-[92svh] w-full items-center justify-center px-6 pb-12 pt-28 sm:px-8 lg:pt-32">
+      <section className="relative flex min-h-[96svh] w-full items-center justify-center px-6 pb-16 pt-28 sm:px-8 lg:pt-32">
         <div className="absolute inset-0 -z-10 bg-bg" />
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="grid w-full max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]"
+          className="flex w-full max-w-6xl flex-col items-start text-left"
         >
-          <motion.div variants={reveal} className="max-w-2xl">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border-color bg-panel-bg px-3 py-2 text-sm font-bold text-title-color shadow-sm">
+          <motion.div
+            variants={reveal}
+            className="flex max-w-5xl flex-col items-start"
+          >
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border-2 border-accent/50 bg-panel-bg px-4 py-2 text-xs font-black text-title-color shadow-sm">
               <span className="h-2 w-2 rounded-full bg-accent" />
               Link in. Post graphic out.
             </div>
-            <h1 className="max-w-[11ch] text-5xl font-black leading-[0.95] tracking-normal text-title-color sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-normal text-title-color sm:text-6xl lg:text-7xl">
               Ship better social images from any link.
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-text-color sm:text-xl">
+            <p className="mt-6 max-w-2xl text-base leading-7 text-text-color sm:text-lg">
               Single Filter turns YouTube, GitHub, and website links into
               polished PNG graphics with strong defaults and just enough control.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex w-full max-w-lg flex-col justify-start gap-3 sm:flex-row">
               <Link
                 to="/create"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-base font-black text-bg transition duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-title-color transition duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
               >
-                <Icon icon="lucide:sparkles" className="text-lg" />
+                <Icon icon="lucide:sparkles" className="text-base" />
                 Create a graphic
               </Link>
               <a
                 href="#workflow"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border-color bg-panel-bg px-5 py-3 text-base font-bold text-title-color transition duration-200 hover:bg-bg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border-color bg-panel-bg px-5 py-3 text-sm font-bold text-title-color transition duration-200 hover:bg-bg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
               >
-                <Icon icon="lucide:arrow-down" className="text-lg" />
+                <Icon icon="lucide:arrow-down" className="text-base" />
                 See the flow
               </a>
             </div>
-          </motion.div>
-          <motion.div variants={reveal}>
-            <PreviewWindow />
+            <div className="mt-5 inline-flex items-center gap-3 rounded-lg border border-border-color px-4 py-3 text-sm font-bold text-title-color">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-color text-accent">
+                <Icon icon="lucide:link-2" className="text-base" />
+              </span>
+              Support any link
+            </div>
           </motion.div>
         </motion.div>
       </section>

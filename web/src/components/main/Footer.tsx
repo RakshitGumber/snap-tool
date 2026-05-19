@@ -5,8 +5,8 @@ export const Footer = () => {
     <footer className="py-12 w-full px-7 bg-card-bg flex justify-center">
       <section className="max-w-7xl flex gap-2 flex-col items-start flex-1 px-4 ">
         <div className="w-full flex sm:items-center sm:justify-between flex-col-reverse sm:flex-row">
-          <p className="text-lg font-bold tracking-wider font-sans text-title-color">
-            Crafted with Caffine and Serotonin.
+          <p className="text-lg font-bold tracking-normal font-sans text-title-color">
+            Single Filter helps creators turn links into finished social graphics.
           </p>
           <div className="flex flex-col gap-8 pb-4 sm:flex-row sm:items-center text-title-color">
             <div className="flex flex-row gap-6">

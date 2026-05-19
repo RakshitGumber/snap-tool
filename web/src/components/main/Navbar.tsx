@@ -12,11 +12,11 @@ const parentVariants = {
   hidden: { opacity: 0, y: "-4rem" },
 };
 
-// const navItems = [
-//   { label: "Home", to: "/" },
-//   { label: "About", to: "/about" },
-//   { label: "Roadmap", to: "/roadmap" },
-// ];
+const navItems = [
+  { label: "Flow", to: "#workflow" },
+  { label: "Templates", to: "#templates" },
+  { label: "FAQ", to: "#faq" },
+];
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -78,31 +78,28 @@ export const Navbar = () => {
             </svg>
           </button>
           <Link
-            className="hidden md:flex px-3 py-2 rounded-lg items-center cursor-pointer text-title-color  hover:bg-secondary-text/20"
+            className="flex px-3 py-2 rounded-lg items-center cursor-pointer text-title-color hover:bg-secondary-text/20"
             to="/"
             onClick={() => setMenuOpen(false)}
           >
-            <h1 className="font-sans font-bold px-2 text-2xl text-current tracking-wider capitalize select-none">
+            <h1 className="font-sans font-bold px-1 text-xl text-current tracking-normal md:px-2 md:text-2xl select-none">
               Single Filter
             </h1>
           </Link>
         </div>
-        {/* <ul className="hidden lg:flex gap-1 px-8">
+        <ul className="hidden lg:flex gap-1 px-8">
           {navItems.map((item) => (
-            <li key={item.to} className="flex rounded-lg">
-              <Link
-                to={item.to}
-                className={
-                  route === item.to
-                    ? "px-4 py-2 cursor-pointer rounded-lg text-title-color font-bold"
-                    : "px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-medium"
-                }
+            <li key={item.to}>
+              <a
+                href={item.to}
+                className="px-4 py-2 hover:bg-text-color/20 cursor-pointer rounded-lg hover:text-title-color font-bold text-secondary-text"
+                onClick={() => setMenuOpen(false)}
               >
                 {item.label}
-              </Link>
+              </a>
             </li>
           ))}
-        </ul> */}
+        </ul>
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           {/* <div className="hidden md:flex gap-2">
             <ThemeButton />
@@ -139,23 +136,19 @@ export const Navbar = () => {
         {menuOpen ? (
           <div className="absolute top-full left-0 right-0 lg:hidden">
             <div className="rounded-b-2xl bg-card-bg p-3 shadow-sm">
-              {/* <ul className="flex flex-col gap-1">
+              <ul className="flex flex-col gap-1">
                 {navItems.map((item) => (
                   <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      className={
-                        route === item.to
-                          ? "flex rounded-lg px-4 py-3 text-title-color font-bold"
-                          : "flex rounded-lg px-4 py-3 text-secondary-text transition hover:bg-text-color/20 hover:text-title-color font-medium"
-                      }
+                    <a
+                      href={item.to}
+                      className="flex rounded-lg px-4 py-3 text-secondary-text transition hover:bg-text-color/20 hover:text-title-color font-bold"
                       onClick={() => setMenuOpen(false)}
                     >
                       {item.label}
-                    </Link>
+                    </a>
                   </li>
                 ))}
-              </ul> */}
+              </ul>
               <div className="mt-3 flex items-center gap-2 border-t border-border-color p-2 md:hidden">
                 <a
                   href="https://github.com/RakshitGumber/snap-tool"

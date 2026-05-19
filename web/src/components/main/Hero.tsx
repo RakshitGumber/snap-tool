@@ -1,60 +1,383 @@
 import { Link } from "@/pages/Router";
+import { Icon } from "@iconify/react";
 import { motion, type Variants } from "framer-motion";
 
-const heroContentReveal: Variants = {
-  hidden: { opacity: 0, y: 28 },
+const reveal: Variants = {
+  hidden: { opacity: 0, y: 24 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      delay: 0.3,
-      duration: 1,
+      duration: 0.8,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 };
 
-export const Hero = () => {
-  return (
-    <main className="min-h-screen max-w-7xl w-full flex flex-col lg:flex-row items-center py-12 lg:py-0">
-      <motion.div
-        variants={heroContentReveal}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col flex-1 justify-center lg:justify-end items-center lg:items-start gap-8 lg:gap-16 px-7 py-20 sm:text-center text-left lg:text-left"
-      >
-        <div className="px-4 py-1 border-2 border-accent w-fit rounded-2xl bg-accent-light/80 text-title-color text-md font-semibold lg:mx-0">
-          Releasing a new version everyday.
+const stagger: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const workflow = [
+  {
+    step: "01",
+    title: "Paste the thing you are already sharing",
+    copy: "Drop in a YouTube, GitHub, or website URL. Single Filter pulls the useful context and gives you a credible first layout.",
+  },
+  {
+    step: "02",
+    title: "Pick a frame, not a blank canvas",
+    copy: "Choose a platform size, template treatment, and background. The controls stay tight so the export stays the point.",
+  },
+  {
+    step: "03",
+    title: "Export a post-ready PNG",
+    copy: "Compare variants, make the small adjustments, then export a clean graphic for launch notes, threads, docs, or updates.",
+  },
+];
+
+const linkTypes = [
+  {
+    name: "YouTube",
+    detail: "Poster frames, creator splits, and cinematic video cards.",
+    icon: "simple-icons:youtube",
+    className: "lg:col-span-5 bg-[oklch(0.96_0.018_24)]",
+  },
+  {
+    name: "GitHub",
+    detail: "Repo launches, profile badges, and release-friendly snapshots.",
+    icon: "simple-icons:github",
+    className: "lg:col-span-4 bg-[oklch(0.94_0.014_165)]",
+  },
+  {
+    name: "Websites",
+    detail: "Browser windows, brand posters, and shareable site cards.",
+    icon: "lucide:globe-2",
+    className: "lg:col-span-3 bg-[oklch(0.95_0.013_245)]",
+  },
+];
+
+const controls = [
+  "Platform presets for square, portrait, and wide posts",
+  "Background choices that support the graphic instead of stealing focus",
+  "Template variants tuned to the link type",
+  "A centered preview that behaves like the export you will ship",
+];
+
+const faqs = [
+  {
+    question: "Is this a full design suite?",
+    answer:
+      "No. Single Filter is intentionally smaller: paste a link, choose a strong default, make light edits, export.",
+  },
+  {
+    question: "What kinds of posts is it for?",
+    answer:
+      "Launch announcements, repo highlights, YouTube promotion, website shares, changelog images, and quick creator updates.",
+  },
+  {
+    question: "Why not just screenshot the page?",
+    answer:
+      "Screenshots are inconsistent. Single Filter turns the same source link into a clean, platform-sized graphic every time.",
+  },
+];
+
+const PreviewWindow = () => (
+  <div className="relative mx-auto w-full max-w-2xl rounded-[1.75rem] border border-border-color bg-panel-bg p-3 shadow-[0_24px_70px_-42px_oklch(0.18_0.02_165)]">
+    <div className="rounded-[1.25rem] border border-border-color bg-[oklch(0.975_0.006_175)] p-4 dark:bg-[oklch(0.18_0.012_245)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-color pb-4">
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-full bg-[oklch(0.78_0.13_27)]" />
+          <span className="h-3 w-3 rounded-full bg-[oklch(0.82_0.13_92)]" />
+          <span className="h-3 w-3 rounded-full bg-accent" />
         </div>
-        <div className="flex flex-col gap-10">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-sans w-4/5 tracking-wider font-bold text-title-color capitalize leading-snug">
-            Minimalist solution to creating your next post
-          </h1>
-          <span className="text-lg lg:text-2xl text px-1 w-full md:w-4/5 lg:w-3/4 mx-auto lg:mx-0">
-            The most simple tool to create professional post. <br /> In just few
-            click.
-          </span>
-          <div className="flex flex-wrap justify-start sm:justify-center lg:justify-start items-center lg:items-start gap-4 my-4 px-1 font-sans">
-            <Link to="/create">
-              <button className="lg:px-6 lg:py-3 px-3 py-2 bg-accent text-bg sm:text-xl font-bold capitalize rounded-lg cursor-pointer">
-                Create Now
-              </button>
-            </Link>
-            {/* <Link to="/about">
-              <button className="lg:px-6 lg:py-3 px-3 py-2 sm:text-xl font-semibold rounded-lg cursor-pointer capitalize flex gap-2 items-center hover:text-title-color">
-                learn more{" "}
-                <Icon
-                  icon="ooui:link-external-ltr"
-                  className="text-accent mb-1"
-                />
-              </button>
-            </Link> */}
+        <div className="flex items-center gap-2 rounded-lg border border-border-color bg-bg px-3 py-2 text-xs font-semibold text-secondary-text">
+          <Icon icon="lucide:link" className="text-base text-accent" />
+          github.com/maker/new-release
+        </div>
+      </div>
+
+      <div className="grid gap-4 py-4 lg:grid-cols-[0.78fr_1.22fr]">
+        <div className="space-y-3">
+          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
+              Canvas
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-xs font-bold text-title-color">
+              <span className="rounded-lg bg-bg px-2 py-2 text-center">1:1</span>
+              <span className="rounded-lg bg-accent px-2 py-2 text-center text-bg">
+                4:5
+              </span>
+              <span className="rounded-lg bg-bg px-2 py-2 text-center">16:9</span>
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
+              Background
+            </p>
+            <div className="mt-3 flex gap-2">
+              <span className="h-9 w-9 rounded-full bg-[oklch(0.72_0.13_165)]" />
+              <span className="h-9 w-9 rounded-full bg-[oklch(0.7_0.12_245)]" />
+              <span className="h-9 w-9 rounded-full bg-[oklch(0.76_0.11_55)]" />
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-color bg-panel-bg p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary-text">
+              Variant
+            </p>
+            <div className="mt-3 space-y-2">
+              <span className="block h-3 rounded-full bg-accent/80" />
+              <span className="block h-3 w-3/4 rounded-full bg-border-color" />
+            </div>
           </div>
         </div>
-      </motion.div>
-      {/* <div className="hidden lg:block">
-        <HeroAnimation />
-      </div> */}
-    </main>
+
+        <div className="flex min-h-[360px] items-center justify-center rounded-2xl bg-[oklch(0.91_0.03_160)] p-6">
+          <div className="aspect-[4/5] w-full max-w-[280px] rounded-[1.2rem] bg-[oklch(0.16_0.02_245)] p-5 text-[oklch(0.96_0.006_165)] shadow-[0_28px_60px_-30px_oklch(0.16_0.02_245)]">
+            <div className="flex items-center justify-between">
+              <Icon icon="simple-icons:github" className="text-3xl" />
+              <span className="rounded-full bg-[oklch(0.29_0.04_245)] px-3 py-1 text-xs font-bold">
+                Release
+              </span>
+            </div>
+            <div className="mt-10 space-y-4">
+              <p className="text-sm font-semibold text-[oklch(0.72_0.13_165)]">
+                single-filter/web
+              </p>
+              <h2 className="text-4xl font-black leading-none tracking-normal">
+                Exportable link cards for creators.
+              </h2>
+              <p className="text-sm leading-6 text-[oklch(0.82_0.01_245)]">
+                Turn metadata into clean social graphics without rebuilding the
+                same layout from scratch.
+              </p>
+            </div>
+            <div className="mt-12 grid grid-cols-2 gap-3 text-xs font-bold">
+              <span className="rounded-xl bg-[oklch(0.22_0.025_245)] p-3">
+                3 source types
+              </span>
+              <span className="rounded-xl bg-[oklch(0.22_0.025_245)] p-3">
+                PNG export
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export const Hero = () => {
+  return (
+    <div className="w-full overflow-hidden">
+      <section className="relative flex min-h-[92svh] w-full items-center justify-center px-6 pb-12 pt-28 sm:px-8 lg:pt-32">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_22%,oklch(0.89_0.055_160),transparent_32%),linear-gradient(135deg,oklch(0.98_0.006_165),oklch(0.94_0.01_245))] dark:bg-[radial-gradient(circle_at_18%_22%,oklch(0.28_0.06_160),transparent_32%),linear-gradient(135deg,oklch(0.16_0.012_245),oklch(0.1_0.008_245))]" />
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+          className="grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]"
+        >
+          <motion.div variants={reveal} className="max-w-2xl">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-border-color bg-panel-bg px-3 py-2 text-sm font-bold text-title-color shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-accent" />
+              Link in. Post graphic out.
+            </div>
+            <h1 className="max-w-[11ch] text-5xl font-black leading-[0.95] tracking-normal text-title-color sm:text-6xl lg:text-7xl">
+              Ship better social images from any link.
+            </h1>
+            <p className="mt-7 max-w-xl text-lg leading-8 text-text-color sm:text-xl">
+              Single Filter turns YouTube, GitHub, and website links into
+              polished PNG graphics with strong defaults and just enough control.
+            </p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to="/create"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-base font-black text-bg transition duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+              >
+                <Icon icon="lucide:sparkles" className="text-lg" />
+                Create a graphic
+              </Link>
+              <a
+                href="#workflow"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border-color bg-panel-bg px-5 py-3 text-base font-bold text-title-color transition duration-200 hover:bg-bg focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+              >
+                <Icon icon="lucide:arrow-down" className="text-lg" />
+                See the flow
+              </a>
+            </div>
+          </motion.div>
+          <motion.div variants={reveal}>
+            <PreviewWindow />
+          </motion.div>
+        </motion.div>
+      </section>
+
+      <section
+        id="workflow"
+        className="w-full border-y border-border-color bg-panel-bg px-6 py-16 sm:px-8 lg:py-24"
+      >
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
+              Workflow
+            </p>
+            <h2 className="mt-4 max-w-md text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
+              Built for the moment between finished and posted.
+            </h2>
+          </div>
+          <div className="grid gap-4">
+            {workflow.map((item) => (
+              <article
+                key={item.step}
+                className="grid gap-4 rounded-2xl border border-border-color bg-bg p-5 sm:grid-cols-[88px_1fr] sm:p-6"
+              >
+                <span className="text-3xl font-black text-accent">
+                  {item.step}
+                </span>
+                <div>
+                  <h3 className="text-2xl font-black tracking-normal text-title-color">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 max-w-2xl text-base leading-7 text-text-color">
+                    {item.copy}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="templates"
+        className="w-full bg-bg px-6 py-16 sm:px-8 lg:py-24"
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <h2 className="max-w-2xl text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
+              Three source types, each with its own visual language.
+            </h2>
+            <p className="max-w-md text-lg leading-8 text-text-color">
+              The templates follow the source, so a repo, video, and product
+              link do not get flattened into the same generic tile.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-4 lg:grid-cols-12">
+            {linkTypes.map((type) => (
+              <article
+                key={type.name}
+                className={`${type.className} min-h-72 rounded-2xl border border-border-color p-6 text-title-color`}
+              >
+                <Icon icon={type.icon} className="text-4xl" />
+                <h3 className="mt-8 text-3xl font-black tracking-normal">
+                  {type.name}
+                </h3>
+                <p className="mt-4 max-w-sm text-base leading-7 text-text-color">
+                  {type.detail}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="w-full bg-panel-bg px-6 py-16 sm:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <div className="rounded-[1.75rem] border border-border-color bg-bg p-4">
+            <div className="rounded-[1.2rem] bg-[oklch(0.17_0.016_245)] p-5 text-[oklch(0.96_0.006_165)]">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-black text-[oklch(0.74_0.12_165)]">
+                  Current export
+                </p>
+                <button className="rounded-lg bg-[oklch(0.72_0.13_165)] px-4 py-2 text-sm font-black text-[oklch(0.14_0.012_165)]">
+                  Export PNG
+                </button>
+              </div>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {controls.map((control) => (
+                  <div
+                    key={control}
+                    className="rounded-xl bg-[oklch(0.23_0.02_245)] p-4 text-sm font-semibold leading-6 text-[oklch(0.86_0.008_245)]"
+                  >
+                    {control}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
+              Control
+            </p>
+            <h2 className="mt-4 text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
+              Enough options to make it yours. Not enough to lose the afternoon.
+            </h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-text-color">
+              The landing page now mirrors the product promise: strong defaults,
+              familiar controls, and a canvas that carries the expression.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="w-full bg-bg px-6 py-16 sm:px-8 lg:py-24"
+      >
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-accent">
+              Questions
+            </p>
+            <h2 className="mt-4 text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
+              A smaller tool on purpose.
+            </h2>
+          </div>
+          <div className="divide-y divide-border-color border-y border-border-color">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="group py-6">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-xl font-black text-title-color">
+                  {faq.question}
+                  <Icon
+                    icon="lucide:plus"
+                    className="shrink-0 text-2xl text-accent transition duration-200 group-open:rotate-45"
+                  />
+                </summary>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-text-color">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="w-full bg-[oklch(0.18_0.016_245)] px-6 py-16 text-[oklch(0.96_0.006_165)] sm:px-8 lg:py-24">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 lg:flex-row lg:items-center">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-[oklch(0.74_0.12_165)]">
+              Ready
+            </p>
+            <h2 className="mt-4 max-w-3xl text-4xl font-black leading-tight tracking-normal lg:text-6xl">
+              Make the link look as finished as the work behind it.
+            </h2>
+          </div>
+          <Link
+            to="/create"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[oklch(0.74_0.12_165)] px-5 py-3 text-base font-black text-[oklch(0.14_0.012_165)] transition duration-200 hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[oklch(0.74_0.12_165)] focus:ring-offset-2 focus:ring-offset-[oklch(0.18_0.016_245)] sm:w-auto"
+          >
+            Open the editor
+            <Icon icon="lucide:arrow-right" className="text-lg" />
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 };

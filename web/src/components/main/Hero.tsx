@@ -209,10 +209,17 @@ const ExportCard = ({
       <div className="relative flex h-full flex-col p-4 sm:p-5">
         <div className="mt-auto">
           <div className={["rounded-lg p-3", styles.tint].join(" ")}>
-            <p className={["text-sm font-black leading-5", styles.ink].join(" ")}>
+            <p
+              className={["text-sm font-black leading-5", styles.ink].join(" ")}
+            >
               {title}
             </p>
-            <p className={["mt-1 text-xs font-semibold leading-4", styles.ink].join(" ")}>
+            <p
+              className={[
+                "mt-1 text-xs font-semibold leading-4",
+                styles.ink,
+              ].join(" ")}
+            >
               {subtitle}
             </p>
           </div>
@@ -239,23 +246,24 @@ export const Hero = () => {
           {...motionProps}
           className="flex w-full max-w-6xl flex-col items-start"
         >
-          <motion.div variants={reveal} className="w-full">
-            <div className="inline-flex items-center rounded-full border border-border-color bg-panel-bg px-4 py-2 text-xs font-bold text-secondary-text shadow-sm">
-              New updates coming soon.
-            </div>
-
+          <motion.div
+            variants={reveal}
+            className="w-full flex flex-col h-full justify-center gap-2"
+          >
             <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[0.95] tracking-normal text-title-color sm:text-6xl lg:text-7xl">
               Turn any link into a social post image.
             </h1>
 
             <p className="mt-6 max-w-2xl text-base leading-7 text-text-color sm:text-lg">
-              Single Filter generates credible, platform-sized PNG exports for YouTube videos, GitHub repos, and websites, with strong defaults and just enough control.
+              Single Filter generates credible, platform-sized PNG exports for
+              YouTube videos, GitHub repos, and websites, with strong defaults
+              and just enough control.
             </p>
 
-            <div className="mt-10 flex flex-wrap items-center gap-3">
+            <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 to="/create"
-                className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-accent px-5 text-sm font-bold text-bg transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+                className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-accent px-7 text-base font-bold text-bg transition hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
               >
                 Open editor
                 <span className="text-base transition-transform duration-200 group-hover:translate-x-0.5">
@@ -264,7 +272,7 @@ export const Hero = () => {
               </Link>
               <a
                 href="#examples"
-                className="inline-flex h-12 items-center justify-center rounded-lg border border-border-color bg-panel-bg px-5 text-sm font-bold text-title-color transition hover:bg-text-color/6 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+                className="inline-flex h-12 items-center justify-center rounded-lg border border-border-color bg-panel-bg px-7 text-base font-bold text-title-color transition hover:bg-text-color/6 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
               >
                 See examples
               </a>
@@ -286,7 +294,8 @@ export const Hero = () => {
               </h2>
             </div>
             <p className="max-w-md text-lg leading-8 text-text-color">
-              A video, a repo, and a product link should not look like the same generic tile.
+              A video, a repo, and a product link should not look like the same
+              generic tile.
             </p>
           </div>
 
@@ -411,7 +420,8 @@ export const Hero = () => {
               Make the link look as finished as the work behind it.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-[oklch(0.9_0.01_245)]">
-              Open the editor, paste the URL you are already sharing, and export a clean graphic in minutes.
+              Open the editor, paste the URL you are already sharing, and export
+              a clean graphic in minutes.
             </p>
           </div>
           <Link

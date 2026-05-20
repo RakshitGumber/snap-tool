@@ -10,9 +10,14 @@ type RouterState = {
 export const useRouter = create<RouterState>((set) => ({
   route: window.location.pathname,
   setRoute: (path) => {
-    window.history.pushState({}, "", path);
+    const nextUrl = new URL(path, window.location.href);
+    window.history.pushState(
+      {},
+      "",
+      `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+    );
     startTransition(() => {
-      set({ route: path });
+      set({ route: nextUrl.pathname });
     });
   },
 }));

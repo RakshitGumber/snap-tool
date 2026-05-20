@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   resolveLinkCardMetadata,
@@ -35,10 +35,35 @@ const createCardItem = (
 
 export const Images = () => {
   const generationRef = useRef(0);
+  const didAutoFetchRef = useRef(false);
+  const initialUrlRef = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [urlInput, setUrlInput] = useState("");
   const [cardDraft, setCardDraft] = useState<LinkCardDraft | null>(null);
 
   const setActiveCard = useCanvasStore((state) => state.setActiveCard);
+
+  useEffect(() => {
+    // Supports deep-linking from the landing hero: /create?url=...
+    // We keep it resilient (no throw, no navigation) and one-shot to avoid loops.
+    const params = new URLSearchParams(window.location.search);
+    const initialUrl = params.get("url")?.trim();
+    if (!initialUrl) return;
+    if (urlInput.trim().length) return;
+
+    initialUrlRef.current = initialUrl;
+    setUrlInput(initialUrl);
+  }, [urlInput]);
+
+  useEffect(() => {
+    const initial = initialUrlRef.current;
+    if (!initial) return;
+    if (didAutoFetchRef.current) return;
+    if (urlInput.trim() !== initial) return;
+
+    didAutoFetchRef.current = true;
+    formRef.current?.requestSubmit();
+  }, [urlInput]);
 
   const handleGenerate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,7 +124,7 @@ export const Images = () => {
 
   return (
     <>
-      <form onSubmit={handleGenerate} className="flex gap-2">
+      <form onSubmit={handleGenerate} className="flex gap-2" ref={formRef}>
         <input
           id="link-card-url"
           type="text"

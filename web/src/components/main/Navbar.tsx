@@ -39,7 +39,7 @@ export const Navbar = () => {
         staggerChildren: 0.05,
       }}
     >
-      <nav className="relative flex max-w-6xl flex-1 items-center justify-between gap-3 px-4 py-3 md:px-6">
+      <nav className="relative flex flex-1 items-center justify-between gap-3 py-3 px-4">
         <div className="flex items-center gap-2 md:gap-3 mr-auto">
           <Link
             className="flex px-3 py-2 rounded-lg items-center cursor-pointer text-title-color hover:bg-secondary-text/20"
@@ -50,7 +50,7 @@ export const Navbar = () => {
             </h1>
           </Link>
         </div>
-        <div className="hidden items-center gap-1 md:flex">
+        {/* <div className="hidden items-center gap-1 md:flex">
           <a
             href="#examples"
             className="rounded-lg px-3 py-2 text-sm font-semibold text-title-color transition hover:bg-text-color/8"
@@ -69,7 +69,7 @@ export const Navbar = () => {
           >
             FAQ
           </a>
-        </div>
+        </div> */}
         <div className="flex items-center gap-2 md:gap-3 ml-auto">
           {/* <div className="hidden md:flex gap-2">
             <ThemeButton />

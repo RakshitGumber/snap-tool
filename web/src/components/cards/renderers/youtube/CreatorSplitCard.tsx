@@ -1,6 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { YouTubeLinkCardMetadata } from "@/libs/linkCards";
 
+import { useEffect, useMemo } from "react";
+import { FillGradient } from "pixi.js";
+
 import {
   PixiBadge,
   PixiIcon,
@@ -21,122 +24,149 @@ const CreatorSplitCard = ({
   height: number;
 }) => {
   const unit = width;
-  const pad = unit * 0.045;
-  const thumbWidth = unit * 0.54;
+  const pad = unit * 0.05;
+  const radius = unit * 0.03;
+  const thumbWidth = unit * 0.6;
   const thumbHeight = height - pad * 2;
+  const sideX = pad + thumbWidth + unit * 0.035;
+  const sideWidth = width - sideX - pad;
+
+  const sideGlow = useMemo(
+    () =>
+      new FillGradient({
+        type: "linear",
+        start: { x: 0, y: 0 },
+        end: { x: 1, y: 1 },
+        colorStops: [
+          { offset: 0, color: "rgba(99,224,160,0.22)" },
+          { offset: 0.55, color: "rgba(255,255,255,0)" },
+          { offset: 1, color: "rgba(255,26,26,0.14)" },
+        ],
+        textureSpace: "local",
+      }),
+    [],
+  );
+
+  useEffect(() => () => sideGlow.destroy(), [sideGlow]);
 
   return (
     <pixiContainer>
       <PixiRect
         box={{ x: 0, y: 0, width, height }}
-        radius={unit * 0.026}
-        fill={0xffffff}
+        radius={radius}
+        fill={0xf7f7f9}
+        stroke={{ color: 0x0f0f0f, width: unit * 0.0014, alpha: 0.08 }}
       />
       <PixiImageBox
         src={metadata.thumbnailUrl}
         box={{ x: pad, y: pad, width: thumbWidth, height: thumbHeight }}
-        radius={unit * 0.018}
+        radius={unit * 0.022}
         fit="cover"
-        background={0xf1f1f1}
+        background={0xe9eaee}
+      />
+      <PixiRect
+        box={{ x: pad, y: pad, width: thumbWidth, height: thumbHeight }}
+        radius={unit * 0.022}
+        fill={0x000000}
+        alpha={0.06}
       />
       <PixiIcon
         kind="play"
-        x={pad + thumbWidth * 0.42}
-        y={pad + thumbHeight * 0.39}
-        size={unit * 0.084}
+        x={pad + thumbWidth * 0.5 - unit * 0.046}
+        y={pad + thumbHeight * 0.5 - unit * 0.046}
+        size={unit * 0.092}
         color={0xffffff}
-        alpha={0.9}
+        alpha={0.86}
       />
       <PixiBadge
         text={metadata.startTimeLabel ?? "8:32"}
-        x={pad + thumbWidth - unit * 0.086}
-        y={pad + thumbHeight - unit * 0.044}
-        width={unit * 0.07}
-        height={unit * 0.03}
-        radius={unit * 0.006}
-        background={0x000000}
+        x={pad + thumbWidth - unit * 0.095}
+        y={pad + thumbHeight - unit * 0.05}
+        width={unit * 0.082}
+        height={unit * 0.034}
+        radius={unit * 0.014}
+        background={"rgba(0,0,0,0.72)"}
         color={0xffffff}
-        fontSize={unit * 0.012}
+        fontSize={unit * 0.013}
         fontWeight={800}
       />
       <PixiRect
         box={{
-          x: pad + thumbWidth + unit * 0.035,
+          x: sideX,
           y: pad,
-          width: unit * 0.33,
+          width: sideWidth,
           height: thumbHeight,
         }}
-        radius={unit * 0.018}
-        fill={0xf9f9f9}
-        stroke={{ color: 0xe5e5e5, width: unit * 0.0015 }}
+        radius={unit * 0.022}
+        fill={0xffffff}
+        stroke={{ color: 0x0f0f0f, width: unit * 0.0014, alpha: 0.06 }}
+      />
+      <PixiRect
+        box={{
+          x: sideX,
+          y: pad,
+          width: sideWidth,
+          height: thumbHeight,
+        }}
+        radius={unit * 0.022}
+        fill={sideGlow}
       />
       <PixiIcon
         kind="youtube"
-        x={pad + thumbWidth + unit * 0.055}
-        y={pad + unit * 0.035}
-        size={unit * 0.052}
-        color={0xff0000}
+        x={sideX + unit * 0.02}
+        y={pad + unit * 0.026}
+        size={unit * 0.035}
+        color={0xff1a1a}
       />
       <PixiTextBlock
-        text="Up next"
+        text="YouTube"
         box={{
-          x: pad + thumbWidth + unit * 0.12,
-          y: pad + unit * 0.046,
-          width: unit * 0.16,
+          x: sideX + unit * 0.062,
+          y: pad + unit * 0.024,
+          width: sideWidth - unit * 0.07,
           height: unit * 0.03,
         }}
-        color={0x0f0f0f}
-        fontSize={unit * 0.018}
+        color={0x121316}
+        fontSize={unit * 0.016}
         fontWeight={900}
       />
       <PixiTextBlock
         text={metadata.title}
         box={{
-          x: pad + thumbWidth + unit * 0.055,
-          y: pad + unit * 0.13,
-          width: unit * 0.25,
-          height: unit * 0.13,
+          x: sideX + unit * 0.02,
+          y: pad + unit * 0.09,
+          width: sideWidth - unit * 0.04,
+          height: unit * 0.145,
         }}
-        color={0x0f0f0f}
-        fontSize={unit * 0.021}
-        fontWeight={800}
-        lineHeight={1.18}
+        color={0x121316}
+        fontSize={unit * 0.024}
+        fontWeight={900}
+        lineHeight={1.08}
         maxLines={4}
       />
       <PixiTextBlock
         text={textOrFallback(metadata.subtitle, "YouTube")}
         box={{
-          x: pad + thumbWidth + unit * 0.055,
-          y: pad + unit * 0.285,
-          width: unit * 0.24,
+          x: sideX + unit * 0.02,
+          y: pad + unit * 0.255,
+          width: sideWidth - unit * 0.12,
           height: unit * 0.03,
         }}
-        color={0x606060}
-        fontSize={unit * 0.013}
-        fontWeight={700}
-      />
-      <PixiTextBlock
-        text="Recommended for you"
-        box={{
-          x: pad + thumbWidth + unit * 0.055,
-          y: pad + unit * 0.33,
-          width: unit * 0.24,
-          height: unit * 0.03,
-        }}
-        color={0x606060}
-        fontSize={unit * 0.012}
+        color={0x5b5d68}
+        fontSize={unit * 0.015}
+        fontWeight={800}
       />
       <PixiBadge
         text="Watch"
-        x={pad + thumbWidth + unit * 0.055}
-        y={height - pad - unit * 0.055}
-        width={unit * 0.12}
-        height={unit * 0.042}
-        radius={unit * 0.021}
-        background={0x0f0f0f}
+        x={sideX + unit * 0.02}
+        y={height - pad - unit * 0.058}
+        width={Math.min(sideWidth - unit * 0.04, unit * 0.16)}
+        height={unit * 0.046}
+        radius={unit * 0.023}
+        background={0x121316}
         color={0xffffff}
-        fontSize={unit * 0.013}
-        fontWeight={800}
+        fontSize={unit * 0.014}
+        fontWeight={900}
       />
     </pixiContainer>
   );

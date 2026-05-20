@@ -173,57 +173,6 @@ export const BACKGROUND_PRESET_CATEGORIES = [
     label: "Soft Gradients",
     presets: [
       {
-        id: "aurora",
-        label: "Aurora",
-        background: `radial-gradient(
-      circle at 70% 80%,
-      rgba(255, 90, 200, 0.95) 0%,
-      rgba(255, 90, 200, 0.6) 18%,
-      transparent 38%
-    ),
-
-    radial-gradient(
-      circle at 15% 55%,
-      rgba(180, 0, 255, 0.9) 0%,
-      rgba(180, 0, 255, 0.55) 20%,
-      transparent 42%
-    ),
-
-    linear-gradient(
-      135deg,
-      #0b63c9 0%,
-      #12b5d0 100%
-    )`,
-        layers: [
-          {
-            type: "linear-gradient",
-            angle: 135,
-            stops: [
-              { offset: 0, color: "#0b63c9" },
-              { offset: 1, color: "#12b5d0" },
-            ],
-          },
-          {
-            type: "radial-gradient",
-            center: { x: 0.15, y: 0.55 },
-            radius: 0.52,
-            stops: [
-              { offset: 0, color: "#b400ff" },
-              { offset: 0.42, color: "rgba(180, 0, 255, 0)" },
-            ],
-          },
-          {
-            type: "radial-gradient",
-            center: { x: 0.7, y: 0.8 },
-            radius: 0.48,
-            stops: [
-              { offset: 0, color: "#ff5ac8" },
-              { offset: 0.38, color: "rgba(255, 90, 200, 0)" },
-            ],
-          },
-        ],
-      },
-      {
         id: "blush",
         label: "Blush",
         ...linearGradientBackground(

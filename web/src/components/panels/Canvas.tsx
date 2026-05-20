@@ -58,6 +58,7 @@ export const Canvas = () => {
   const deleteActiveCard = useCanvasStore((state) => state.deleteActiveCard);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
+  const pixiCanvasKey = `${activeCanvasPresetId}-${activeBackgroundId}`;
 
   useEffect(() => {
     if (!boardRef.current) return;
@@ -181,7 +182,10 @@ export const Canvas = () => {
 
       const snapshot = useCanvasStore.getState();
 
-      app.renderer.resize(snapshot.canvasSize.width, snapshot.canvasSize.height);
+      app.renderer.resize(
+        snapshot.canvasSize.width,
+        snapshot.canvasSize.height,
+      );
 
       await waitForNextFrame();
       app.render();
@@ -229,7 +233,7 @@ export const Canvas = () => {
         className="relative overflow-hidden shadow-lg"
       >
         <Application
-          key={activeCanvasPresetId}
+          key={pixiCanvasKey}
           ref={appRef}
           antialias
           backgroundAlpha={0}

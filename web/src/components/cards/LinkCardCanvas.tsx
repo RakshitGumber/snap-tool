@@ -23,29 +23,58 @@ type LinkCardCanvasProps = {
   activeCard: LinkCardCanvasItem | null;
 };
 
-const createLinearGradient = (layer: Extract<BackgroundLayer, { type: "linear-gradient" }>) => {
+const createLinearGradient = (
+  layer: Extract<BackgroundLayer, { type: "linear-gradient" }>,
+  canvasSize: CanvasSize,
+) => {
   const radians = (layer.angle * Math.PI) / 180;
   const dx = Math.sin(radians);
   const dy = -Math.cos(radians);
+  const centerX = canvasSize.width / 2;
+  const centerY = canvasSize.height / 2;
+  const cornerDistances = [
+    -centerX * dx - centerY * dy,
+    (canvasSize.width - centerX) * dx - centerY * dy,
+    -centerX * dx + (canvasSize.height - centerY) * dy,
+    (canvasSize.width - centerX) * dx +
+      (canvasSize.height - centerY) * dy,
+  ];
+  const startDistance = Math.min(...cornerDistances);
+  const endDistance = Math.max(...cornerDistances);
 
   return new FillGradient({
     type: "linear",
-    start: { x: 0.5 - dx / 2, y: 0.5 - dy / 2 },
-    end: { x: 0.5 + dx / 2, y: 0.5 + dy / 2 },
+    start: {
+      x: centerX + startDistance * dx,
+      y: centerY + startDistance * dy,
+    },
+    end: {
+      x: centerX + endDistance * dx,
+      y: centerY + endDistance * dy,
+    },
     colorStops: layer.stops,
-    textureSpace: "local",
+    textureSpace: "global",
   });
 };
 
-const createRadialGradient = (layer: Extract<BackgroundLayer, { type: "radial-gradient" }>) =>
+const createRadialGradient = (
+  layer: Extract<BackgroundLayer, { type: "radial-gradient" }>,
+  canvasSize: CanvasSize,
+) =>
   new FillGradient({
     type: "radial",
-    center: layer.center,
-    outerCenter: layer.center,
+    center: {
+      x: layer.center.x * canvasSize.width,
+      y: layer.center.y * canvasSize.height,
+    },
+    outerCenter: {
+      x: layer.center.x * canvasSize.width,
+      y: layer.center.y * canvasSize.height,
+    },
     innerRadius: 0,
-    outerRadius: layer.radius,
+    outerRadius: layer.radius * Math.max(canvasSize.width, canvasSize.height),
     colorStops: layer.stops,
-    textureSpace: "local",
+    textureSpace: "global",
   });
 
 const PixiGradientLayer = ({
@@ -61,9 +90,9 @@ const PixiGradientLayer = ({
   const gradient = useMemo(
     () =>
       layer.type === "linear-gradient"
-        ? createLinearGradient(layer)
-        : createRadialGradient(layer),
-    [layer],
+        ? createLinearGradient(layer, canvasSize)
+        : createRadialGradient(layer, canvasSize),
+    [canvasSize, layer],
   );
 
   useEffect(() => () => gradient.destroy(), [gradient]);

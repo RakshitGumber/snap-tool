@@ -6,8 +6,12 @@ import {
   getCanvasPresetById,
   type CanvasSize,
 } from "@/config/canvasPresets";
-import { isLinkCardPresetId } from "@/config/linkCardPresets";
+import {
+  getLinkCardPresetById,
+  isLinkCardPresetId,
+} from "@/config/linkCardPresets";
 import type { LinkCardMetadata } from "@/libs/linkCards";
+import { clampCardWidthRatio } from "@/libs/cardSizing";
 
 export type LinkCardCanvasItem = {
   id: string;
@@ -43,8 +47,6 @@ const defaultCanvasPreset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
 const STORAGE_KEY = "snap-tool:canvas:v2";
 const LEGACY_STORAGE_KEY = "snap-tool:canvas:v1";
 const MAX_HISTORY_LENGTH = 32;
-const MIN_CARD_WIDTH_RATIO = 0.12;
-const MAX_CARD_WIDTH_RATIO = 0.92;
 
 const createDefaultSnapshot = (): LightweightCanvasSnapshot => ({
   canvasSize: defaultCanvasPreset.size,
@@ -91,7 +93,9 @@ const normalizeSnapshot = (
     canvasSize: preset.size,
     activeCanvasPresetId: preset.id,
     activeBackgroundId: backgroundId,
-    activeCard: snapshot.activeCard,
+    activeCard: snapshot.activeCard
+      ? clampLinkCardSize(snapshot.activeCard, preset.size)
+      : null,
   };
 };
 
@@ -152,8 +156,31 @@ const withHistory = (
   };
 };
 
-const clampWidthRatio = (widthRatio: number) =>
-  Math.min(MAX_CARD_WIDTH_RATIO, Math.max(MIN_CARD_WIDTH_RATIO, widthRatio));
+const clampLinkCardWidthRatio = (
+  widthRatio: number,
+  presetId: string,
+  canvasSize: CanvasSize,
+) => {
+  const preset = getLinkCardPresetById(presetId);
+
+  return clampCardWidthRatio({
+    widthRatio,
+    canvasSize,
+    aspectRatio: preset.aspectRatio,
+  });
+};
+
+const clampLinkCardSize = (
+  card: LinkCardCanvasItem,
+  canvasSize: CanvasSize,
+): LinkCardCanvasItem => ({
+  ...card,
+  widthRatio: clampLinkCardWidthRatio(
+    card.widthRatio,
+    card.presetId,
+    canvasSize,
+  ),
+});
 
 const initialSnapshot = loadInitialSnapshot();
 
@@ -170,6 +197,9 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         ...toSnapshot(state),
         activeCanvasPresetId: preset.id,
         canvasSize: preset.size,
+        activeCard: state.activeCard
+          ? clampLinkCardSize(state.activeCard, preset.size)
+          : null,
       }),
     );
   },
@@ -187,10 +217,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       withHistory(state, {
         ...toSnapshot(state),
         activeCard: activeCard
-          ? {
-              ...activeCard,
-              widthRatio: clampWidthRatio(activeCard.widthRatio),
-            }
+          ? clampLinkCardSize(activeCard, state.canvasSize)
           : null,
       }),
     ),
@@ -202,7 +229,11 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       return {
         activeCard: {
           ...state.activeCard,
-          widthRatio: clampWidthRatio(widthRatio),
+          widthRatio: clampLinkCardWidthRatio(
+            widthRatio,
+            state.activeCard.presetId,
+            state.canvasSize,
+          ),
         },
       };
     }),

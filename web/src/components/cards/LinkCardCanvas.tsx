@@ -14,6 +14,7 @@ import {
   type LinkCardPreset,
 } from "@/config/linkCardPresets";
 import type { CanvasSize } from "@/config/canvasPresets";
+import { clampCardWidthRatio } from "@/libs/cardSizing";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
 import { PixiImageBox, PixiRect } from "./pixiPrimitives";
 
@@ -172,7 +173,12 @@ export const getCardRenderBox = (
   preset: LinkCardPreset,
   canvasSize: CanvasSize,
 ) => {
-  const cardWidth = canvasSize.width * card.widthRatio;
+  const widthRatio = clampCardWidthRatio({
+    widthRatio: card.widthRatio,
+    canvasSize,
+    aspectRatio: preset.aspectRatio,
+  });
+  const cardWidth = canvasSize.width * widthRatio;
   const cardHeight = cardWidth / preset.aspectRatio;
 
   return {

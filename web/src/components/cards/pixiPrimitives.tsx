@@ -169,8 +169,7 @@ export const shortUrl = (value: string) => {
 export const textOrFallback = (
   value: string | null | undefined,
   fallback: string,
-) =>
-  value?.trim() ? value : fallback;
+) => (value?.trim() ? value : fallback);
 
 const normalizeFontWeight = (
   fontWeight: FontWeightInput,
@@ -534,7 +533,13 @@ export const PixiIcon = ({
       graphics.stroke({ color, width: Math.max(2, size * 0.07) });
 
       if (kind === "youtube") {
-        graphics.roundRect(size * 0.1, size * 0.24, size * 0.8, size * 0.52, size * 0.14);
+        graphics.roundRect(
+          size * 0.1,
+          size * 0.24,
+          size * 0.8,
+          size * 0.52,
+          size * 0.14,
+        );
         graphics.fill(color);
         graphics.moveTo(size * 0.43, size * 0.36);
         graphics.lineTo(size * 0.43, size * 0.64);

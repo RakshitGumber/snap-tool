@@ -11,7 +11,10 @@ import {
 import { Rectangle } from "pixi.js";
 import type { ApplicationRef } from "@pixi/react";
 
-import { LinkCardCanvas } from "@/components/cards/LinkCardCanvas";
+import {
+  getCardRenderBox,
+  LinkCardCanvas,
+} from "@/components/cards/LinkCardCanvas";
 import { getPixiResolution } from "@/components/cards/pixiResolution";
 import { useCanvasExport } from "@/providers/CanvasExportContext";
 import {
@@ -205,19 +208,19 @@ export const Canvas = () => {
     });
   }, [registerExporter]);
 
-  const resizeHandleStyle = useMemo((): CSSProperties | undefined => {
+  const cardOverlayStyle = useMemo((): CSSProperties | undefined => {
     if (!activeCard) return undefined;
 
     const preset = getLinkCardPresetById(activeCard.presetId);
-    const scaledCardWidth =
-      canvasSize.width * activeCard.widthRatio * previewSize.scale;
-    const scaledCardHeight = scaledCardWidth / preset.aspectRatio;
+    const cardBox = getCardRenderBox(activeCard, preset, canvasSize);
 
     return {
-      left: `calc(50% + ${scaledCardWidth / 2}px - 10px)`,
-      top: `calc(50% + ${scaledCardHeight / 2}px - 10px)`,
+      left: cardBox.x * previewSize.scale,
+      top: cardBox.y * previewSize.scale,
+      width: cardBox.width * previewSize.scale,
+      height: cardBox.height * previewSize.scale,
     };
-  }, [activeCard, canvasSize.width, previewSize.scale]);
+  }, [activeCard, canvasSize, previewSize.scale]);
 
   return (
     <div
@@ -254,16 +257,17 @@ export const Canvas = () => {
             Add a link from Images
           </div>
         ) : (
-          <button
-            type="button"
-            aria-label="Resize centered card"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            className="absolute h-5 w-5 rounded-full border bg-accent"
-            style={resizeHandleStyle}
-          />
+          <div className="absolute" style={cardOverlayStyle}>
+            <button
+              type="button"
+              aria-label="Resize centered card"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="absolute bottom-0 right-0 h-5 w-5 translate-x-1/2 translate-y-1/2 rounded-full border bg-accent"
+            />
+          </div>
         )}
       </div>
     </div>

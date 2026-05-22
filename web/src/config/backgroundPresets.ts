@@ -68,6 +68,30 @@ const linearGradientBackground = (
   layers: [{ type: "linear-gradient" as const, angle, stops }],
 });
 
+const stopOffsetToPercent = (offset: number) =>
+  // Keep stable, readable CSS while preserving non-integer stops when needed.
+  `${Math.round(offset * 1000) / 10}%`;
+
+const linearGradientCss = (angle: number, stops: BackgroundGradientStop[]) =>
+  `linear-gradient(${angle}deg, ${stops
+    .map((stop) => `${stop.color} ${stopOffsetToPercent(stop.offset)}`)
+    .join(", ")})`;
+
+const linearGradientPreset = (input: {
+  id: string;
+  label: string;
+  angle: number;
+  stops: BackgroundGradientStop[];
+}): BackgroundPreset => ({
+  id: input.id,
+  label: input.label,
+  ...linearGradientBackground(
+    linearGradientCss(input.angle, input.stops),
+    input.angle,
+    input.stops,
+  ),
+});
+
 const solidLayer = (color: string): BackgroundLayer[] => [
   { type: "solid", color },
 ];
@@ -170,48 +194,130 @@ export const BACKGROUND_PRESET_CATEGORIES = [
   },
   {
     id: "soft-gradients",
-    label: "Soft Gradients",
+    label: "Gradients",
     presets: [
-      {
+      linearGradientPreset({
         id: "blush",
         label: "Blush",
-        ...linearGradientBackground(
-          "linear-gradient(135deg, #fff1e6 0%, #f8c7d8 44%, #c58cff 100%)",
-          135,
-          [
-            { offset: 0, color: "#fff1e6" },
-            { offset: 0.44, color: "#f8c7d8" },
-            { offset: 1, color: "#c58cff" },
-          ],
-        ),
-      },
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#fff1e6" },
+          { offset: 0.44, color: "#f8c7d8" },
+          { offset: 1, color: "#c58cff" },
+        ],
+      }),
 
-      {
+      linearGradientPreset({
         id: "duskline",
         label: "Duskline",
-        ...linearGradientBackground(
-          "linear-gradient(145deg, #1e1f4b 0%, #5a2a7a 46%, #f06c54 100%)",
-          145,
-          [
-            { offset: 0, color: "#1e1f4b" },
-            { offset: 0.46, color: "#5a2a7a" },
-            { offset: 1, color: "#f06c54" },
-          ],
-        ),
-      },
-      {
+        angle: 145,
+        stops: [
+          { offset: 0, color: "#1e1f4b" },
+          { offset: 0.46, color: "#5a2a7a" },
+          { offset: 1, color: "#f06c54" },
+        ],
+      }),
+
+      linearGradientPreset({
         id: "tropic",
         label: "Tropic",
-        ...linearGradientBackground(
-          "linear-gradient(135deg, #083d77 0%, #2bb3c0 52%, #d9f7a6 100%)",
-          135,
-          [
-            { offset: 0, color: "#083d77" },
-            { offset: 0.52, color: "#2bb3c0" },
-            { offset: 1, color: "#d9f7a6" },
-          ],
-        ),
-      },
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#083d77" },
+          { offset: 0.52, color: "#2bb3c0" },
+          { offset: 1, color: "#d9f7a6" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "warm-flame",
+        label: "Warm Flame",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#ff9a9e" },
+          { offset: 1, color: "#fad0c4" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "rare-wind",
+        label: "Rare Wind",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#a8edea" },
+          { offset: 1, color: "#fed6e3" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "tempting-azure",
+        label: "Tempting Azure",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#84fab0" },
+          { offset: 1, color: "#8fd3f4" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "malibu",
+        label: "Malibu",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#4facfe" },
+          { offset: 1, color: "#00f2fe" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "dusty-grass",
+        label: "Dusty Grass",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#d4fc79" },
+          { offset: 1, color: "#96e6a1" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "desert-hump",
+        label: "Desert Hump",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#c79081" },
+          { offset: 1, color: "#dfa579" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "true-sunset",
+        label: "True Sunset",
+        angle: 135,
+        stops: [
+          { offset: 0, color: "#fa709a" },
+          { offset: 1, color: "#fee140" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "aqua-splash",
+        label: "Aqua Splash",
+        angle: 145,
+        stops: [
+          { offset: 0, color: "#13547a" },
+          { offset: 1, color: "#80d0c7" },
+        ],
+      }),
+
+      linearGradientPreset({
+        id: "eternal-constance",
+        label: "Eternal Constance",
+        angle: 145,
+        stops: [
+          { offset: 0, color: "#09203f" },
+          { offset: 1, color: "#537895" },
+        ],
+      }),
     ],
   },
   {

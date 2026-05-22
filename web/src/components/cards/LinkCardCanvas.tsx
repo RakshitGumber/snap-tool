@@ -37,8 +37,7 @@ const createLinearGradient = (
     -centerX * dx - centerY * dy,
     (canvasSize.width - centerX) * dx - centerY * dy,
     -centerX * dx + (canvasSize.height - centerY) * dy,
-    (canvasSize.width - centerX) * dx +
-      (canvasSize.height - centerY) * dy,
+    (canvasSize.width - centerX) * dx + (canvasSize.height - centerY) * dy,
   ];
   const startDistance = Math.min(...cornerDistances);
   const endDistance = Math.max(...cornerDistances);

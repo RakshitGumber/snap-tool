@@ -63,6 +63,8 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
                     <button
                       key={preset.id}
                       type="button"
+                      title={preset.label}
+                      aria-label={preset.label}
                       onClick={() => {
                         setActiveBackground(preset.id);
                         onBackgroundSelected?.();
@@ -82,6 +84,8 @@ export const Background = ({ onBackgroundSelected }: BackgroundProps) => {
                     <button
                       key={preset.id}
                       type="button"
+                      title={preset.label}
+                      aria-label={preset.label}
                       onClick={() => {
                         setActiveBackground(preset.id);
                         onBackgroundSelected?.();

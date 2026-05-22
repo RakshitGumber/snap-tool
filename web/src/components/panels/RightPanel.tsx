@@ -9,6 +9,7 @@ import { useCanvasStore } from "@/stores/useCanvasStore";
 
 import { Background } from "../controls/Background";
 import { Images } from "../controls/Images";
+import { Overview } from "../controls/Overview";
 
 type RightPanelView = "home" | "background";
 
@@ -53,6 +54,10 @@ export const RightPanel = () => {
             <div className="flex flex-col gap-3 px-5 py-6">
               <h3 className="font-semibold text-lg">Link</h3>
               <Images />
+            </div>
+            <div className="flex flex-col gap-3 px-5 pb-6">
+              <h3 className="font-semibold text-lg">Overview</h3>
+              <Overview />
             </div>
             <div className="flex px-5 flex-col gap-3 pb-6">
               <h3 className="font-semibold text-lg">Background</h3>

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import type { YouTubeLinkCardMetadata } from "@/libs/linkCards";
 
 import { PixiImageBox } from "@/components/cards/pixiPrimitives";

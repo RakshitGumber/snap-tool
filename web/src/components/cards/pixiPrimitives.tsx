@@ -28,6 +28,7 @@ type TextBlockProps = {
   box: Box;
   color: ColorSource;
   fontSize: number;
+  fontFamily?: string;
   fontWeight?: FontWeightInput;
   lineHeight?: number;
   maxLines?: number;
@@ -295,6 +296,7 @@ export const PixiTextBlock = ({
   box,
   color,
   fontSize,
+  fontFamily = CARD_FONT_FAMILY,
   fontWeight = 500,
   lineHeight = 1.15,
   maxLines = 1,
@@ -307,14 +309,14 @@ export const PixiTextBlock = ({
         align,
         breakWords: true,
         fill: color,
-        fontFamily: CARD_FONT_FAMILY,
+        fontFamily,
         fontSize,
         fontWeight: normalizeFontWeight(fontWeight),
         lineHeight: fontSize * lineHeight,
         wordWrap: true,
         wordWrapWidth: box.width,
       }),
-    [align, box.width, color, fontSize, fontWeight, lineHeight],
+    [align, box.width, color, fontFamily, fontSize, fontWeight, lineHeight],
   );
   const clampedText = useMemo(
     () =>

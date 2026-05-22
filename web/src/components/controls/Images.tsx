@@ -1,37 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import {
-  resolveLinkCardMetadata,
-  type LinkCardMetadata,
-} from "@/libs/linkCards";
-import {
-  getLinkCardPresetsBySource,
-  type LinkCardPreset,
-} from "@/config/linkCardPresets";
-import {
-  type LinkCardCanvasItem,
-  useCanvasStore,
-} from "@/stores/useCanvasStore";
-import { CardPanel } from "../panels/CardPanel";
-
-type LinkCardDraft = {
-  id: string;
-  input: string;
-  status: string;
-  variants: LinkCardCanvasItem[];
-  error: string | null;
-};
-
-const createCardItem = (
-  preset: LinkCardPreset,
-  metadata: LinkCardMetadata,
-): LinkCardCanvasItem => ({
-  id: crypto.randomUUID(),
-  presetId: preset.id,
-  label: preset.label,
-  metadata,
-  widthRatio: preset.initialWidthRatio,
-});
+import { resolveLinkCardMetadata } from "@/libs/linkCards";
+import { useCanvasStore } from "@/stores/useCanvasStore";
 
 export const Images = () => {
   const generationRef = useRef(0);
@@ -39,9 +9,12 @@ export const Images = () => {
   const initialUrlRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const [urlInput, setUrlInput] = useState("");
-  const [cardDraft, setCardDraft] = useState<LinkCardDraft | null>(null);
+  const [status, setStatus] = useState<"idle" | "generating">("idle");
+  const [error, setError] = useState<string | null>(null);
 
-  const setActiveCard = useCanvasStore((state) => state.setActiveCard);
+  const setActiveYouTubeComposition = useCanvasStore(
+    (state) => state.setActiveYouTubeComposition,
+  );
 
   useEffect(() => {
     // Supports deep-linking from the landing hero: /create?url=...
@@ -70,86 +43,52 @@ export const Images = () => {
 
     const generationId = generationRef.current + 1;
     generationRef.current = generationId;
-    const draftId = crypto.randomUUID();
-
-    setCardDraft({
-      id: draftId,
-      input: urlInput.trim(),
-      status: "generating",
-      variants: [],
-      error: null,
-    });
+    setStatus("generating");
+    setError(null);
 
     try {
       const metadata = await resolveLinkCardMetadata(urlInput);
-      const presets = getLinkCardPresetsBySource(metadata.source);
 
-      for (const preset of presets) {
-        if (generationRef.current !== generationId) return;
+      if (generationRef.current !== generationId) return;
 
-        const card = createCardItem(preset, metadata);
-
-        setCardDraft((currentDraft) => {
-          if (currentDraft?.id !== draftId) return currentDraft;
-
-          return {
-            ...currentDraft,
-            variants: [...currentDraft.variants, card],
-            status: "generating",
-          };
-        });
-        await Promise.resolve();
+      if (metadata.source !== "youtube") {
+        throw new Error("Only YouTube links can be placed on the canvas for now.");
       }
 
-      if (presets.length === 0) {
-        throw new Error("No templates are available for that link.");
-      }
-
-      setCardDraft((currentDraft) =>
-        currentDraft?.id === draftId
-          ? { ...currentDraft, status: "ready" }
-          : currentDraft,
-      );
+      setActiveYouTubeComposition(metadata);
+      setStatus("idle");
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to generate cards.";
+        error instanceof Error ? error.message : "Unable to generate a canvas.";
 
-      setCardDraft((currentDraft) =>
-        currentDraft?.id === draftId
-          ? { ...currentDraft, status: "error", error: message }
-          : currentDraft,
-      );
+      if (generationRef.current !== generationId) return;
+
+      setError(message);
+      setStatus("idle");
     }
   };
 
   return (
-    <>
-      <form onSubmit={handleGenerate} className="flex gap-2" ref={formRef}>
+    <form onSubmit={handleGenerate} className="flex flex-col gap-2" ref={formRef}>
+      <div className="flex gap-2">
         <input
           id="link-card-url"
           type="text"
           inputMode="url"
           value={urlInput}
           onChange={(event) => setUrlInput(event.target.value)}
-          placeholder="Enter any link"
+          placeholder="Enter a YouTube link"
           className="min-w-0 h-10 flex-1 rounded-lg border border-border-color bg-bg px-3 py-2 text-sm text-title-color placeholder:text-secondary-text focus:border-accent"
         />
         <button
           type="submit"
-          className="rounded-lg h-10 bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90"
+          disabled={status === "generating"}
+          className="rounded-lg h-10 bg-accent px-4 py-2 text-sm font-semibold text-bg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Fetch
+          {status === "generating" ? "Fetching" : "Fetch"}
         </button>
-      </form>
-
-      <CardPanel
-        cardDraft={cardDraft}
-        onClose={() => setCardDraft(null)}
-        onSelect={(card) => {
-          setActiveCard(card);
-          setCardDraft(null);
-        }}
-      />
-    </>
+      </div>
+      {error ? <p className="text-xs font-semibold text-red-400">{error}</p> : null}
+    </form>
   );
 };

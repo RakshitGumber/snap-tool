@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 export type BackgroundPresetStyle = CSSProperties;
+export type BackgroundContrastColor = "#111111" | "#FFFFFF";
 
 export type BackgroundGradientStop = {
   offset: number;
@@ -32,6 +33,7 @@ export type BackgroundPreset = {
   id: string;
   label: string;
   background: string;
+  contrast?: BackgroundContrastColor;
   style?: BackgroundPresetStyle;
   layers?: BackgroundLayer[];
 };
@@ -96,6 +98,23 @@ const solidLayer = (color: string): BackgroundLayer[] => [
   { type: "solid", color },
 ];
 
+const getContrastColorForHex = (hex: string): BackgroundContrastColor => {
+  const normalizedHex = hex.replace("#", "");
+  const red = Number.parseInt(normalizedHex.slice(0, 2), 16);
+  const green = Number.parseInt(normalizedHex.slice(2, 4), 16);
+  const blue = Number.parseInt(normalizedHex.slice(4, 6), 16);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+  return luminance > 0.52 ? "#111111" : "#FFFFFF";
+};
+
+const getContrastColorForBackground = (
+  background: string,
+): BackgroundContrastColor =>
+  HEX_COLOR_PATTERN.test(background)
+    ? getContrastColorForHex(background)
+    : "#FFFFFF";
+
 export const getBackgroundPresetStyle = (
   preset: BackgroundPreset,
 ): CSSProperties => ({
@@ -119,6 +138,15 @@ export const getBackgroundPresetLayers = (
   preset: BackgroundPreset,
 ): BackgroundLayer[] => preset.layers ?? solidLayer(preset.background);
 
+export const getBackgroundContrastColor = (
+  preset: BackgroundPreset,
+): BackgroundContrastColor =>
+  preset.contrast ?? getContrastColorForBackground(preset.background);
+
+export const getOppositeContrastColor = (
+  color: BackgroundContrastColor,
+): BackgroundContrastColor => (color === "#FFFFFF" ? "#111111" : "#FFFFFF");
+
 export const BACKGROUND_PRESET_CATEGORIES = [
   {
     id: "solid",
@@ -128,66 +156,77 @@ export const BACKGROUND_PRESET_CATEGORIES = [
         id: "white",
         label: "White",
         background: "#F5F3EE",
+        contrast: "#111111",
         layers: solidLayer("#F5F3EE"),
       },
       {
         id: "graphite",
         label: "Graphite",
         background: "#23252B",
+        contrast: "#FFFFFF",
         layers: solidLayer("#23252B"),
       },
       {
         id: "red",
         label: "Energetic",
         background: "#FF3B30",
+        contrast: "#FFFFFF",
         layers: solidLayer("#FF3B30"),
       },
       {
         id: "calm",
         label: "Calm",
         background: "#7FA8A4",
+        contrast: "#111111",
         layers: solidLayer("#7FA8A4"),
       },
       {
         id: "author",
         label: "Author",
         background: "#14213D",
+        contrast: "#FFFFFF",
         layers: solidLayer("#14213D"),
       },
       {
         id: "ember",
         label: "Ember",
         background: "#E76F51",
+        contrast: "#111111",
         layers: solidLayer("#E76F51"),
       },
       {
         id: "love",
         label: "Love",
         background: "#D6456B",
+        contrast: "#FFFFFF",
         layers: solidLayer("#D6456B"),
       },
       {
         id: "sky",
         label: "Sky",
         background: "#4DA8FF",
+        contrast: "#111111",
         layers: solidLayer("#4DA8FF"),
       },
       {
         id: "tech",
         label: "Tech",
         background: "#635BFF",
+        contrast: "#FFFFFF",
         layers: solidLayer("#635BFF"),
       },
       {
         id: "rage",
         label: "Rage",
         background: "#6D071A",
+        contrast: "#FFFFFF",
         layers: solidLayer("#6D071A"),
       },
       {
         id: "future",
         label: "Future",
         background: "#00BFA6",
+        contrast: "#111111",
         layers: solidLayer("#00BFA6"),
       },
     ],
@@ -456,6 +495,7 @@ export const getBackgroundPresetById = (presetId: string) => {
       id: presetId,
       label: "Custom",
       background: customColor,
+      contrast: getContrastColorForHex(customColor),
     };
   }
 

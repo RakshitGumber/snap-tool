@@ -14,10 +14,14 @@ type LeftPanelAction = {
 export const LeftPanel = () => {
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
-  const deleteActiveCard = useCanvasStore((state) => state.deleteActiveCard);
+  const deleteActiveComposition = useCanvasStore(
+    (state) => state.deleteActiveComposition,
+  );
   const canUndo = useCanvasStore((state) => state.historyPast.length > 0);
   const canRedo = useCanvasStore((state) => state.historyFuture.length > 0);
-  const hasActiveCard = useCanvasStore((state) => state.activeCard !== null);
+  const hasActiveComposition = useCanvasStore(
+    (state) => state.activeComposition !== null,
+  );
 
   const actions: LeftPanelAction[] = [
     {
@@ -38,8 +42,8 @@ export const LeftPanel = () => {
       id: "delete",
       title: "Delete",
       icon: "mingcute:delete-2-line",
-      disabled: !hasActiveCard,
-      onClick: deleteActiveCard,
+      disabled: !hasActiveComposition,
+      onClick: deleteActiveComposition,
     },
   ];
 

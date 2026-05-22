@@ -11,17 +11,15 @@ import {
 import { Rectangle } from "pixi.js";
 import type { ApplicationRef } from "@pixi/react";
 
-import {
-  getCardRenderBox,
-  LinkCardCanvas,
-} from "@/components/cards/LinkCardCanvas";
+import { LinkCardCanvas } from "@/components/cards/LinkCardCanvas";
 import { getPixiResolution } from "@/components/cards/pixiResolution";
 import { useCanvasExport } from "@/providers/CanvasExportContext";
 import {
+  getBackgroundContrastColor,
   getBackgroundPresetById,
   getBackgroundPresetStyle,
 } from "@/config/backgroundPresets";
-import { getLinkCardPresetById } from "@/config/linkCardPresets";
+import { getCompositionLayout } from "@/libs/canvasComposition";
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 type ResizeState = {
@@ -40,27 +38,36 @@ export const Canvas = () => {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<ApplicationRef | null>(null);
   const resizeStateRef = useRef<ResizeState | null>(null);
+  const textEditorRef = useRef<HTMLTextAreaElement | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [textDraft, setTextDraft] = useState("");
   const { registerExporter } = useCanvasExport();
 
   const canvasSize = useCanvasStore((state) => state.canvasSize);
   const activeCanvasPresetId = useCanvasStore(
     (state) => state.activeCanvasPresetId,
   );
-  const activeCard = useCanvasStore((state) => state.activeCard);
+  const activeComposition = useCanvasStore(
+    (state) => state.activeComposition,
+  );
   const activeBackgroundId = useCanvasStore(
     (state) => state.activeBackgroundId,
   );
-  const resizeActiveCard = useCanvasStore((state) => state.resizeActiveCard);
-  const beginResizeActiveCard = useCanvasStore(
-    (state) => state.beginResizeActiveCard,
+  const resizeActiveImage = useCanvasStore((state) => state.resizeActiveImage);
+  const beginResizeActiveImage = useCanvasStore(
+    (state) => state.beginResizeActiveImage,
   );
-  const endResizeActiveCard = useCanvasStore(
-    (state) => state.endResizeActiveCard,
+  const endResizeActiveImage = useCanvasStore(
+    (state) => state.endResizeActiveImage,
   );
-  const deleteActiveCard = useCanvasStore((state) => state.deleteActiveCard);
+  const deleteActiveComposition = useCanvasStore(
+    (state) => state.deleteActiveComposition,
+  );
+  const updateTextValue = useCanvasStore((state) => state.updateTextValue);
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
+  const textColor = getBackgroundContrastColor(activeBackground);
   const pixiCanvasKey = `${activeCanvasPresetId}-${activeBackgroundId}`;
 
   useEffect(() => {
@@ -105,17 +112,17 @@ export const Canvas = () => {
 
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      if (!activeCard) return;
+      if (!activeComposition) return;
       event.currentTarget.setPointerCapture(event.pointerId);
-      beginResizeActiveCard();
+      beginResizeActiveImage();
       resizeStateRef.current = {
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        widthRatio: activeCard.widthRatio,
+        widthRatio: activeComposition.image.widthRatio,
       };
     },
-    [activeCard, beginResizeActiveCard],
+    [activeComposition, beginResizeActiveImage],
   );
 
   const handlePointerMove = useCallback(
@@ -125,21 +132,23 @@ export const Canvas = () => {
       if (
         !resizeState ||
         !event.currentTarget.hasPointerCapture(event.pointerId) ||
-        !activeCard ||
+        !activeComposition ||
         previewSize.scale <= 0
       )
         return;
 
-      const preset = getLinkCardPresetById(activeCard.presetId);
       const deltaX = (event.clientX - resizeState.startX) / previewSize.scale;
       const deltaY = (event.clientY - resizeState.startY) / previewSize.scale;
-      const directionalDelta = Math.max(deltaX, deltaY * preset.aspectRatio);
+      const directionalDelta = Math.max(
+        deltaX,
+        deltaY * activeComposition.image.aspectRatio,
+      );
       const nextWidthRatio =
         resizeState.widthRatio + (directionalDelta * 2) / canvasSize.width;
 
-      resizeActiveCard(nextWidthRatio);
+      resizeActiveImage(nextWidthRatio);
     },
-    [activeCard, previewSize.scale, canvasSize.width, resizeActiveCard],
+    [activeComposition, previewSize.scale, canvasSize.width, resizeActiveImage],
   );
 
   const handlePointerUp = useCallback(
@@ -149,10 +158,36 @@ export const Canvas = () => {
 
       event.currentTarget.releasePointerCapture(event.pointerId);
       resizeStateRef.current = null;
-      endResizeActiveCard();
+      endResizeActiveImage();
     },
-    [endResizeActiveCard],
+    [endResizeActiveImage],
   );
+
+  const beginTextEditing = useCallback(() => {
+    if (!activeComposition) return;
+
+    setTextDraft(activeComposition.text.value);
+    setIsEditingText(true);
+  }, [activeComposition]);
+
+  const commitTextEditing = useCallback(() => {
+    if (!isEditingText) return;
+
+    updateTextValue(textDraft.trim() || activeComposition?.metadata.title || "");
+    setIsEditingText(false);
+  }, [activeComposition?.metadata.title, isEditingText, textDraft, updateTextValue]);
+
+  const cancelTextEditing = useCallback(() => {
+    setIsEditingText(false);
+    setTextDraft("");
+  }, []);
+
+  useEffect(() => {
+    if (!isEditingText) return;
+
+    textEditorRef.current?.focus();
+    textEditorRef.current?.select();
+  }, [isEditingText]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -165,10 +200,10 @@ export const Canvas = () => {
         return;
       }
 
-      if (!activeCard) return;
+      if (!activeComposition) return;
 
       event.preventDefault();
-      deleteActiveCard();
+      deleteActiveComposition();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -176,7 +211,7 @@ export const Canvas = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeCard, deleteActiveCard]);
+  }, [activeComposition, deleteActiveComposition]);
 
   useEffect(() => {
     return registerExporter(async () => {
@@ -208,19 +243,30 @@ export const Canvas = () => {
     });
   }, [registerExporter]);
 
-  const cardOverlayStyle = useMemo((): CSSProperties | undefined => {
-    if (!activeCard) return undefined;
-
-    const preset = getLinkCardPresetById(activeCard.presetId);
-    const cardBox = getCardRenderBox(activeCard, preset, canvasSize);
-
-    return {
-      left: cardBox.x * previewSize.scale,
-      top: cardBox.y * previewSize.scale,
-      width: cardBox.width * previewSize.scale,
-      height: cardBox.height * previewSize.scale,
-    };
-  }, [activeCard, canvasSize, previewSize.scale]);
+  const activeLayout = activeComposition
+    ? getCompositionLayout(activeComposition, canvasSize)
+    : null;
+  const imageOverlayStyle: CSSProperties | undefined = activeLayout
+    ? {
+        left: activeLayout.imageBox.x * previewSize.scale,
+        top: activeLayout.imageBox.y * previewSize.scale,
+        width: activeLayout.imageBox.width * previewSize.scale,
+        height: activeLayout.imageBox.height * previewSize.scale,
+      }
+    : undefined;
+  const textOverlayStyle: CSSProperties | undefined =
+    activeComposition && activeLayout
+      ? {
+          color: textColor,
+          fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
+          fontSize: activeComposition.text.fontSize * previewSize.scale,
+          height: activeLayout.textBox.height * previewSize.scale,
+          left: activeLayout.textBox.x * previewSize.scale,
+          lineHeight: 1.2,
+          top: activeLayout.textBox.y * previewSize.scale,
+          width: activeLayout.textBox.width * previewSize.scale,
+        }
+      : undefined;
 
   return (
     <div
@@ -247,27 +293,72 @@ export const Canvas = () => {
         >
           <LinkCardCanvas
             activeBackgroundId={activeBackgroundId}
-            activeCard={activeCard}
+            activeComposition={activeComposition}
             canvasSize={canvasSize}
           />
         </Application>
 
-        {!activeCard ? (
+        {!activeComposition ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-medium text-secondary-text">
             Add a link from Images
           </div>
         ) : (
-          <div className="absolute" style={cardOverlayStyle}>
-            <button
-              type="button"
-              aria-label="Resize centered card"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              className="absolute bottom-0 right-0 h-5 w-5 translate-x-1/2 translate-y-1/2 rounded-full border bg-accent"
-            />
-          </div>
+          <>
+            <div className="absolute" style={imageOverlayStyle}>
+              <button
+                type="button"
+                aria-label="Resize video image"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                className="absolute bottom-0 right-0 h-5 w-5 translate-x-1/2 translate-y-1/2 rounded-full border bg-accent"
+              />
+            </div>
+            <div className="absolute" style={textOverlayStyle}>
+              {isEditingText ? (
+                <textarea
+                  ref={textEditorRef}
+                  aria-label="Edit video title"
+                  value={textDraft}
+                  onBlur={commitTextEditing}
+                  onChange={(event) => setTextDraft(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      cancelTextEditing();
+                    }
+
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      commitTextEditing();
+                    }
+                  }}
+                  className="h-full w-full resize-none rounded-md border border-accent bg-panel-bg/90 px-2 py-1 text-center font-bold leading-[1.2] outline-none"
+                  style={{
+                    color: textColor,
+                    fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
+                    fontSize: activeComposition.text.fontSize * previewSize.scale,
+                  }}
+                />
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Edit video title"
+                    onClick={beginTextEditing}
+                    className="absolute inset-0 cursor-text bg-transparent"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Edit video title"
+                    onClick={beginTextEditing}
+                    className="absolute right-0 top-1/2 h-5 w-5 translate-x-1/2 -translate-y-1/2 rounded-full border bg-accent text-[0px]"
+                  />
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

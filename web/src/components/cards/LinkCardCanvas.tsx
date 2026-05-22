@@ -6,7 +6,9 @@ import { FillGradient } from "pixi.js";
 
 import {
   getBackgroundPresetById,
+  getBackgroundContrastColor,
   getBackgroundPresetLayers,
+  getOppositeContrastColor,
   type BackgroundLayer,
 } from "@/config/backgroundPresets";
 import {
@@ -15,13 +17,18 @@ import {
 } from "@/config/linkCardPresets";
 import type { CanvasSize } from "@/config/canvasPresets";
 import { clampCardWidthRatio } from "@/libs/cardSizing";
+import {
+  getCompositionLayout,
+  MAX_TEXT_LINES,
+  type CanvasComposition,
+} from "@/libs/canvasComposition";
 import type { LinkCardCanvasItem } from "@/stores/useCanvasStore";
-import { PixiImageBox, PixiRect } from "./pixiPrimitives";
+import { PixiImageBox, PixiRect, PixiTextBlock } from "./pixiPrimitives";
 
 type LinkCardCanvasProps = {
   canvasSize: CanvasSize;
   activeBackgroundId: string;
-  activeCard: LinkCardCanvasItem | null;
+  activeComposition: CanvasComposition | null;
 };
 
 const createLinearGradient = (
@@ -191,17 +198,90 @@ export const getCardRenderBox = (
 export const LinkCardCanvas = ({
   canvasSize,
   activeBackgroundId,
-  activeCard,
+  activeComposition,
 }: LinkCardCanvasProps) => {
+  const activeBackground = getBackgroundPresetById(activeBackgroundId);
+  const contrastColor = getBackgroundContrastColor(activeBackground);
+
   return (
     <pixiContainer>
       <PixiBackground
         activeBackgroundId={activeBackgroundId}
         canvasSize={canvasSize}
       />
-      {activeCard ? (
-        <CenteredPixiCard card={activeCard} canvasSize={canvasSize} />
+      {activeComposition ? (
+        <PixiComposition
+          composition={activeComposition}
+          canvasSize={canvasSize}
+          textColor={contrastColor}
+          overlayColor={getOppositeContrastColor(contrastColor)}
+        />
       ) : null}
+    </pixiContainer>
+  );
+};
+
+const IMAGE_SHADOWS = {
+  none: null,
+  soft: { x: 10, y: 14, alpha: 0.18 },
+  strong: { x: 16, y: 20, alpha: 0.28 },
+} as const;
+
+const PixiComposition = ({
+  composition,
+  canvasSize,
+  textColor,
+  overlayColor,
+}: {
+  composition: CanvasComposition;
+  canvasSize: CanvasSize;
+  textColor: string;
+  overlayColor: string;
+}) => {
+  const layout = getCompositionLayout(composition, canvasSize);
+  const shadow = IMAGE_SHADOWS[composition.image.shadow];
+
+  return (
+    <pixiContainer>
+      {shadow ? (
+        <PixiRect
+          box={{
+            x: layout.imageBox.x + shadow.x,
+            y: layout.imageBox.y + shadow.y,
+            width: layout.imageBox.width,
+            height: layout.imageBox.height,
+          }}
+          radius={composition.image.radius}
+          fill={0x000000}
+          alpha={shadow.alpha}
+        />
+      ) : null}
+      <PixiImageBox
+        src={composition.image.src}
+        box={layout.imageBox}
+        fit="cover"
+        radius={composition.image.radius}
+        background={0x101114}
+      />
+      {composition.text.overlay.enabled ? (
+        <PixiRect
+          box={layout.textBox}
+          radius={Math.min(18, composition.text.fontSize * 0.4)}
+          fill={overlayColor}
+          alpha={0.82}
+        />
+      ) : null}
+      <PixiTextBlock
+        text={composition.text.value}
+        box={layout.textBox}
+        color={textColor}
+        fontFamily={`${composition.text.fontFamily}, Arial, sans-serif`}
+        fontSize={composition.text.fontSize}
+        fontWeight={700}
+        lineHeight={1.2}
+        maxLines={MAX_TEXT_LINES}
+        align="center"
+      />
     </pixiContainer>
   );
 };

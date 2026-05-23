@@ -312,7 +312,7 @@ export const Canvas = () => {
         ) : (
           <>
             {imageOverlayStyle ? (
-              <div className="absolute" style={imageOverlayStyle}>
+              <div className="absolute z-20" style={imageOverlayStyle}>
                 <button
                   type="button"
                   aria-label="Resize video image"
@@ -326,7 +326,7 @@ export const Canvas = () => {
             ) : null}
 
             {textOverlayStyle ? (
-              <div className="absolute" style={textOverlayStyle}>
+              <div className="absolute z-10" style={textOverlayStyle}>
                 {isEditingText ? (
                   <textarea
                     ref={textEditorRef}
@@ -362,12 +362,6 @@ export const Canvas = () => {
                       aria-label="Edit video title"
                       onClick={beginTextEditing}
                       className="absolute inset-0 cursor-text bg-transparent"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Edit video title"
-                      onClick={beginTextEditing}
-                      className="absolute right-0 top-1/2 h-5 w-5 translate-x-1/2 -translate-y-1/2 rounded-full border bg-accent text-[0px]"
                     />
                   </>
                 )}

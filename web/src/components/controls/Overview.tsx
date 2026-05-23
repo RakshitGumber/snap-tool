@@ -6,7 +6,13 @@ import type {
 import { useCanvasStore } from "@/stores/useCanvasStore";
 
 const fontFamilies: CanvasFontFamily[] = ["Roboto", "Inter Variable"];
-const shadowPresets: ImageShadowPreset[] = ["none", "soft", "strong"];
+const shadowPresets: ImageShadowPreset[] = [
+  "none",
+  "subtle",
+  "soft",
+  "lifted",
+  "strong",
+];
 const textColorModes: Array<{ id: TextColorMode; label: string }> = [
   { id: "auto", label: "Auto" },
   { id: "black", label: "Black" },
@@ -124,7 +130,7 @@ export const Overview = () => {
                 value={activeComposition.text.fontSize}
                 onChange={(event) =>
                   updateTextSettings({
-                    fontSize: Number(event.currentTarget.value),
+                    fontSize: Math.round(Number(event.currentTarget.value)),
                   })
                 }
                 className={inputClass}
@@ -134,7 +140,9 @@ export const Overview = () => {
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-border-color bg-panel-bg px-3 py-2">
             <span className="text-sm font-semibold text-title-color">
-              Text background
+              {activeComposition.templateId === "youtube-thumbnail-text"
+                ? "Thumbnail overlay"
+                : "Text background"}
             </span>
             <input
               type="checkbox"
@@ -205,9 +213,13 @@ export const Overview = () => {
                 <option key={shadow} value={shadow}>
                   {shadow === "none"
                     ? "None"
-                    : shadow === "soft"
-                      ? "Soft"
-                      : "Strong"}
+                    : shadow === "subtle"
+                      ? "Subtle"
+                      : shadow === "soft"
+                        ? "Soft"
+                        : shadow === "lifted"
+                          ? "Lifted"
+                          : "Strong"}
                 </option>
               ))}
             </select>

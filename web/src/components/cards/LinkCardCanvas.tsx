@@ -224,8 +224,25 @@ export const LinkCardCanvas = ({
 
 const IMAGE_SHADOWS = {
   none: null,
-  soft: { x: 10, y: 14, alpha: 0.18 },
-  strong: { x: 16, y: 20, alpha: 0.28 },
+  subtle: [
+    { x: 0, y: 10, spread: 10, alpha: 0.10 },
+    { x: 0, y: 18, spread: 22, alpha: 0.05 },
+  ],
+  soft: [
+    { x: 0, y: 14, spread: 14, alpha: 0.14 },
+    { x: 0, y: 24, spread: 30, alpha: 0.08 },
+    { x: 0, y: 36, spread: 52, alpha: 0.035 },
+  ],
+  lifted: [
+    { x: 0, y: 18, spread: 18, alpha: 0.18 },
+    { x: 0, y: 32, spread: 42, alpha: 0.10 },
+    { x: 0, y: 52, spread: 72, alpha: 0.045 },
+  ],
+  strong: [
+    { x: 0, y: 22, spread: 22, alpha: 0.22 },
+    { x: 0, y: 40, spread: 54, alpha: 0.14 },
+    { x: 0, y: 68, spread: 92, alpha: 0.06 },
+  ],
 } as const;
 
 const PixiComposition = ({
@@ -240,7 +257,8 @@ const PixiComposition = ({
   overlayColor: string;
 }) => {
   const layout = getCompositionLayout(composition, canvasSize);
-  const shadow = IMAGE_SHADOWS[composition.image.shadow];
+  const shadowLayers = IMAGE_SHADOWS[composition.image.shadow];
+  const imageRadius = Math.max(10, composition.image.radius);
 
   const resolvedTextColor =
     composition.text.colorMode === "black"
@@ -248,44 +266,74 @@ const PixiComposition = ({
       : composition.text.colorMode === "white"
         ? "#FFFFFF"
         : textColor;
+  const overlayPaddingX = Math.round(
+    Math.max(12, Math.min(48, composition.text.fontSize * 0.34)),
+  );
+  const overlayPaddingY = Math.round(
+    Math.max(10, Math.min(40, composition.text.fontSize * 0.26)),
+  );
 
   return (
     <pixiContainer>
-      {shadow && composition.image.visible ? (
-        <PixiRect
-          box={{
-            x: layout.imageBox.x + shadow.x,
-            y: layout.imageBox.y + shadow.y,
-            width: layout.imageBox.width,
-            height: layout.imageBox.height,
-          }}
-          radius={composition.image.radius}
-          fill={0x000000}
-          alpha={shadow.alpha}
-        />
-      ) : null}
+      {shadowLayers && composition.image.visible
+        ? shadowLayers.map((layer, index) => {
+            const spread = Math.max(0, layer.spread);
+            const inset = spread / 2;
+            return (
+              <PixiRect
+                key={`shadow-${index}`}
+                box={{
+                  x: layout.imageBox.x - inset + layer.x,
+                  y: layout.imageBox.y - inset + layer.y,
+                  width: layout.imageBox.width + spread,
+                  height: layout.imageBox.height + spread,
+                }}
+                radius={Math.min(80, imageRadius + Math.round(spread * 0.18))}
+                fill={0x000000}
+                alpha={layer.alpha}
+              />
+            );
+          })
+        : null}
 
       {composition.image.visible ? (
         <PixiImageBox
           src={composition.image.src}
           box={layout.imageBox}
           fit="cover"
-          radius={Math.max(10, composition.image.radius)}
+          radius={imageRadius}
           background={null}
         />
       ) : null}
 
-      {composition.text.visible && composition.text.overlay.enabled ? (
+      {composition.text.visible &&
+      composition.text.overlay.enabled &&
+      composition.templateId === "youtube-feed" ? (
         <PixiRect
           box={{
-            x: layout.titleBox.x,
-            y: layout.titleBox.y,
-            width: layout.titleBox.width,
-            height: layout.titleBox.height + layout.channelBox.height,
+            x: layout.titleBox.x - overlayPaddingX,
+            y: layout.titleBox.y - overlayPaddingY,
+            width: layout.titleBox.width + overlayPaddingX * 2,
+            height:
+              layout.titleBox.height +
+              layout.channelBox.height +
+              overlayPaddingY * 2,
           }}
-          radius={Math.min(18, composition.text.fontSize * 0.32)}
+          radius={Math.min(22, Math.round(composition.text.fontSize * 0.34))}
           fill={overlayColor}
           alpha={0.82}
+        />
+      ) : null}
+
+      {composition.text.visible &&
+      composition.text.overlay.enabled &&
+      composition.templateId === "youtube-thumbnail-text" &&
+      composition.image.visible ? (
+        <PixiRect
+          box={layout.imageBox}
+          radius={imageRadius}
+          fill={0x000000}
+          alpha={0.55}
         />
       ) : null}
 

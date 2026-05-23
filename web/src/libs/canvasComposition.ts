@@ -2,12 +2,21 @@ import type { CanvasSize } from "@/config/canvasPresets";
 import type { YouTubeLinkCardMetadata } from "@/libs/linkCards";
 
 export type CanvasFontFamily = "Roboto" | "Inter Variable";
-export type ImageShadowPreset = "none" | "soft" | "strong";
+export type ImageShadowPreset =
+  | "none"
+  | "subtle"
+  | "soft"
+  | "lifted"
+  | "strong";
 export type TextColorMode = "auto" | "black" | "white";
+export type YouTubeCompositionTemplateId =
+  | "youtube-feed"
+  | "youtube-thumbnail-text";
 
 export type YouTubeCanvasComposition = {
   id: string;
   source: "youtube";
+  templateId: YouTubeCompositionTemplateId;
   metadata: YouTubeLinkCardMetadata;
   image: {
     src: string;
@@ -55,6 +64,8 @@ export const DEFAULT_TEXT_FONT_SIZE = 52;
 export const DEFAULT_COMPOSITION_SPACING = 32;
 export const DEFAULT_IMAGE_RADIUS = 0;
 export const DEFAULT_IMAGE_SHADOW: ImageShadowPreset = "none";
+export const DEFAULT_YOUTUBE_TEMPLATE_ID: YouTubeCompositionTemplateId =
+  "youtube-feed";
 export const MAX_COMPOSITION_OCCUPANCY_RATIO = 0.92;
 export const MIN_IMAGE_WIDTH_RATIO = 0.12;
 export const MAX_TEXT_LINES = 2;
@@ -66,9 +77,11 @@ const AVERAGE_CHARACTER_WIDTH_RATIO = 0.56;
 
 export const createYouTubeComposition = (
   metadata: YouTubeLinkCardMetadata,
+  templateId: YouTubeCompositionTemplateId = DEFAULT_YOUTUBE_TEMPLATE_ID,
 ): CanvasComposition => ({
   id: crypto.randomUUID(),
   source: "youtube",
+  templateId,
   metadata,
   image: {
     src: metadata.thumbnailUrl,
@@ -83,9 +96,9 @@ export const createYouTubeComposition = (
     fontFamily: DEFAULT_TEXT_FONT_FAMILY,
     fontSize: DEFAULT_TEXT_FONT_SIZE,
     visible: true,
-    colorMode: "auto",
+    colorMode: templateId === "youtube-thumbnail-text" ? "white" : "auto",
     overlay: {
-      enabled: false,
+      enabled: templateId === "youtube-thumbnail-text",
     },
   },
   layout: {
@@ -100,6 +113,18 @@ const isFinitePositiveNumber = (value: number) =>
   Number.isFinite(value) && value > 0;
 
 const normalizeTextValue = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const isShadowPreset = (value: unknown): value is ImageShadowPreset =>
+  value === "none" ||
+  value === "subtle" ||
+  value === "soft" ||
+  value === "lifted" ||
+  value === "strong";
+
+const isYouTubeTemplateId = (
+  value: unknown,
+): value is YouTubeCompositionTemplateId =>
+  value === "youtube-feed" || value === "youtube-thumbnail-text";
 
 export const measureCompositionText = ({
   text,
@@ -183,7 +208,11 @@ const getGroupHeightForImageWidth = (
   const hasText = composition.text.visible && (titleHeight > 0 || channelHeight > 0);
   const spacing = hasImage && hasText ? composition.layout.spacing : 0;
 
-  return imageHeight + spacing + titleHeight + (hasText ? channelHeight : 0);
+  if (!hasImage || composition.templateId !== "youtube-thumbnail-text") {
+    return imageHeight + spacing + titleHeight + (hasText ? channelHeight : 0);
+  }
+
+  return imageHeight;
 };
 
 export const getMaxCompositionImageWidthRatio = (
@@ -236,6 +265,11 @@ export const normalizeComposition = (
   canvasSize: CanvasSize,
 ): CanvasComposition => ({
   ...composition,
+  templateId: isYouTubeTemplateId(
+    (composition as { templateId?: unknown }).templateId,
+  )
+    ? composition.templateId
+    : DEFAULT_YOUTUBE_TEMPLATE_ID,
   image: {
     ...composition.image,
     widthRatio: clampCompositionImageWidthRatio(
@@ -244,11 +278,22 @@ export const normalizeComposition = (
       composition.image.widthRatio,
     ),
     radius: Math.max(0, composition.image.radius),
+    shadow: isShadowPreset((composition.image as { shadow?: unknown }).shadow)
+      ? composition.image.shadow
+      : DEFAULT_IMAGE_SHADOW,
     visible: composition.image.visible ?? true,
   },
   text: {
     ...composition.text,
-    fontSize: clamp(composition.text.fontSize, 12, 96),
+    fontSize: Math.round(
+      clamp(
+        Number.isFinite(composition.text.fontSize)
+          ? composition.text.fontSize
+          : DEFAULT_TEXT_FONT_SIZE,
+        12,
+        96,
+      ),
+    ),
     value: composition.text.value || composition.metadata.title,
     visible: composition.text.visible ?? true,
     colorMode: composition.text.colorMode ?? "auto",
@@ -296,14 +341,88 @@ export const getCompositionLayout = (
   const hasText =
     composition.text.visible && (titleHeight > 0 || channelHeight > 0);
   const spacing = hasImage && hasText ? composition.layout.spacing : 0;
-  const groupHeight = imageHeight + spacing + titleHeight + (hasText ? channelHeight : 0);
+  const groupHeight =
+    hasImage && composition.templateId === "youtube-thumbnail-text"
+      ? imageHeight
+      : imageHeight + spacing + titleHeight + (hasText ? channelHeight : 0);
   const groupX = (canvasSize.width - groupWidth) / 2;
   const groupY = (canvasSize.height - groupHeight) / 2;
 
   const imageY = groupY;
-  const titleY = hasImage ? groupY + imageHeight + spacing : groupY;
-  const channelY = titleY + titleHeight;
   const textInsetX = Math.max(0, Math.round(composition.text.fontSize * 0.25));
+
+  if (!hasImage || composition.templateId !== "youtube-thumbnail-text") {
+    const titleY = hasImage ? groupY + imageHeight + spacing : groupY;
+    const channelY = titleY + titleHeight;
+
+    return {
+      groupBox: {
+        x: groupX,
+        y: groupY,
+        width: groupWidth,
+        height: groupHeight,
+      },
+      imageBox: {
+        x: groupX,
+        y: imageY,
+        width: imageWidth,
+        height: imageHeight,
+      },
+      titleBox: {
+        x: groupX + textInsetX,
+        y: titleY,
+        width: Math.max(0, imageWidth - textInsetX * 2),
+        height: titleHeight,
+      },
+      channelBox: {
+        x: groupX + textInsetX,
+        y: channelY,
+        width: Math.max(0, imageWidth - textInsetX * 2),
+        height: channelHeight,
+      },
+      imageWidthRatio,
+    };
+  }
+
+  const clampDimension = (value: number, min: number, max: number) =>
+    Math.round(clamp(value, min, max));
+  const insetX = clampDimension(
+    Math.min(composition.layout.spacing, imageWidth * 0.12),
+    12,
+    72,
+  );
+  const insetY = clampDimension(
+    Math.min(composition.layout.spacing, imageHeight * 0.12),
+    12,
+    72,
+  );
+  const baseGap = clampDimension(composition.layout.spacing * 0.6, 14, 40);
+  const contentWidth = Math.max(0, imageWidth - insetX * 2 - textInsetX * 2);
+  const minY = groupY + insetY;
+  const maxY = groupY + imageHeight - insetY;
+
+  let titleY = 0;
+  let channelY = 0;
+  let titleChannelGap = baseGap;
+
+  const titleBoxX = groupX + insetX + textInsetX;
+  const channelBoxX = titleBoxX;
+  const titleBoxWidth = contentWidth;
+  const channelBoxWidth = contentWidth;
+
+  channelY = maxY - channelHeight;
+  titleY = channelY - titleHeight - titleChannelGap;
+
+  if (titleY < minY) {
+    titleY = minY;
+    channelY = titleY + titleHeight + titleChannelGap;
+  }
+
+  if (channelY + channelHeight > maxY) {
+    titleChannelGap = 14;
+    channelY = maxY - channelHeight;
+    titleY = Math.max(minY, channelY - titleHeight - titleChannelGap);
+  }
 
   return {
     groupBox: {
@@ -319,15 +438,15 @@ export const getCompositionLayout = (
       height: imageHeight,
     },
     titleBox: {
-      x: groupX + textInsetX,
+      x: titleBoxX,
       y: titleY,
-      width: Math.max(0, imageWidth - textInsetX * 2),
+      width: titleBoxWidth,
       height: titleHeight,
     },
     channelBox: {
-      x: groupX + textInsetX,
+      x: channelBoxX,
       y: channelY,
-      width: Math.max(0, imageWidth - textInsetX * 2),
+      width: channelBoxWidth,
       height: channelHeight,
     },
     imageWidthRatio,

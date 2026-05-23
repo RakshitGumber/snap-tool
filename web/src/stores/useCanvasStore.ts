@@ -14,6 +14,7 @@ import {
   type CanvasFontFamily,
   type ImageShadowPreset,
   type TextColorMode,
+  type YouTubeCompositionTemplateId,
 } from "@/libs/canvasComposition";
 import type {
   LinkCardMetadata,
@@ -59,7 +60,10 @@ type CanvasStoreState = LightweightCanvasSnapshot & {
   resizeAnchor: { widthRatio: number; fontSize: number } | null;
   setActiveCanvasPreset: (presetId: string) => void;
   setActiveBackground: (backgroundId: string) => void;
-  setActiveYouTubeComposition: (metadata: YouTubeLinkCardMetadata) => void;
+  setActiveYouTubeComposition: (
+    metadata: YouTubeLinkCardMetadata,
+    templateId?: YouTubeCompositionTemplateId,
+  ) => void;
   resizeActiveImage: (widthRatio: number) => void;
   beginResizeActiveImage: () => void;
   endResizeActiveImage: () => void;
@@ -115,9 +119,14 @@ const isStoredComposition = (
 
   const composition = value as Partial<CanvasComposition>;
 
+  const templateId = (composition as { templateId?: unknown }).templateId;
   const imageVisible = (composition.image as { visible?: unknown }).visible;
   const textVisible = (composition.text as { visible?: unknown }).visible;
   const textColorMode = (composition.text as { colorMode?: unknown }).colorMode;
+
+  if (templateId !== undefined && typeof templateId !== "string") {
+    return false;
+  }
 
   if (imageVisible !== undefined && typeof imageVisible !== "boolean") {
     return false;
@@ -321,12 +330,12 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       }),
     ),
 
-  setActiveYouTubeComposition: (metadata) =>
+  setActiveYouTubeComposition: (metadata, templateId) =>
     set((state) =>
       withHistory(state, {
         ...toSnapshot(state),
         activeComposition: normalizeComposition(
-          createYouTubeComposition(metadata),
+          createYouTubeComposition(metadata, templateId),
           state.canvasSize,
         ),
       }),

@@ -7,6 +7,7 @@ import {
   measureCompositionText,
   TITLE_TEXT_LINE_HEIGHT,
   CHANNEL_TEXT_LINE_HEIGHT,
+  DEFAULT_YOUTUBE_TEMPLATE_ID,
   type CanvasComposition,
 } from "../src/libs/canvasComposition";
 import type { YouTubeLinkCardMetadata } from "../src/libs/linkCards";
@@ -136,6 +137,31 @@ describe("canvas composition layout", () => {
     );
     expect(layout.channelBox.height).toBeCloseTo(
       Math.max(12, composition.text.fontSize * 0.48) * CHANNEL_TEXT_LINE_HEIGHT,
+    );
+  });
+
+  test("defaults new compositions to the feed template", () => {
+    const composition = createYouTubeComposition(metadata);
+    expect(composition.templateId).toBe(DEFAULT_YOUTUBE_TEMPLATE_ID);
+  });
+
+  test("positions title and channel inside thumbnail for on-thumbnail template", () => {
+    const composition = createYouTubeComposition(metadata, "youtube-thumbnail-text");
+    const layout = getCompositionLayout(composition, {
+      width: 1600,
+      height: 900,
+    });
+
+    expect(layout.groupBox.height).toBeCloseTo(layout.imageBox.height);
+    expect(layout.titleBox.x).toBeGreaterThanOrEqual(layout.imageBox.x);
+    expect(layout.channelBox.x).toBeGreaterThanOrEqual(layout.imageBox.x);
+    expect(layout.titleBox.y).toBeGreaterThanOrEqual(layout.imageBox.y);
+    expect(layout.channelBox.y + layout.channelBox.height).toBeLessThanOrEqual(
+      layout.imageBox.y + layout.imageBox.height,
+    );
+    expect(layout.channelBox.y).toBeGreaterThan(layout.titleBox.y);
+    expect(layout.channelBox.y - (layout.titleBox.y + layout.titleBox.height)).toBeGreaterThanOrEqual(
+      14,
     );
   });
 });

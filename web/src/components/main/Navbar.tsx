@@ -53,12 +53,6 @@ export const Navbar = () => {
         </div>
         {/* <div className="hidden items-center gap-1 md:flex">
           <a
-            href="#examples"
-            className="rounded-lg px-3 py-2 text-sm font-semibold text-title-color transition hover:bg-text-color/8"
-          >
-            Examples
-          </a>
-          <a
             href="#workflow"
             className="rounded-lg px-3 py-2 text-sm font-semibold text-title-color transition hover:bg-text-color/8"
           >

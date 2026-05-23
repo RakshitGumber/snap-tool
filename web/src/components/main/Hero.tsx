@@ -21,74 +21,6 @@ const stagger: Variants = {
   },
 };
 
-type ExampleTone = "youtube" | "github" | "website";
-type ExampleSize = "square" | "portrait" | "wide";
-
-const EXAMPLE_EXPORTS: Array<{
-  id: string;
-  tone: ExampleTone;
-  size: ExampleSize;
-  title: string;
-  subtitle: string;
-  icon: string;
-  widthClass: string;
-}> = [
-  {
-    id: "ex-gh-wide",
-    tone: "github",
-    size: "wide",
-    title: "Repo launch cover",
-    subtitle: "Name, tagline, quick stats.",
-    icon: "simple-icons:github",
-    widthClass: "w-[min(560px,86vw)] sm:w-[520px]",
-  },
-  {
-    id: "ex-yt-square",
-    tone: "youtube",
-    size: "square",
-    title: "Episode cover",
-    subtitle: "Readable at a glance.",
-    icon: "simple-icons:youtube",
-    widthClass: "w-[min(360px,80vw)] sm:w-[340px]",
-  },
-  {
-    id: "ex-web-square",
-    tone: "website",
-    size: "square",
-    title: "Product snapshot",
-    subtitle: "Brand + URL frame.",
-    icon: "lucide:globe-2",
-    widthClass: "w-[min(360px,80vw)] sm:w-[340px]",
-  },
-  {
-    id: "ex-web-portrait",
-    tone: "website",
-    size: "portrait",
-    title: "Site poster",
-    subtitle: "A clean vertical rhythm.",
-    icon: "lucide:globe-2",
-    widthClass: "w-[min(360px,80vw)] sm:w-[340px]",
-  },
-  {
-    id: "ex-yt-wide",
-    tone: "youtube",
-    size: "wide",
-    title: "Trailer card",
-    subtitle: "Wide without losing text.",
-    icon: "simple-icons:youtube",
-    widthClass: "w-[min(560px,86vw)] sm:w-[520px]",
-  },
-  {
-    id: "ex-gh-square",
-    tone: "github",
-    size: "square",
-    title: "Release share",
-    subtitle: "Tag, highlights, link.",
-    icon: "simple-icons:github",
-    widthClass: "w-[min(360px,80vw)] sm:w-[340px]",
-  },
-];
-
 const WORKFLOW: Array<{
   step: string;
   title: string;
@@ -129,105 +61,6 @@ const FAQ: Array<{ q: string; a: string }> = [
     a: "Screenshots are inconsistent. Single Filter turns the same source link into a clean, platform-sized graphic every time.",
   },
 ];
-
-const toneStyles: Record<
-  ExampleTone,
-  { bg: string; tint: string; ink: string; chip: string; shadow: string }
-> = {
-  youtube: {
-    bg: "bg-[oklch(0.96_0.02_24)]",
-    tint: "bg-[oklch(0.92_0.03_24)]",
-    ink: "text-[oklch(0.28_0.02_24)]",
-    chip: "bg-[oklch(0.88_0.05_24)]",
-    shadow: "shadow-[0_18px_40px_-18px_oklch(0.45_0.06_24/0.35)]",
-  },
-  github: {
-    bg: "bg-[oklch(0.95_0.017_165)]",
-    tint: "bg-[oklch(0.91_0.025_165)]",
-    ink: "text-[oklch(0.25_0.02_165)]",
-    chip: "bg-[oklch(0.87_0.04_165)]",
-    shadow: "shadow-[0_18px_40px_-18px_oklch(0.43_0.05_165/0.35)]",
-  },
-  website: {
-    bg: "bg-[oklch(0.95_0.014_245)]",
-    tint: "bg-[oklch(0.91_0.02_245)]",
-    ink: "text-[oklch(0.25_0.02_245)]",
-    chip: "bg-[oklch(0.88_0.035_245)]",
-    shadow: "shadow-[0_18px_40px_-18px_oklch(0.43_0.05_245/0.35)]",
-  },
-};
-
-const sizeStyles: Record<ExampleSize, string> = {
-  square: "aspect-square",
-  portrait: "aspect-[4/5]",
-  wide: "aspect-[16/9]",
-};
-
-const ExportCard = ({
-  tone,
-  size,
-  title,
-  subtitle,
-  icon,
-  className,
-}: {
-  tone: ExampleTone;
-  size: ExampleSize;
-  title: string;
-  subtitle: string;
-  icon: string;
-  className?: string;
-}) => {
-  const styles = toneStyles[tone];
-  return (
-    <div
-      className={[
-        "relative overflow-hidden rounded-xl border border-border-color",
-        styles.bg,
-        sizeStyles[size],
-        styles.shadow,
-        className ?? "",
-      ].join(" ")}
-    >
-      <div className="absolute inset-0 opacity-[0.22]">
-        <div className="absolute -left-10 -top-16 h-44 w-44 rounded-full bg-accent/25 blur-2xl" />
-        <div className="absolute -right-12 -bottom-20 h-48 w-48 rounded-full bg-accent/18 blur-2xl" />
-      </div>
-
-      <div className="absolute inset-0 opacity-[0.28]">
-        <div
-          className={[
-            "absolute right-4 top-4 rotate-6 scale-[1.35]",
-            styles.ink,
-            "opacity-[0.12]",
-          ].join(" ")}
-        >
-          <Icon icon={icon} className="text-6xl sm:text-7xl" />
-        </div>
-      </div>
-
-      <div className="relative flex h-full flex-col p-4 sm:p-5">
-        <div className="mt-auto">
-          <div className={["rounded-lg p-3", styles.tint].join(" ")}>
-            <p
-              className={["text-sm font-black leading-5", styles.ink].join(" ")}
-            >
-              {title}
-            </p>
-            <p
-              className={[
-                "mt-1 text-xs font-semibold leading-4",
-                styles.ink,
-              ].join(" ")}
-            >
-              {subtitle}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export const Hero = () => {
   const reduceMotion = useReducedMotion();
@@ -271,71 +104,14 @@ export const Hero = () => {
                 </span>
               </Link>
               <a
-                href="#examples"
+                href="#workflow"
                 className="inline-flex h-12 items-center justify-center rounded-lg border border-border-color bg-panel-bg px-7 text-base font-bold text-title-color transition hover:bg-text-color/6 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
               >
-                See examples
+                How it works
               </a>
             </div>
           </motion.div>
         </motion.div>
-      </section>
-
-      <section
-        id="examples"
-        className="w-full border-t border-border-color bg-panel-bg px-6 py-14 sm:px-8 lg:py-20"
-      >
-        <div className="mx-auto w-full max-w-6xl">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm font-bold text-secondary-text">Examples</p>
-              <h2 className="mt-3 max-w-2xl text-4xl font-black leading-tight tracking-normal text-title-color lg:text-5xl">
-                Three sources, three visual languages.
-              </h2>
-            </div>
-            <p className="max-w-md text-lg leading-8 text-text-color">
-              A video, a repo, and a product link should not look like the same
-              generic tile.
-            </p>
-          </div>
-
-          <div className="mt-10 -mx-6 sm:-mx-8">
-            <p id="examples-hint" className="sr-only">
-              Horizontally scrollable gallery of example exports.
-            </p>
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-panel-bg to-transparent sm:w-14" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-panel-bg to-transparent sm:w-14" />
-
-              <div
-                role="region"
-                aria-label="Example exports"
-                aria-describedby="examples-hint"
-                className="flex items-end gap-4 overflow-x-auto pb-4 pl-6 pr-6 snap-x snap-proximity scroll-px-6 sm:pl-8 sm:pr-8 sm:scroll-px-8"
-              >
-                {EXAMPLE_EXPORTS.map((example) => (
-                  <div
-                    key={example.id}
-                    tabIndex={0}
-                    className={[
-                      "shrink-0 snap-start rounded-xl outline-none",
-                      example.widthClass,
-                      "focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:ring-offset-2 focus-visible:ring-offset-panel-bg",
-                    ].join(" ")}
-                  >
-                    <ExportCard
-                      tone={example.tone}
-                      size={example.size}
-                      title={example.title}
-                      subtitle={example.subtitle}
-                      icon={example.icon}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section

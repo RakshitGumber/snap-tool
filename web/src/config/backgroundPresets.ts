@@ -108,6 +108,73 @@ const getContrastColorForHex = (hex: string): BackgroundContrastColor => {
   return luminance > 0.52 ? "#111111" : "#FFFFFF";
 };
 
+const hexToRgb = (hex: string) => {
+  const normalizedHex = hex.replace("#", "");
+  return {
+    r: Number.parseInt(normalizedHex.slice(0, 2), 16),
+    g: Number.parseInt(normalizedHex.slice(2, 4), 16),
+    b: Number.parseInt(normalizedHex.slice(4, 6), 16),
+  };
+};
+
+const srgbToLinear = (channel: number) => {
+  const normalized = channel / 255;
+  return normalized <= 0.04045
+    ? normalized / 12.92
+    : Math.pow((normalized + 0.055) / 1.055, 2.4);
+};
+
+const relativeLuminanceForHex = (hex: string) => {
+  const { r, g, b } = hexToRgb(hex);
+  const red = srgbToLinear(r);
+  const green = srgbToLinear(g);
+  const blue = srgbToLinear(b);
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+};
+
+const getContrastColorForLinearGradientStops = (
+  stops: BackgroundGradientStop[],
+): BackgroundContrastColor => {
+  const validStops = stops
+    .filter((stop) => typeof stop.color === "string" && HEX_COLOR_PATTERN.test(stop.color))
+    .map((stop) => ({
+      offset: Math.min(1, Math.max(0, stop.offset)),
+      luminance: relativeLuminanceForHex(stop.color),
+    }))
+    .sort((a, b) => a.offset - b.offset);
+
+  if (!validStops.length) return "#FFFFFF";
+  if (validStops.length === 1) {
+    return validStops[0].luminance > 0.52 ? "#111111" : "#FFFFFF";
+  }
+
+  // Approximate gradient luminance by sampling across the stop offsets.
+  const samples = 7;
+  let total = 0;
+
+  for (let index = 0; index < samples; index += 1) {
+    const t = index / (samples - 1);
+    let right = validStops.findIndex((stop) => stop.offset >= t);
+    if (right === -1) right = validStops.length - 1;
+    const left = Math.max(0, right - 1);
+    const leftStop = validStops[left];
+    const rightStop = validStops[right];
+
+    if (!leftStop || !rightStop) continue;
+
+    if (leftStop.offset === rightStop.offset) {
+      total += rightStop.luminance;
+      continue;
+    }
+
+    const localT = (t - leftStop.offset) / (rightStop.offset - leftStop.offset);
+    total += leftStop.luminance + (rightStop.luminance - leftStop.luminance) * localT;
+  }
+
+  const average = total / samples;
+  return average > 0.52 ? "#111111" : "#FFFFFF";
+};
+
 const getContrastColorForBackground = (
   background: string,
 ): BackgroundContrastColor =>
@@ -141,7 +208,16 @@ export const getBackgroundPresetLayers = (
 export const getBackgroundContrastColor = (
   preset: BackgroundPreset,
 ): BackgroundContrastColor =>
-  preset.contrast ?? getContrastColorForBackground(preset.background);
+  preset.contrast ??
+  (preset.layers?.some((layer) => layer.type === "linear-gradient")
+    ? getContrastColorForLinearGradientStops(
+        preset.layers
+          ?.filter(
+            (layer): layer is Extract<BackgroundLayer, { type: "linear-gradient" }> =>
+              layer.type === "linear-gradient",
+          )[0]?.stops ?? [],
+      )
+    : getContrastColorForBackground(preset.background));
 
 export const getOppositeContrastColor = (
   color: BackgroundContrastColor,

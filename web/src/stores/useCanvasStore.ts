@@ -13,7 +13,7 @@ import {
   type CanvasComposition,
   type CanvasFontFamily,
   type ImageShadowPreset,
-  type TextPosition,
+  type TextColorMode,
 } from "@/libs/canvasComposition";
 import type {
   LinkCardMetadata,
@@ -38,13 +38,15 @@ export type LightweightCanvasSnapshot = {
 type TextSettingsPatch = Partial<{
   fontFamily: CanvasFontFamily;
   fontSize: number;
-  position: TextPosition;
   overlayEnabled: boolean;
+  visible: boolean;
+  colorMode: TextColorMode;
 }>;
 
 type ImageSettingsPatch = Partial<{
   radius: number;
   shadow: ImageShadowPreset;
+  visible: boolean;
 }>;
 
 type LayoutSettingsPatch = Partial<{
@@ -54,6 +56,7 @@ type LayoutSettingsPatch = Partial<{
 type CanvasStoreState = LightweightCanvasSnapshot & {
   historyPast: LightweightCanvasSnapshot[];
   historyFuture: LightweightCanvasSnapshot[];
+  resizeAnchor: { widthRatio: number; fontSize: number } | null;
   setActiveCanvasPreset: (presetId: string) => void;
   setActiveBackground: (backgroundId: string) => void;
   setActiveYouTubeComposition: (metadata: YouTubeLinkCardMetadata) => void;
@@ -65,14 +68,17 @@ type CanvasStoreState = LightweightCanvasSnapshot & {
   updateImageSettings: (patch: ImageSettingsPatch) => void;
   updateLayoutSettings: (patch: LayoutSettingsPatch) => void;
   deleteActiveComposition: () => void;
+  toggleImageVisible: () => void;
+  toggleTextVisible: () => void;
   clearCanvasContents: () => void;
   undo: () => void;
   redo: () => void;
 };
 
 const defaultCanvasPreset = getCanvasPresetById(DEFAULT_CANVAS_PRESET_ID);
-const STORAGE_KEY = "snap-tool:canvas:v3";
-const LEGACY_STORAGE_KEY = "snap-tool:canvas:v2";
+const STORAGE_KEY = "snap-tool:canvas:v4";
+const LEGACY_STORAGE_KEY = "snap-tool:canvas:v3";
+const LEGACY_STORAGE_KEY_V2 = "snap-tool:canvas:v2";
 const MAX_HISTORY_LENGTH = 32;
 
 const createDefaultSnapshot = (): LightweightCanvasSnapshot => ({
@@ -109,6 +115,22 @@ const isStoredComposition = (
 
   const composition = value as Partial<CanvasComposition>;
 
+  const imageVisible = (composition.image as { visible?: unknown }).visible;
+  const textVisible = (composition.text as { visible?: unknown }).visible;
+  const textColorMode = (composition.text as { colorMode?: unknown }).colorMode;
+
+  if (imageVisible !== undefined && typeof imageVisible !== "boolean") {
+    return false;
+  }
+
+  if (textVisible !== undefined && typeof textVisible !== "boolean") {
+    return false;
+  }
+
+  if (textColorMode !== undefined && typeof textColorMode !== "string") {
+    return false;
+  }
+
   return (
     composition.source === "youtube" &&
     typeof composition.id === "string" &&
@@ -126,7 +148,6 @@ const isStoredComposition = (
     typeof composition.text.value === "string" &&
     typeof composition.text.fontFamily === "string" &&
     typeof composition.text.fontSize === "number" &&
-    typeof composition.text.position === "string" &&
     typeof composition.text.overlay === "object" &&
     composition.text.overlay !== null &&
     typeof composition.text.overlay.enabled === "boolean" &&
@@ -212,6 +233,7 @@ const loadStoredSnapshot = (storageKey: string) => {
 const loadInitialSnapshot = () =>
   loadStoredSnapshot(STORAGE_KEY) ??
   loadStoredSnapshot(LEGACY_STORAGE_KEY) ??
+  loadStoredSnapshot(LEGACY_STORAGE_KEY_V2) ??
   createDefaultSnapshot();
 
 const toSnapshot = (state: LightweightCanvasSnapshot) => ({
@@ -274,6 +296,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   ...initialSnapshot,
   historyPast: [],
   historyFuture: [],
+  resizeAnchor: null,
 
   setActiveCanvasPreset: (presetId) => {
     const preset = getCanvasPresetById(presetId);
@@ -313,6 +336,12 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     set((state) => {
       if (!state.activeComposition) return {};
 
+      const anchor = state.resizeAnchor;
+      const nextFontSize =
+        anchor && anchor.widthRatio > 0
+          ? anchor.fontSize * (widthRatio / anchor.widthRatio)
+          : state.activeComposition.text.fontSize;
+
       return {
         activeComposition: normalizeComposition(
           {
@@ -320,6 +349,10 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
             image: {
               ...state.activeComposition.image,
               widthRatio,
+            },
+            text: {
+              ...state.activeComposition.text,
+              fontSize: nextFontSize,
             },
           },
           state.canvasSize,
@@ -336,10 +369,14 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           -MAX_HISTORY_LENGTH,
         ),
         historyFuture: [],
+        resizeAnchor: {
+          widthRatio: state.activeComposition.image.widthRatio,
+          fontSize: state.activeComposition.text.fontSize,
+        },
       };
     }),
 
-  endResizeActiveImage: () => undefined,
+  endResizeActiveImage: () => set(() => ({ resizeAnchor: null })),
 
   updateTextValue: (value) =>
     set((state) =>
@@ -360,7 +397,8 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           ...composition.text,
           fontFamily: patch.fontFamily ?? composition.text.fontFamily,
           fontSize: patch.fontSize ?? composition.text.fontSize,
-          position: patch.position ?? composition.text.position,
+          visible: patch.visible ?? composition.text.visible,
+          colorMode: patch.colorMode ?? composition.text.colorMode,
           overlay: {
             ...composition.text.overlay,
             enabled:
@@ -378,6 +416,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           ...composition.image,
           radius: patch.radius ?? composition.image.radius,
           shadow: patch.shadow ?? composition.image.shadow,
+          visible: patch.visible ?? composition.image.visible,
         },
       })),
     ),
@@ -402,6 +441,28 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         activeComposition: null,
       });
     }),
+
+  toggleImageVisible: () =>
+    set((state) =>
+      updateActiveComposition(state, (composition) => ({
+        ...composition,
+        image: {
+          ...composition.image,
+          visible: !composition.image.visible,
+        },
+      })),
+    ),
+
+  toggleTextVisible: () =>
+    set((state) =>
+      updateActiveComposition(state, (composition) => ({
+        ...composition,
+        text: {
+          ...composition.text,
+          visible: !composition.text.visible,
+        },
+      })),
+    ),
 
   clearCanvasContents: () =>
     set((state) =>

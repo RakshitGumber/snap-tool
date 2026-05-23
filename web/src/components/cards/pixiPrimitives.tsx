@@ -55,7 +55,7 @@ type ImageBoxProps = {
   box: Box;
   radius?: number;
   fit?: "cover" | "contain";
-  background?: ColorSource;
+  background?: ColorSource | null;
   alpha?: number;
 };
 
@@ -427,11 +427,13 @@ export const PixiImageBox = ({
 
   return (
     <pixiContainer alpha={alpha} x={box.x} y={box.y}>
-      <PixiRect
-        box={{ x: 0, y: 0, width: box.width, height: box.height }}
-        radius={radius}
-        fill={background}
-      />
+      {background != null ? (
+        <PixiRect
+          box={{ x: 0, y: 0, width: box.width, height: box.height }}
+          radius={radius}
+          fill={background}
+        />
+      ) : null}
       <pixiGraphics ref={setMask} draw={maskDraw} />
       {texture && imageSize ? (
         <pixiSprite

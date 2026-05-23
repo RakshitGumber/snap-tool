@@ -19,6 +19,7 @@ import type { CanvasSize } from "@/config/canvasPresets";
 import { clampCardWidthRatio } from "@/libs/cardSizing";
 import {
   getCompositionLayout,
+  MAX_CHANNEL_LINES,
   MAX_TEXT_LINES,
   type CanvasComposition,
 } from "@/libs/canvasComposition";
@@ -241,9 +242,16 @@ const PixiComposition = ({
   const layout = getCompositionLayout(composition, canvasSize);
   const shadow = IMAGE_SHADOWS[composition.image.shadow];
 
+  const resolvedTextColor =
+    composition.text.colorMode === "black"
+      ? "#111111"
+      : composition.text.colorMode === "white"
+        ? "#FFFFFF"
+        : textColor;
+
   return (
     <pixiContainer>
-      {shadow ? (
+      {shadow && composition.image.visible ? (
         <PixiRect
           box={{
             x: layout.imageBox.x + shadow.x,
@@ -256,32 +264,58 @@ const PixiComposition = ({
           alpha={shadow.alpha}
         />
       ) : null}
-      <PixiImageBox
-        src={composition.image.src}
-        box={layout.imageBox}
-        fit="cover"
-        radius={composition.image.radius}
-        background={0x101114}
-      />
-      {composition.text.overlay.enabled ? (
+
+      {composition.image.visible ? (
+        <PixiImageBox
+          src={composition.image.src}
+          box={layout.imageBox}
+          fit="cover"
+          radius={Math.max(10, composition.image.radius)}
+          background={null}
+        />
+      ) : null}
+
+      {composition.text.visible && composition.text.overlay.enabled ? (
         <PixiRect
-          box={layout.textBox}
-          radius={Math.min(18, composition.text.fontSize * 0.4)}
+          box={{
+            x: layout.titleBox.x,
+            y: layout.titleBox.y,
+            width: layout.titleBox.width,
+            height: layout.titleBox.height + layout.channelBox.height,
+          }}
+          radius={Math.min(18, composition.text.fontSize * 0.32)}
           fill={overlayColor}
           alpha={0.82}
         />
       ) : null}
-      <PixiTextBlock
-        text={composition.text.value}
-        box={layout.textBox}
-        color={textColor}
-        fontFamily={`${composition.text.fontFamily}, Arial, sans-serif`}
-        fontSize={composition.text.fontSize}
-        fontWeight={700}
-        lineHeight={1.2}
-        maxLines={MAX_TEXT_LINES}
-        align="center"
-      />
+
+      {composition.text.visible ? (
+        <>
+          <PixiTextBlock
+            text={composition.text.value}
+            box={layout.titleBox}
+            color={resolvedTextColor}
+            fontFamily={`${composition.text.fontFamily}, Arial, sans-serif`}
+            fontSize={composition.text.fontSize}
+            fontWeight={820}
+            lineHeight={1.1}
+            maxLines={MAX_TEXT_LINES}
+            align="left"
+          />
+          <PixiTextBlock
+            text={composition.metadata.subtitle}
+            box={layout.channelBox}
+            color={resolvedTextColor}
+            fontFamily={`${composition.text.fontFamily}, Arial, sans-serif`}
+            fontSize={Math.max(12, composition.text.fontSize * 0.48)}
+            fontWeight={650}
+            lineHeight={1.1}
+            maxLines={MAX_CHANNEL_LINES}
+            align="left"
+            alpha={0.82}
+          />
+        </>
+      ) : null}
     </pixiContainer>
   );
 };

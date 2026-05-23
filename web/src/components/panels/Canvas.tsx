@@ -68,6 +68,12 @@ export const Canvas = () => {
 
   const activeBackground = getBackgroundPresetById(activeBackgroundId);
   const textColor = getBackgroundContrastColor(activeBackground);
+  const resolvedTextColor =
+    activeComposition?.text.colorMode === "black"
+      ? "#111111"
+      : activeComposition?.text.colorMode === "white"
+        ? "#FFFFFF"
+        : textColor;
   const pixiCanvasKey = `${activeCanvasPresetId}-${activeBackgroundId}`;
 
   useEffect(() => {
@@ -246,7 +252,8 @@ export const Canvas = () => {
   const activeLayout = activeComposition
     ? getCompositionLayout(activeComposition, canvasSize)
     : null;
-  const imageOverlayStyle: CSSProperties | undefined = activeLayout
+  const imageOverlayStyle: CSSProperties | undefined =
+    activeLayout && activeComposition?.image.visible
     ? {
         left: activeLayout.imageBox.x * previewSize.scale,
         top: activeLayout.imageBox.y * previewSize.scale,
@@ -255,18 +262,18 @@ export const Canvas = () => {
       }
     : undefined;
   const textOverlayStyle: CSSProperties | undefined =
-    activeComposition && activeLayout
+    activeComposition && activeLayout && activeComposition.text.visible
       ? {
-          color: textColor,
-          fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
-          fontSize: activeComposition.text.fontSize * previewSize.scale,
-          height: activeLayout.textBox.height * previewSize.scale,
-          left: activeLayout.textBox.x * previewSize.scale,
-          lineHeight: 1.2,
-          top: activeLayout.textBox.y * previewSize.scale,
-          width: activeLayout.textBox.width * previewSize.scale,
-        }
-      : undefined;
+          color: resolvedTextColor,
+           fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
+           fontSize: activeComposition.text.fontSize * previewSize.scale,
+           height: activeLayout.titleBox.height * previewSize.scale,
+           left: activeLayout.titleBox.x * previewSize.scale,
+           lineHeight: 1.1,
+           top: activeLayout.titleBox.y * previewSize.scale,
+           width: activeLayout.titleBox.width * previewSize.scale,
+         }
+       : undefined;
 
   return (
     <div
@@ -304,60 +311,68 @@ export const Canvas = () => {
           </div>
         ) : (
           <>
-            <div className="absolute" style={imageOverlayStyle}>
-              <button
-                type="button"
-                aria-label="Resize video image"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                className="absolute bottom-0 right-0 h-5 w-5 translate-x-1/2 translate-y-1/2 rounded-full border bg-accent"
-              />
-            </div>
-            <div className="absolute" style={textOverlayStyle}>
-              {isEditingText ? (
-                <textarea
-                  ref={textEditorRef}
-                  aria-label="Edit video title"
-                  value={textDraft}
-                  onBlur={commitTextEditing}
-                  onChange={(event) => setTextDraft(event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      cancelTextEditing();
-                    }
-
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      commitTextEditing();
-                    }
-                  }}
-                  className="h-full w-full resize-none rounded-md border border-accent bg-panel-bg/90 px-2 py-1 text-center font-bold leading-[1.2] outline-none"
-                  style={{
-                    color: textColor,
-                    fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
-                    fontSize: activeComposition.text.fontSize * previewSize.scale,
-                  }}
+            {imageOverlayStyle ? (
+              <div className="absolute" style={imageOverlayStyle}>
+                <button
+                  type="button"
+                  aria-label="Resize video image"
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  className="absolute bottom-0 right-0 h-5 w-5 translate-x-1/2 translate-y-1/2 rounded-full border bg-accent"
                 />
-              ) : (
-                <>
-                  <button
-                    type="button"
+              </div>
+            ) : null}
+
+            {textOverlayStyle ? (
+              <div className="absolute" style={textOverlayStyle}>
+                {isEditingText ? (
+                  <textarea
+                    ref={textEditorRef}
                     aria-label="Edit video title"
-                    onClick={beginTextEditing}
-                    className="absolute inset-0 cursor-text bg-transparent"
+                    value={textDraft}
+                    onBlur={commitTextEditing}
+                    onChange={(event) =>
+                      setTextDraft(event.currentTarget.value)
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelTextEditing();
+                      }
+
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        commitTextEditing();
+                      }
+                    }}
+                    className="h-full w-full resize-none rounded-md border border-accent bg-panel-bg/90 px-3 py-2 text-left font-black leading-[1.1] outline-none"
+                    style={{
+                      color: resolvedTextColor,
+                      fontFamily: `${activeComposition.text.fontFamily}, Arial, sans-serif`,
+                      fontSize:
+                        activeComposition.text.fontSize * previewSize.scale,
+                    }}
                   />
-                  <button
-                    type="button"
-                    aria-label="Edit video title"
-                    onClick={beginTextEditing}
-                    className="absolute right-0 top-1/2 h-5 w-5 translate-x-1/2 -translate-y-1/2 rounded-full border bg-accent text-[0px]"
-                  />
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Edit video title"
+                      onClick={beginTextEditing}
+                      className="absolute inset-0 cursor-text bg-transparent"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Edit video title"
+                      onClick={beginTextEditing}
+                      className="absolute right-0 top-1/2 h-5 w-5 translate-x-1/2 -translate-y-1/2 rounded-full border bg-accent text-[0px]"
+                    />
+                  </>
+                )}
+              </div>
+            ) : null}
           </>
         )}
       </div>

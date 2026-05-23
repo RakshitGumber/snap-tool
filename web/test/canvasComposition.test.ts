@@ -5,6 +5,8 @@ import {
   getCompositionLayout,
   getMaxCompositionImageWidthRatio,
   measureCompositionText,
+  TITLE_TEXT_LINE_HEIGHT,
+  CHANNEL_TEXT_LINE_HEIGHT,
   type CanvasComposition,
 } from "../src/libs/canvasComposition";
 import type { YouTubeLinkCardMetadata } from "../src/libs/linkCards";
@@ -29,6 +31,13 @@ const makeComposition = (
 });
 
 describe("canvas composition layout", () => {
+  test("uses YouTube defaults for title and padding", () => {
+    const composition = createYouTubeComposition(metadata);
+
+    expect(composition.text.fontSize).toBe(52);
+    expect(composition.layout.spacing).toBe(32);
+  });
+
   test("centers the image and text as one group", () => {
     const composition = makeComposition();
     const layout = getCompositionLayout(composition, {
@@ -38,22 +47,17 @@ describe("canvas composition layout", () => {
 
     expect(layout.groupBox.x + layout.groupBox.width / 2).toBeCloseTo(800);
     expect(layout.groupBox.y + layout.groupBox.height / 2).toBeCloseTo(450);
-    expect(layout.textBox.width).toBeCloseTo(layout.imageBox.width);
+    expect(layout.titleBox.width).toBeLessThanOrEqual(layout.imageBox.width);
   });
 
-  test("supports placing text above the image", () => {
-    const composition = makeComposition({
-      text: {
-        ...createYouTubeComposition(metadata).text,
-        position: "above",
-      },
-    });
+  test("places the title below the thumbnail", () => {
+    const composition = makeComposition();
     const layout = getCompositionLayout(composition, {
       width: 1600,
       height: 900,
     });
 
-    expect(layout.textBox.y).toBeLessThan(layout.imageBox.y);
+    expect(layout.titleBox.y).toBeGreaterThan(layout.imageBox.y);
   });
 
   test("clamps image size against the full group height", () => {
@@ -85,7 +89,53 @@ describe("canvas composition layout", () => {
       fontSize: 24,
     });
 
-    expect(measured.lineCount).toBe(3);
-    expect(measured.height).toBeCloseTo(86.4);
+    expect(measured.lineCount).toBe(2);
+    expect(measured.height).toBeCloseTo(57.6);
+  });
+
+  test("collapses title+channel height when title is hidden", () => {
+    const composition = makeComposition({
+      text: {
+        ...createYouTubeComposition(metadata).text,
+        visible: false,
+      },
+    });
+    const layout = getCompositionLayout(composition, {
+      width: 1600,
+      height: 900,
+    });
+
+    expect(layout.titleBox.height).toBe(0);
+    expect(layout.channelBox.height).toBe(0);
+    expect(layout.groupBox.height).toBeCloseTo(layout.imageBox.height);
+  });
+
+  test("uses tighter line heights for title and channel", () => {
+    const composition = makeComposition({
+      image: {
+        ...createYouTubeComposition(metadata).image,
+        visible: false,
+      },
+      text: {
+        ...createYouTubeComposition(metadata).text,
+        value: "Short title",
+        fontSize: 50,
+      },
+      metadata: {
+        ...metadata,
+        subtitle: "Channel",
+      },
+    });
+    const layout = getCompositionLayout(composition, {
+      width: 2000,
+      height: 900,
+    });
+
+    expect(layout.titleBox.height).toBeCloseTo(
+      composition.text.fontSize * TITLE_TEXT_LINE_HEIGHT,
+    );
+    expect(layout.channelBox.height).toBeCloseTo(
+      Math.max(12, composition.text.fontSize * 0.48) * CHANNEL_TEXT_LINE_HEIGHT,
+    );
   });
 });
